@@ -27,17 +27,21 @@ function getSession(token) {
   return s;
 }
 
-const { CLIENT_ID, CLIENT_SECRET, ANTHROPIC_API_KEY } = process.env;
+const { CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, ANTHROPIC_API_KEY } = process.env;
 const anthropic = ANTHROPIC_API_KEY ? new Anthropic({ apiKey: ANTHROPIC_API_KEY }) : null;
-const ML_API_URL = 'https://api.mercadolibre.com';
+const ML_API_URL  = 'https://api.mercadolibre.com';
+const ML_AUTH_URL = 'https://auth.mercadolibre.com.uy';
 
 let tokenData    = null;
 let cachedClaims = [];
 
-// ── Persistencia del token ML (lee del DATA_DIR compartido, también puede refrescar) ──
-const TOKEN_FILE = path.join(DATA_DIR, 'ml_token.json');
+// ── Persistencia del token ML ──
+const OWN_TOKEN_FILE = path.join(OWN_DATA_DIR, 'ml_token.json');
+const SHARED_TOKEN_FILE = path.join(DATA_DIR, 'ml_token.json');
+// Prefiere token propio, fallback al compartido
+const TOKEN_FILE = fs.existsSync(OWN_TOKEN_FILE) ? OWN_TOKEN_FILE : (fs.existsSync(SHARED_TOKEN_FILE) ? SHARED_TOKEN_FILE : OWN_TOKEN_FILE);
 function saveToken(data) {
-  try { fs.writeFileSync(TOKEN_FILE, JSON.stringify(data), 'utf8'); } catch(e) {}
+  try { fs.writeFileSync(OWN_TOKEN_FILE, JSON.stringify(data), 'utf8'); } catch(e) {}
 }
 function loadToken() {
   try {
@@ -86,6 +90,53 @@ async function refreshMLToken() {
 setInterval(refreshMLToken, 5 * 60 * 60 * 1000);
 // Refrescar al arrancar si ya hay token guardado
 if (tokenData?.refresh_token) refreshMLToken();
+
+// ── OAuth ML (login independiente) ───────────────────────────────
+let pkceVerifier = null;
+function generateCodeVerifier() {
+  return crypto.randomBytes(32).toString('base64url');
+}
+function generateCodeChallenge(verifier) {
+  return crypto.createHash('sha256').update(verifier).digest('base64url');
+}
+
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('/login', (req, res) => {
+  pkceVerifier = generateCodeVerifier();
+  const challenge = generateCodeChallenge(pkceVerifier);
+  const authUrl =
+    `${ML_AUTH_URL}/authorization` +
+    `?response_type=code` +
+    `&client_id=${CLIENT_ID}` +
+    `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
+    `&scope=read_orders+offline_access` +
+    `&code_challenge=${challenge}` +
+    `&code_challenge_method=S256`;
+  res.redirect(authUrl);
+});
+
+app.get('/callback', async (req, res) => {
+  const { code } = req.query;
+  if (!code) return res.status(400).json({ error: 'Falta el parámetro code' });
+  try {
+    const response = await axios.post(`${ML_API_URL}/oauth/token`, {
+      grant_type: 'authorization_code',
+      client_id: CLIENT_ID,
+      client_secret: CLIENT_SECRET,
+      code,
+      redirect_uri: REDIRECT_URI,
+      code_verifier: pkceVerifier,
+    });
+    pkceVerifier = null;
+    tokenData = response.data;
+    saveToken(tokenData);
+    console.log('[oauth] Token obtenido OK');
+    res.redirect('/');
+  } catch (err) {
+    res.status(500).json({ error: 'Error al obtener el token', detail: err.response?.data || err.message });
+  }
+});
 
 // ── Middleware ────────────────────────────────────────────────────
 function requireToken(req, res, next) {
@@ -1444,8 +1495,7 @@ Responde SOLO con el texto de la respuesta, sin explicaciones adicionales. Si no
   }
 });
 
-// ── Static files ──────────────────────────────────────────────────
-app.use(express.static(path.join(__dirname, 'public')));
+// ── Static files (ya montado arriba) ──
 
 app.listen(PORT, () => {
   console.log(`ml-atencion corriendo en http://localhost:${PORT}`);
