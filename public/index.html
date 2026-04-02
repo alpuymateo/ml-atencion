@@ -1,0 +1,1977 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ML Atenci&oacute;n</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #f0f2f5; color: #1a1d23; }
+
+    /* Login */
+    #login-screen, #ml-connect-screen {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1a1d23 0%, #2d3250 100%);
+    }
+    .login-card {
+      background: white; border-radius: 16px; padding: 48px;
+      text-align: center; max-width: 400px; width: 90%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .login-logo { font-size: 56px; margin-bottom: 20px; }
+    .login-card h1 { font-size: 26px; font-weight: 700; margin-bottom: 8px; }
+    .login-card p { color: #6b7280; font-size: 14px; margin-bottom: 32px; }
+    .btn-login {
+      display: block; background: #FFE600; color: #1a1d23;
+      font-weight: 700; padding: 14px 32px; border-radius: 8px;
+      text-decoration: none; font-size: 15px; width: 100%;
+      transition: box-shadow 0.15s, transform 0.1s;
+    }
+    .btn-login:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(255,230,0,0.4); }
+
+    /* Layout */
+    #app { display: none; min-height: 100vh; }
+
+    .sidebar {
+      position: fixed; left: 0; top: 0; bottom: 0; width: 240px;
+      background: #1e2130; color: white;
+      display: flex; flex-direction: column; z-index: 100;
+    }
+    .sidebar-logo {
+      padding: 24px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .logo-badge {
+      background: #FFE600; color: #1a1d23; font-weight: 800;
+      font-size: 16px; padding: 4px 10px; border-radius: 6px;
+    }
+    .logo-text { font-weight: 600; font-size: 16px; color: white; }
+    .logo-sub { font-size: 11px; color: rgba(255,255,255,0.35); display: block; margin-top: 2px; }
+
+    .sidebar-nav { padding: 12px 0; flex: 1; }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 20px; color: rgba(255,255,255,0.55);
+      cursor: pointer; font-size: 14px; font-weight: 500;
+      border-left: 3px solid transparent; transition: all 0.15s;
+    }
+    .nav-item:hover { color: white; background: rgba(255,255,255,0.05); }
+    .nav-item.active { color: #FFE600; border-left-color: #FFE600; background: rgba(255,230,0,0.07); }
+    .nav-icon { font-size: 17px; width: 22px; text-align: center; }
+    .nav-section-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.8px;
+      text-transform: uppercase; color: rgba(255,255,255,0.25);
+      padding: 14px 20px 4px; margin-top: 4px;
+    }
+
+    .sidebar-user {
+      padding: 16px 20px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    .user-info { display: flex; align-items: center; gap: 10px; }
+    .user-avatar {
+      width: 36px; height: 36px; background: #FFE600; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; color: #1a1d23; font-size: 13px; flex-shrink: 0;
+    }
+    .user-name { font-size: 12px; font-weight: 600; color: white; }
+    .user-role { font-size: 11px; color: rgba(255,255,255,0.35); }
+
+    .main-content { margin-left: 240px; padding: 32px; min-height: 100vh; }
+
+    .page-header { margin-bottom: 28px; }
+    .page-header h1 { font-size: 22px; font-weight: 700; }
+    .page-header p { color: #6b7280; font-size: 13px; margin-top: 4px; }
+
+    /* KPI Cards */
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-bottom: 24px; }
+    .kpi-card {
+      background: white; border-radius: 12px; padding: 22px 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.07); border: 1px solid #ebebeb;
+      position: relative; overflow: hidden;
+    }
+    .kpi-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0;
+      height: 3px; background: var(--accent, #4361ee);
+    }
+    .kpi-icon { font-size: 28px; margin-bottom: 12px; display: block; }
+    .kpi-label { font-size: 11px; font-weight: 600; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    .kpi-value { font-size: 26px; font-weight: 700; color: #1a1d23; margin-bottom: 4px; line-height: 1; }
+    .kpi-sub { font-size: 12px; color: #b0b8c4; }
+
+    /* Table */
+    .table-card {
+      background: white; border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.07); border: 1px solid #ebebeb;
+      overflow: hidden;
+    }
+    .table-header {
+      padding: 18px 24px; border-bottom: 1px solid #f0f0f0;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    }
+    .table-title { font-size: 14px; font-weight: 600; }
+    .table-controls { display: flex; gap: 10px; align-items: center; }
+    .search-input, .filter-select {
+      padding: 8px 13px; border: 1px solid #e5e7eb; border-radius: 8px;
+      font-size: 13px; font-family: 'Inter', sans-serif;
+      outline: none; background: white; transition: border-color 0.15s;
+    }
+    .search-input { width: 220px; }
+    .search-input:focus, .filter-select:focus { border-color: #4361ee; }
+
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      padding: 11px 16px; text-align: left;
+      font-size: 11px; font-weight: 600; color: #9ca3af;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      background: #fafafa; border-bottom: 1px solid #f0f0f0;
+    }
+    tbody tr { border-bottom: 1px solid #f8f9fa; transition: background 0.1s; }
+    tbody tr:hover { background: #fafafa; }
+    tbody tr:last-child { border-bottom: none; }
+    td { padding: 13px 16px; font-size: 13px; color: #374151; }
+
+    .badge {
+      display: inline-block; padding: 3px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 600;
+    }
+    .badge-opened { background: #fee2e2; color: #991b1b; }
+    .badge-closed { background: #d1fae5; color: #065f46; }
+    .badge-resolved { background: #dbeafe; color: #1e40af; }
+    .badge-in_process { background: #fef3c7; color: #92400e; }
+    .badge-default { background: #f3f4f6; color: #6b7280; }
+
+    .card {
+      background: white; border-radius: 12px; padding: 20px 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.07); border: 1px solid #ebebeb;
+    }
+
+    .btn-refresh {
+      padding: 8px 16px; background: #f0f2f5; color: #374151;
+      font-weight: 600; font-size: 13px; border: 1px solid #e5e7eb;
+      border-radius: 8px; cursor: pointer; font-family: 'Inter', sans-serif;
+      transition: background 0.15s;
+    }
+    .btn-refresh:hover { background: #e5e7eb; }
+    .btn-refresh:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-sync {
+      padding: 8px 16px; background: #FFE600; color: #1a1d23;
+      font-weight: 700; font-size: 13px; border: none; border-radius: 8px;
+      cursor: pointer; font-family: 'Inter', sans-serif; transition: opacity 0.15s;
+    }
+    .btn-sync:disabled { opacity: 0.5; cursor: not-allowed; }
+    .sync-bar-wrap {
+      display: none; background: white; border-radius: 12px;
+      padding: 20px 24px; margin-bottom: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.07); border: 1px solid #ebebeb;
+    }
+    .sync-bar-label { font-size: 13px; color: #374151; margin-bottom: 10px; font-weight: 500; }
+    .sync-bar-track { background: #f0f2f5; border-radius: 99px; height: 8px; overflow: hidden; }
+    .sync-bar-fill { background: #4361ee; height: 100%; border-radius: 99px; transition: width 0.4s; width: 0%; }
+    .sync-done-msg { display: none; font-size: 13px; color: #065f46; font-weight: 600; margin-top: 8px; }
+
+    .pagination {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 24px; border-top: 1px solid #f0f0f0;
+    }
+    .pagination-info { font-size: 13px; color: #9ca3af; }
+    .pagination-btns { display: flex; gap: 8px; }
+    .btn-page {
+      padding: 7px 14px; border: 1px solid #e5e7eb; border-radius: 6px;
+      background: white; font-size: 13px; cursor: pointer;
+      font-family: 'Inter', sans-serif; font-weight: 500; transition: all 0.1s;
+    }
+    .btn-page:hover:not(:disabled) { background: #f9fafb; }
+    .btn-page:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .loading { text-align: center; padding: 48px; color: #9ca3af; font-size: 14px; }
+    .spinner {
+      display: inline-block; width: 18px; height: 18px;
+      border: 2px solid #e5e7eb; border-top-color: #4361ee;
+      border-radius: 50%; animation: spin 0.7s linear infinite;
+      margin-right: 8px; vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 1200px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 768px) {
+      .sidebar { width: 0; overflow: hidden; transition: width 0.2s; position: fixed; z-index: 100; }
+      .sidebar.open { width: 240px; }
+      .main-content { margin-left: 0; padding: 16px; }
+      .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px; }
+      .kpi-card { padding: 16px; }
+      .kpi-value { font-size: 20px; }
+      .page-header { flex-direction: column !important; gap: 12px; }
+      .page-header > div:last-child { width: 100%; flex-wrap: wrap; }
+      .filter-select { flex: 1; min-width: 0; }
+      #mobile-bar {
+        display: flex; align-items: center; gap: 12px;
+        background: #1e2130; padding: 12px 16px;
+        position: sticky; top: 0; z-index: 99;
+      }
+      #mobile-bar .logo-badge { background: #FFE600; color: #1a1d23; font-weight: 800; font-size: 14px; padding: 3px 8px; border-radius: 5px; }
+      #mobile-bar span { color: white; font-weight: 600; font-size: 15px; }
+      #mobile-menu-btn { margin-left: auto; background: none; border: none; cursor: pointer; color: white; font-size: 22px; padding: 4px 8px; }
+      #sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 99; }
+      #sidebar-overlay.show { display: block; }
+      .dev-card-header { flex-wrap: wrap; gap: 6px !important; }
+      .dev-card-product { flex-direction: column; align-items: flex-start !important; }
+    }
+
+    @media (min-width: 769px) {
+      #mobile-bar { display: none; }
+      #sidebar-overlay { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Login de usuario -->
+<div id="login-screen" style="display:none">
+  <div class="login-card">
+    <div class="login-logo">💬</div>
+    <h1>ML Atenci&oacute;n</h1>
+    <p>Ingres&aacute; con tu usuario y contrase&ntilde;a</p>
+    <div id="login-error" style="display:none;background:#fee2e2;color:#991b1b;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;"></div>
+    <input id="login-username" type="text" placeholder="Usuario" autocomplete="username"
+      style="display:block;width:100%;padding:12px 14px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;font-family:Inter,sans-serif;margin-bottom:10px;box-sizing:border-box;"
+      onkeydown="if(event.key==='Enter')doLogin()">
+    <input id="login-password" type="password" placeholder="Contrase&ntilde;a" autocomplete="current-password"
+      style="display:block;width:100%;padding:12px 14px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;font-family:Inter,sans-serif;margin-bottom:16px;box-sizing:border-box;"
+      onkeydown="if(event.key==='Enter')doLogin()">
+    <button onclick="doLogin()" class="btn-login" style="cursor:pointer;border:none;">Ingresar</button>
+  </div>
+</div>
+
+<!-- Conectar ML -->
+<div id="ml-connect-screen" style="display:none">
+  <div class="login-card">
+    <div class="login-logo">🟡</div>
+    <h1>Conectar MercadoLibre</h1>
+    <p id="ml-connect-user-msg">Para continuar, conect&aacute; tu cuenta de MercadoLibre</p>
+    <a href="/login" class="btn-login" style="margin-bottom:12px;display:block;">Conectar con MercadoLibre</a>
+    <button onclick="doLogout()" style="background:none;border:none;color:#9ca3af;font-size:13px;cursor:pointer;font-family:Inter,sans-serif;">Cerrar sesi&oacute;n</button>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app">
+  <!-- Mobile top bar -->
+  <div id="mobile-bar">
+    <span class="logo-badge">ML</span>
+    <span>Atenci&oacute;n</span>
+    <button id="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+  </div>
+  <div id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-badge">ML</span>
+      <div>
+        <span class="logo-text">Atenci&oacute;n</span>
+        <small class="logo-sub">MercadoLibre UY</small>
+      </div>
+    </div>
+    <nav class="sidebar-nav" style="overflow-y:auto;flex:1;">
+
+      <div class="nav-section-label">Posventa</div>
+      <div class="nav-item active" data-page="tareas" onclick="showPage('tareas')">
+        <span class="nav-icon">✅</span> Tareas
+      </div>
+      <div class="nav-item" data-page="reclamos" onclick="showPage('reclamos')">
+        <span class="nav-icon">⚠️</span> Reclamos
+      </div>
+      <div class="nav-item" data-page="devoluciones" onclick="showPage('devoluciones')">
+        <span class="nav-icon">↩️</span> Devoluciones
+      </div>
+
+      <div class="nav-section-label">MercadoLibre</div>
+      <div class="nav-item" data-page="ml-preguntas" onclick="showPage('ml-preguntas')">
+        <span class="nav-icon">💬</span> Preguntas
+      </div>
+      <div class="nav-item" data-page="ml-postventa" onclick="showPage('ml-postventa')">
+        <span class="nav-icon">📨</span> Post-venta
+      </div>
+      <div class="nav-item" data-page="ml-reglas" onclick="showPage('ml-reglas')">
+        <span class="nav-icon">⚙️</span> Reglas IA
+      </div>
+
+      <div class="nav-section-label admin-only" style="display:none;">Admin</div>
+      <div class="nav-item admin-only" data-page="usuarios" onclick="showPage('usuarios')" style="display:none;">
+        <span class="nav-icon">👥</span> Usuarios
+      </div>
+
+    </nav>
+    <div class="sidebar-user">
+      <div class="user-info">
+        <div class="user-avatar" id="user-avatar">?</div>
+        <div style="flex:1;min-width:0;">
+          <div class="user-name" id="user-name">Cargando...</div>
+          <div class="user-role" id="user-role">&mdash;</div>
+        </div>
+        <button onclick="doLogout()" title="Cerrar sesi&oacute;n"
+          style="background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.35);font-size:16px;padding:4px;flex-shrink:0;"
+          onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='rgba(255,255,255,0.35)'">⏻</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+
+    <!-- Tareas -->
+    <div id="page-tareas">
+      <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;">
+        <div>
+          <h1>Tareas</h1>
+          <p id="tareas-subtitle">&Oacute;rdenes ME1 y acuerda con comprador &mdash; mensajes y acciones pendientes</p>
+        </div>
+        <button class="btn-refresh" id="btn-refresh-tareas" onclick="loadTareas()">Actualizar</button>
+      </div>
+      <div id="tareas-content">
+        <div class="loading"><span class="spinner"></span>Cargando tareas...</div>
+      </div>
+    </div>
+
+    <!-- Reclamos -->
+    <div id="page-reclamos" style="display:none">
+      <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;">
+        <div>
+          <h1>Reclamos</h1>
+          <p>Reclamos recibidos en tiempo real v&iacute;a notificaciones de MercadoLibre</p>
+        </div>
+        <select class="filter-select" id="scan-months">
+          <option value="1">&Uacute;ltimo mes</option>
+          <option value="3" selected>&Uacute;ltimos 3 meses</option>
+          <option value="6">&Uacute;ltimos 6 meses</option>
+        </select>
+        <button class="btn-sync" id="btn-scan-claims" onclick="startClaimsScan()">Buscar hist&oacute;ricos</button>
+        <button class="btn-refresh" onclick="loadClaims(0)">Actualizar</button>
+      </div>
+
+      <div class="sync-bar-wrap" id="claims-scan-wrap">
+        <div class="sync-bar-label" id="claims-scan-label">Iniciando escaneo...</div>
+        <div class="sync-bar-track"><div class="sync-bar-fill" id="claims-scan-fill"></div></div>
+        <div class="sync-done-msg" id="claims-scan-done"></div>
+      </div>
+
+      <div id="claims-setup-notice" style="display:none;background:#fef3c7;border:1px solid #fcd34d;border-radius:12px;padding:20px 24px;margin-bottom:24px;">
+        <strong style="color:#92400e;">⚙️ Configuraci&oacute;n requerida</strong>
+        <p style="color:#92400e;font-size:13px;margin-top:6px;">
+          Para recibir reclamos, activ&aacute; los t&oacute;picos <strong>claims</strong> y <strong>claims_actions</strong> en tu app de MercadoLibre Developers (secci&oacute;n Post Purchase).
+        </p>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card" style="--accent:#ef476f">
+          <span class="kpi-icon">⚠️</span>
+          <div class="kpi-label">Total recibidos</div>
+          <div class="kpi-value" id="kpi-claims-total">0</div>
+          <div class="kpi-sub">desde que inici&oacute; el servidor</div>
+        </div>
+        <div class="kpi-card" style="--accent:#ef476f">
+          <span class="kpi-icon">🔴</span>
+          <div class="kpi-label">Abiertos</div>
+          <div class="kpi-value" id="kpi-claims-opened">0</div>
+          <div class="kpi-sub">requieren atenci&oacute;n</div>
+        </div>
+        <div class="kpi-card" style="--accent:#9ca3af">
+          <span class="kpi-icon">🔒</span>
+          <div class="kpi-label">Cerrados</div>
+          <div class="kpi-value" id="kpi-claims-closed">0</div>
+          <div class="kpi-sub">resueltos</div>
+        </div>
+        <div class="kpi-card" style="--accent:#4361ee">
+          <span class="kpi-icon">📋</span>
+          <div class="kpi-label">Tipos</div>
+          <div class="kpi-value" id="kpi-claims-types">&mdash;</div>
+          <div class="kpi-sub">motivos distintos</div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <span class="table-title">Listado de reclamos</span>
+          <div class="table-controls">
+            <input type="text" class="search-input" id="claims-search"
+              placeholder="Buscar por ID o orden..." oninput="filterClaims()" />
+            <select class="filter-select" id="claims-status-filter" onchange="loadClaims(0)">
+              <option value="">Todos los estados</option>
+              <option value="opened">Abierto</option>
+              <option value="closed">Cerrado</option>
+            </select>
+          </div>
+        </div>
+        <div id="claims-table-content">
+          <div class="loading"><span class="spinner"></span>Cargando...</div>
+        </div>
+        <div class="pagination">
+          <span class="pagination-info" id="claims-pagination-info">&mdash;</span>
+          <div class="pagination-btns">
+            <button class="btn-page" id="claims-btn-prev" onclick="changeClaimsPage(-1)" disabled>&larr; Anterior</button>
+            <button class="btn-page" id="claims-btn-next" onclick="changeClaimsPage(1)">Siguiente &rarr;</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Devoluciones -->
+    <div id="page-devoluciones" style="display:none">
+      <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;">
+        <div>
+          <h1>Devoluciones y Reclamos</h1>
+          <p id="dev-subtitle">&mdash;</p>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <select class="filter-select" id="dev-status-filter" onchange="loadDevoluciones()">
+            <option value="">Todos los estados</option>
+            <option value="opened" selected>Abiertas</option>
+            <option value="closed">Cerradas</option>
+          </select>
+          <button class="btn-refresh" id="btn-refresh-dev" onclick="loadDevoluciones()">Actualizar</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;" id="dev-summary-pills"></div>
+      <div id="dev-content">
+        <div class="loading"><span class="spinner"></span>Cargando...</div>
+      </div>
+    </div>
+
+    <!-- ML Analizar (tabs: pendientes, mensajes, preguntas, reglas) -->
+    <div id="page-ml-analizar" style="display:none">
+      <div class="page-header">
+        <div><h1>Atenci&oacute;n MercadoLibre</h1>
+          <p>Preguntas, mensajes post-venta y reglas IA</p>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="showAnalizarTab('pendientes')" id="tab-pendientes" style="padding:8px 16px;background:#7c3aed;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">💬 Preguntas</button>
+          <button onclick="showAnalizarTab('mensajes')" id="tab-mensajes" style="padding:8px 16px;background:#e5e7eb;color:#374151;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">📨 Post-venta</button>
+          <button onclick="showAnalizarTab('preguntas')" id="tab-preguntas" style="padding:8px 16px;background:#e5e7eb;color:#374151;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">❓ Frecuentes</button>
+          <button onclick="showAnalizarTab('reglas')" id="tab-reglas" style="padding:8px 16px;background:#e5e7eb;color:#374151;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">⚙️ Reglas</button>
+        </div>
+      </div>
+
+      <!-- Tab: Responder preguntas pendientes -->
+      <div id="analizar-tab-pendientes">
+        <div class="card" style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <b style="font-size:14px;">Preguntas sin responder en ML</b>
+            <span id="pendientes-count" style="font-size:12px;color:#9ca3af;"></span>
+            <span id="feedback-resumen" style="display:none;font-size:12px;background:#f9fafb;padding:3px 10px;border-radius:12px;border:1px solid #e5e7eb;"></span>
+            <select id="pendientes-dias" onchange="loadPendientes()" style="padding:4px 8px;border:1px solid #d1d5db;border-radius:5px;font-size:12px;">
+              <option value="1">Hoy</option>
+              <option value="3">&Uacute;ltimos 3 d&iacute;as</option>
+              <option value="7">&Uacute;ltimos 7 d&iacute;as</option>
+              <option value="30">&Uacute;ltimos 30 d&iacute;as</option>
+              <option value="0" selected>Todas</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button onclick="loadPendientes()" style="padding:8px 14px;background:#e5e7eb;color:#374151;border:none;border-radius:6px;font-size:13px;cursor:pointer;">↺ Actualizar</button>
+            <button onclick="simularTodas()" id="btn-simular-todas" style="padding:8px 16px;background:#7c3aed;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">🤖 Generar todas con IA</button>
+          </div>
+        </div>
+        <div id="pendientes-list"></div>
+      </div>
+
+      <!-- Tab: Mensajes post-venta -->
+      <div id="analizar-tab-mensajes" style="display:none">
+        <div class="card" style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <b style="font-size:14px;">Mensajes post-venta sin responder</b>
+            <span id="mensajes-count" style="font-size:12px;color:#9ca3af;"></span>
+            <select id="mensajes-dias" onchange="loadMensajes()" style="padding:4px 8px;border:1px solid #d1d5db;border-radius:5px;font-size:12px;">
+              <option value="3">&Uacute;ltimos 3 d&iacute;as</option>
+              <option value="7">&Uacute;ltimos 7 d&iacute;as</option>
+              <option value="14" selected>&Uacute;ltimos 14 d&iacute;as</option>
+              <option value="30">&Uacute;ltimos 30 d&iacute;as</option>
+            </select>
+          </div>
+          <button onclick="loadMensajes(true)" style="padding:8px 14px;background:#e5e7eb;color:#374151;border:none;border-radius:6px;font-size:13px;cursor:pointer;">↺ Actualizar</button>
+        </div>
+        <div id="mensajes-list"></div>
+      </div>
+
+      <!-- Tab: Preguntas frecuentes -->
+      <div id="analizar-tab-preguntas" style="display:none">
+        <div class="card" style="margin-bottom:16px;">
+          <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+            <div style="flex:1;min-width:220px;">
+              <label style="font-size:12px;color:#6b7280;display:block;margin-bottom:4px;">Buscar publicaci&oacute;n</label>
+              <input type="text" id="preguntas-search" class="search-input" style="width:100%;" placeholder="T&iacute;tulo o ID..." oninput="filtrarPreguntasPubs()"/>
+            </div>
+            <button onclick="loadPreguntasStats()" style="padding:8px 14px;background:#e5e7eb;color:#374151;border:none;border-radius:6px;font-size:13px;cursor:pointer;">↺ Actualizar</button>
+            <button onclick="importarHistorial()" id="btn-importar-historial" style="padding:8px 14px;background:#2563eb;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">⬇ Importar historial ML</button>
+          </div>
+          <div id="importar-estado" style="display:none;margin-top:10px;font-size:12px;color:#6b7280;"></div>
+        </div>
+        <div id="preguntas-stats-list"></div>
+        <div id="preguntas-detalle"></div>
+      </div>
+
+      <!-- Tab: Reglas del negocio -->
+      <div id="analizar-tab-reglas" style="display:none">
+        <div class="card" style="margin-bottom:16px;">
+          <b style="font-size:14px;">Reglas e informaci&oacute;n del negocio</b>
+          <p style="font-size:12px;color:#6b7280;margin:6px 0 14px;">Claude filtra por contexto: post-venta ve Post-venta + Env&iacute;os + Retiros; preguntas ve Preguntas + Env&iacute;os; General aplica siempre.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+            <div style="flex:1;min-width:240px;">
+              <label style="font-size:11px;color:#6b7280;display:block;margin-bottom:4px;">Regla o informaci&oacute;n</label>
+              <input type="text" id="regla-texto" placeholder="Ej: Los roperos se retiran en Av. Italia 1234" style="width:100%;padding:7px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;">
+            </div>
+            <div style="min-width:150px;">
+              <label style="font-size:11px;color:#6b7280;display:block;margin-bottom:4px;">Categor&iacute;a</label>
+              <select id="regla-categoria" style="width:100%;padding:7px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;">
+                <option value="General">General</option>
+                <option value="Env&iacute;os">Env&iacute;os</option>
+                <option value="Retiros">Retiros</option>
+                <option value="Post-venta">Post-venta</option>
+                <option value="Preguntas">Preguntas</option>
+                <option value="Tareas">Tareas</option>
+              </select>
+            </div>
+            <button onclick="agregarRegla()" style="padding:7px 16px;background:#7c3aed;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">+ Agregar</button>
+          </div>
+        </div>
+        <div id="reglas-list"></div>
+        <!-- Mapeo manual SKU → ML -->
+        <div class="card" style="margin-top:16px;">
+          <b style="font-size:14px;">🔗 Mapeo manual SKU Odoo → Publicaci&oacute;n ML</b>
+          <p style="font-size:12px;color:#6b7280;margin:6px 0 14px;">Cuando un producto tiene el SKU mal configurado en ML, vinculalo manualmente ac&aacute;.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px;">
+            <div>
+              <label style="font-size:11px;color:#6b7280;display:block;margin-bottom:4px;">SKU Odoo</label>
+              <input type="text" id="skumap-sku" placeholder="Ej: 54301-ROJO" style="padding:7px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;width:160px;">
+            </div>
+            <div>
+              <label style="font-size:11px;color:#6b7280;display:block;margin-bottom:4px;">ID Publicaci&oacute;n ML</label>
+              <input type="text" id="skumap-mlid" placeholder="Ej: 467234915" style="padding:7px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;width:160px;">
+            </div>
+            <button onclick="agregarSkuMap()" style="padding:7px 16px;background:#2563eb;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">+ Agregar</button>
+          </div>
+          <div id="skumap-list"></div>
+        </div>
+        <div id="reglas-interpretacion" style="display:none;margin-top:16px;" class="card">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <span style="font-size:13px;font-weight:700;color:#7c3aed;">🤖 C&oacute;mo Claude interpreta estas reglas</span>
+            <button onclick="interpretarReglas()" id="btn-interpretar" style="padding:3px 10px;background:#ede9fe;border:1px solid #c4b5fd;color:#6d28d9;border-radius:5px;font-size:11px;cursor:pointer;">↺ Actualizar</button>
+          </div>
+          <p id="reglas-interpretacion-text" style="font-size:13px;color:#374151;line-height:1.6;margin:0;"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Usuarios -->
+    <div id="page-usuarios" style="display:none">
+      <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;">
+        <div>
+          <h1>Usuarios</h1>
+          <p>Gesti&oacute;n de acceso al panel</p>
+        </div>
+        <button class="btn-refresh" onclick="showUserForm()" style="background:#4361ee;color:white;border:none;">+ Nuevo usuario</button>
+      </div>
+      <div class="table-card">
+        <div id="users-table-content"><div class="loading"><span class="spinner"></span>Cargando...</div></div>
+      </div>
+
+      <!-- Modal usuario -->
+      <div id="user-modal" style="display:none;position:fixed;inset:0;background:#0006;z-index:1000;align-items:center;justify-content:center;">
+        <div style="background:white;border-radius:16px;padding:24px;width:100%;max-width:420px;margin:16px;">
+          <h3 id="user-modal-title" style="font-size:16px;font-weight:700;margin-bottom:16px;">Nuevo usuario</h3>
+          <input type="hidden" id="edit-user-id">
+          <div style="margin-bottom:12px;">
+            <label style="font-size:12px;color:#6b7280;font-weight:600;">Nombre completo</label>
+            <input id="edit-user-name" type="text" placeholder="Ej: Juan Garc&iacute;a"
+              style="width:100%;margin-top:4px;padding:8px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;box-sizing:border-box;">
+          </div>
+          <div style="margin-bottom:12px;">
+            <label style="font-size:12px;color:#6b7280;font-weight:600;">Usuario</label>
+            <input id="edit-user-username" type="text" placeholder="Ej: juan"
+              style="width:100%;margin-top:4px;padding:8px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;box-sizing:border-box;">
+          </div>
+          <div style="margin-bottom:12px;">
+            <label style="font-size:12px;color:#6b7280;font-weight:600;">Contrase&ntilde;a <span id="pass-hint" style="color:#9ca3af;">(dejar vac&iacute;o para no cambiar)</span></label>
+            <input id="edit-user-password" type="password" placeholder="••••••••"
+              style="width:100%;margin-top:4px;padding:8px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;box-sizing:border-box;">
+          </div>
+          <div style="margin-bottom:20px;">
+            <label style="font-size:12px;color:#6b7280;font-weight:600;">Rol</label>
+            <select id="edit-user-role" style="width:100%;margin-top:4px;padding:8px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;box-sizing:border-box;">
+              <option value="user">Usuario</option>
+              <option value="admin">Administrador</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:10px;justify-content:flex-end;">
+            <button onclick="closeUserForm()" style="padding:8px 16px;border:1px solid #e5e7eb;border-radius:8px;background:white;cursor:pointer;font-size:14px;">Cancelar</button>
+            <button onclick="saveUser()" style="padding:8px 20px;background:#4361ee;color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;">Guardar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ── State ──
+const PAGE_SIZE = 50;
+
+let claimsOffset = 0;
+let totalClaims = 0;
+let allClaims = [];
+let claimsLoaded = false;
+let devolucionesLoaded = false;
+
+const CLAIM_STATUS_LABELS = {
+  opened: 'Abierto', closed: 'Cerrado', resolved: 'Resuelto', in_process: 'En proceso',
+};
+const CLAIM_TYPE_LABELS = {
+  mediations: 'Mediación', claims: 'Reclamo', fulfillment: 'Fulfillment', return: 'Devolución',
+};
+const CLAIM_REASON_LABELS = {
+  PNR: 'Producto no recibido', PDD: 'Producto diferente/defectuoso', CS: 'Compra cancelada',
+};
+
+// ── Utils ──
+function fmt(amount) {
+  return new Intl.NumberFormat('es-UY', {
+    style: 'currency', currency: 'UYU', maximumFractionDigits: 0,
+  }).format(amount);
+}
+function fmtDate(d) {
+  return new Date(d).toLocaleDateString('es-UY', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+function fmtDateTime(d) {
+  return new Date(d).toLocaleString('es-UY', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+// ── Navigation ──
+const PAGES = ['tareas', 'reclamos', 'devoluciones', 'ml-analizar', 'usuarios'];
+const ML_TAB_PAGES = { 'ml-preguntas': 'pendientes', 'ml-postventa': 'mensajes', 'ml-reglas': 'reglas' };
+
+function showPage(page) {
+  document.getElementById('sidebar')?.classList.remove('open');
+  document.getElementById('sidebar-overlay')?.classList.remove('show');
+
+  if (ML_TAB_PAGES[page]) {
+    const realPage = 'ml-analizar';
+    PAGES.forEach(p => {
+      const el = document.getElementById('page-' + p);
+      if (el) el.style.display = p === realPage ? '' : 'none';
+    });
+    document.querySelectorAll('.nav-item[data-page]').forEach(el => {
+      el.classList.toggle('active', el.dataset.page === page);
+    });
+    initAnalizarPage(ML_TAB_PAGES[page]);
+    localStorage.setItem('currentPage', page);
+    return;
+  }
+
+  PAGES.forEach(p => {
+    const el = document.getElementById('page-' + p);
+    if (el) el.style.display = p === page ? '' : 'none';
+  });
+  document.querySelectorAll('.nav-item[data-page]').forEach(el => {
+    el.classList.toggle('active', el.dataset.page === page);
+  });
+  localStorage.setItem('currentPage', page);
+
+  if (page === 'reclamos' && !claimsLoaded) {
+    loadClaims(0);
+    claimsLoaded = true;
+  }
+  if (page === 'devoluciones' && !devolucionesLoaded) {
+    loadDevoluciones();
+    devolucionesLoaded = true;
+  }
+  if (page === 'tareas') {
+    loadTareas();
+  }
+  if (page === 'ml-analizar') {
+    initAnalizarPage('pendientes');
+  }
+  if (page === 'usuarios') {
+    loadUsersPage();
+  }
+}
+
+// ── Claims ──
+function buildClaimsTable(claims) {
+  if (!claims.length) return '<div class="loading">No hay reclamos recibidos todavía.<br><small style="color:#b0b8c4">Los reclamos aparecerán aquí cuando MercadoLibre envíe notificaciones.</small></div>';
+  const rows = claims.map(c => {
+    const complainant = c.players?.find(p => p.role === 'complainant');
+    const buyerLabel  = complainant ? `#${complainant.user_id}` : '—';
+    const typeLabel   = CLAIM_TYPE_LABELS[c.type] || c.type || '—';
+    const reasonLabel = CLAIM_REASON_LABELS[c.reason_id] || c.reason_id || '—';
+    const statusCls   = 'badge badge-' + (c.status === 'opened' ? 'opened' : 'closed');
+    const stage       = c.stage && c.stage !== 'none' ? `<small style="color:#9ca3af">(${c.stage})</small>` : '';
+    return `<tr>
+      <td style="font-family:monospace;font-size:12px;color:#6b7280;">#${c.id}</td>
+      <td style="font-family:monospace;font-size:12px;color:#6b7280;">#${c.resource_id || '—'}</td>
+      <td>${typeLabel}</td>
+      <td>${reasonLabel}</td>
+      <td style="font-weight:500;">${buyerLabel}</td>
+      <td><span class="${statusCls}">${CLAIM_STATUS_LABELS[c.status] || c.status}</span> ${stage}</td>
+      <td>${fmtDate(c.date_created)}</td>
+    </tr>`;
+  }).join('');
+  return `<table>
+    <thead><tr>
+      <th>ID Reclamo</th><th>ID Orden</th><th>Tipo</th><th>Motivo</th><th>Comprador</th><th>Estado</th><th>Fecha</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+function filterClaims() {
+  const search = document.getElementById('claims-search').value.toLowerCase();
+  const filtered = allClaims.filter(c =>
+    !search || String(c.id).includes(search) || String(c.resource_id).includes(search)
+  );
+  document.getElementById('claims-table-content').innerHTML = buildClaimsTable(filtered);
+}
+
+async function loadClaims(offset = 0) {
+  document.getElementById('claims-table-content').innerHTML =
+    '<div class="loading"><span class="spinner"></span>Cargando...</div>';
+  const status = document.getElementById('claims-status-filter')?.value || '';
+  const statusParam = status ? `&status=${status}` : '';
+  try {
+    const res = await fetch(`/api/reclamos?offset=${offset}&limit=${PAGE_SIZE}${statusParam}`, { headers: authHeaders() });
+    if (res.status === 401) { showLogin(); return; }
+    const data = await res.json();
+    allClaims    = data.data  || [];
+    totalClaims  = data.paging?.total || 0;
+    claimsOffset = offset;
+
+    document.getElementById('claims-setup-notice').style.display = totalClaims === 0 ? 'block' : 'none';
+    document.getElementById('claims-table-content').innerHTML = buildClaimsTable(allClaims);
+
+    const statsRes = await fetch('/api/reclamos/stats', { headers: authHeaders() });
+    const stats    = await statsRes.json();
+    document.getElementById('kpi-claims-total').textContent   = (stats.total || 0).toLocaleString('es-UY');
+    document.getElementById('kpi-claims-opened').textContent  = (stats.by_status?.opened || 0).toLocaleString('es-UY');
+    document.getElementById('kpi-claims-closed').textContent  = (stats.by_status?.closed || 0).toLocaleString('es-UY');
+    document.getElementById('kpi-claims-types').textContent   = Object.keys(stats.by_type || {}).length;
+
+    const from = totalClaims === 0 ? 0 : offset + 1;
+    const to   = Math.min(offset + allClaims.length, totalClaims);
+    document.getElementById('claims-pagination-info').textContent =
+      totalClaims === 0 ? 'Sin reclamos recibidos' : `Mostrando ${from}–${to} de ${totalClaims.toLocaleString('es-UY')} reclamos`;
+    document.getElementById('claims-btn-prev').disabled = offset === 0;
+    document.getElementById('claims-btn-next').disabled = offset + PAGE_SIZE >= totalClaims;
+  } catch {
+    document.getElementById('claims-table-content').innerHTML =
+      '<div class="loading">Error al cargar reclamos.</div>';
+  }
+}
+
+let claimsScanInterval = null;
+
+async function startClaimsScan() {
+  const months = document.getElementById('scan-months').value;
+  document.getElementById('btn-scan-claims').disabled = true;
+  document.getElementById('claims-scan-wrap').style.display = 'block';
+  document.getElementById('claims-scan-done').style.display = 'none';
+  document.getElementById('claims-scan-fill').style.width = '0%';
+  document.getElementById('claims-scan-label').textContent = 'Iniciando escaneo...';
+  await fetch(`/api/reclamos/scan?months=${months}`, { headers: authHeaders() });
+  claimsScanInterval = setInterval(pollClaimsScan, 1000);
+}
+
+async function pollClaimsScan() {
+  try {
+    const res  = await fetch('/api/reclamos/scan/status', { headers: authHeaders() });
+    const data = await res.json();
+    const pct  = data.total ? Math.round((data.checked / data.total) * 100) : 0;
+    document.getElementById('claims-scan-fill').style.width = pct + '%';
+    document.getElementById('claims-scan-label').textContent =
+      `Revisando órdenes canceladas... ${data.checked} de ${data.total} (${data.found} reclamos encontrados)`;
+    if (!data.running) {
+      clearInterval(claimsScanInterval);
+      document.getElementById('btn-scan-claims').disabled = false;
+      document.getElementById('claims-scan-fill').style.width = '100%';
+      const msg = document.getElementById('claims-scan-done');
+      msg.textContent = `Escaneo completado — ${data.found} reclamos históricos encontrados`;
+      msg.style.display = 'block';
+      loadClaims(0);
+    }
+  } catch {}
+}
+
+function changeClaimsPage(dir) {
+  const next = claimsOffset + dir * PAGE_SIZE;
+  if (next < 0 || next >= totalClaims) return;
+  loadClaims(next);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── Tareas ──
+async function loadTareas() {
+  const btn = document.getElementById('btn-refresh-tareas');
+  if (btn) btn.disabled = true;
+  document.getElementById('tareas-content').innerHTML =
+    '<div class="loading"><span class="spinner"></span>Cargando tareas...</div>';
+
+  try {
+    const res = await fetch('/api/tareas', { headers: authHeaders() });
+    if (res.status === 401) { showLogin(); return; }
+    const data = await res.json();
+    if (data.error) throw new Error(JSON.stringify(data.error));
+
+    const questions   = data.questions || [];
+    const acuerda     = data.acuerda_orders || [];
+    const me1         = data.me1_orders || [];
+    const dac         = data.dac_orders || [];
+    const totalOrders = acuerda.length + me1.length + dac.length;
+
+    document.getElementById('tareas-subtitle').textContent =
+      `${questions.length} preguntas sin responder · ${totalOrders} órdenes pendientes`;
+
+    const qHtml = questions.length
+      ? questions.map(q => {
+          const d = new Date(q.date_created).toLocaleString('es-UY', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+          const suggHtml = q.suggestion
+            ? `<div style="margin-top:8px;background:#f0fdf4;border-left:3px solid #22c55e;padding:8px 12px;border-radius:4px;font-size:13px;color:#166534;">
+                <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;">✨ Respuesta sugerida</span><br>
+                ${q.suggestion}
+              </div>`
+            : '';
+          return `<div style="background:white;border-radius:10px;border:1px solid #fde68a;padding:12px 16px;margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+              <span style="font-size:11px;color:#92400e;font-weight:700;">📦 ${q.item_id}</span>
+              <span style="font-size:11px;color:#9ca3af;">${d}</span>
+            </div>
+            <div style="font-size:14px;color:#1a1d23;">${q.text}</div>
+            ${suggHtml}
+          </div>`;
+        }).join('')
+      : '<div style="color:#9ca3af;font-size:13px;padding:8px 0;">Sin preguntas sin responder</div>';
+
+    const orderCard = (o, clr, accionHtml) => {
+      const thumb = o.item_thumbnail
+        ? `<img src="${o.item_thumbnail}" style="width:44px;height:44px;object-fit:contain;border-radius:8px;border:1px solid #e5e7eb;flex-shrink:0;">`
+        : `<div style="width:44px;height:44px;border-radius:8px;background:#f0f2f5;flex-shrink:0;"></div>`;
+      const d = new Date(o.date_created).toLocaleString('es-UY', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+      const sku = o.item_sku ? `<span style="color:#9ca3af;font-size:11px;"> · SKU: ${o.item_sku}</span>` : '';
+      const s = o.shipping_address;
+      const addrHtml = s ? (() => {
+        const partes = [s.receiver_name, s.address, s.city, s.state, s.zip].filter(Boolean);
+        const comentario = s.comment ? `<span style="color:#6b7280;"> · ${s.comment}</span>` : '';
+        return `<div style="margin-top:8px;padding:8px 10px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;font-size:12px;color:#0369a1;">
+          <b>📍 Dirección de envío:</b> ${partes.join(' — ')}${comentario}
+          <span style="color:#94a3b8;margin-left:8px;">· ${s.status}</span>
+        </div>`;
+      })() : '';
+      return `<div style="background:white;border-radius:10px;border:1px solid #e5e7eb;padding:12px 16px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:12px;font-weight:700;color:${clr};background:${clr}15;border-radius:999px;padding:2px 10px;">${o.shipping_label}</span>
+          <span style="font-size:12px;font-weight:600;color:#6b7280;">#${o.order_id}</span>
+          <span style="font-size:12px;color:#9ca3af;">${d}</span>
+          <div style="flex:1;"></div>
+          <span style="font-size:13px;font-weight:600;">${o.buyer_name}</span>
+          <span style="font-weight:700;">$${Number(o.total_amount).toLocaleString('es-UY')}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          ${thumb}
+          <div style="font-size:13px;font-weight:600;">${o.item_title}<br>
+            <span style="font-weight:400;color:#6b7280;">${o.quantity} unid.${sku}</span>
+          </div>
+        </div>
+        ${accionHtml}
+        ${addrHtml}
+      </div>`;
+    };
+
+    const acuerdaHtml = acuerda.length
+      ? acuerda.map(o => orderCard(o, '#f77f00',
+          `<div style="background:#f77f0010;border-left:3px solid #f77f00;padding:8px 12px;border-radius:4px;font-size:13px;">
+            🤝 <strong>Acción:</strong> Coordinar entrega — responder y acordar lugar/hora con el comprador
+          </div>`)).join('')
+      : '<div style="color:#9ca3af;font-size:13px;padding:8px 0;">Sin órdenes acuerda con comprador</div>';
+
+    const me1Html = me1.length
+      ? me1.map(o => orderCard(o, '#4361ee',
+          `<div style="background:#4361ee10;border-left:3px solid #4361ee;padding:8px 12px;border-radius:4px;font-size:13px;">
+            📦 <strong>Acción:</strong> Preparar paquete y generar etiqueta ME1
+          </div>`)).join('')
+      : '<div style="color:#9ca3af;font-size:13px;padding:8px 0;">Sin órdenes ME1</div>';
+
+    const dacHtml = dac.length
+      ? dac.map(o => orderCard(o, '#7c3aed',
+          `<div style="background:#7c3aed10;border-left:3px solid #7c3aed;padding:8px 12px;border-radius:4px;font-size:13px;">
+            🚚 <strong>Acción:</strong> Coordinar fecha y horario de entrega con el comprador
+          </div>`)).join('')
+      : '<div style="color:#9ca3af;font-size:13px;padding:8px 0;">Sin órdenes a coordinar</div>';
+
+    const section = (title, count, color, html) =>
+      `<div style="margin-bottom:24px;">
+        <div style="font-size:13px;font-weight:700;color:${color};text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
+          ${title} <span style="background:${color};color:white;border-radius:999px;padding:1px 8px;font-size:12px;">${count}</span>
+        </div>
+        ${html}
+      </div>`;
+
+    document.getElementById('tareas-content').innerHTML =
+      section('Preguntas sin responder (últimos 7 días)', questions.length, '#d97706', qHtml) +
+      section('ME1 a coordinar', dac.length, '#7c3aed', dacHtml) +
+      section('Acuerda con comprador', acuerda.length, '#f77f00', acuerdaHtml) +
+      section('Envíos ME1', me1.length, '#4361ee', me1Html);
+
+  } catch(e) {
+    console.error('[tareas]', e);
+    document.getElementById('tareas-content').innerHTML =
+      `<div class="loading">Error: ${e.message}</div>`;
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+// ── Devoluciones ──
+async function loadDevoluciones() {
+  const btn = document.getElementById('btn-refresh-dev');
+  if (btn) btn.disabled = true;
+  document.getElementById('dev-content').innerHTML =
+    '<div class="loading"><span class="spinner"></span>Cargando...</div>';
+
+  const status = document.getElementById('dev-status-filter').value;
+  let url = '/api/devoluciones';
+  if (status) url += `?status=${status}`;
+
+  try {
+    const res = await fetch(url, { headers: authHeaders() });
+    if (res.status === 401) { showLogin(); return; }
+    const data = await res.json();
+    if (data.error) throw new Error(JSON.stringify(data.error));
+
+    const returns     = data.returns     || [];
+    const claims      = data.claims      || [];
+    const byStatus    = data.by_status   || {};
+    const bySubstatus = data.by_substatus || {};
+
+    document.getElementById('dev-subtitle').textContent =
+      `${data.total || 0} total · ${byStatus.opened || 0} abiertas · ${byStatus.closed || 0} cerradas`;
+
+    const SUBSTATUS_LABELS = {
+      pending_review: 'Pendientes de revisión', in_transit: 'En camino',
+      waiting_seller: 'Esperando vendedor', closed: 'Cerradas',
+      approved: 'Aprobadas', rejected: 'Rechazadas',
+    };
+    const pillColors = ['#4361ee','#f77f00','#06d6a0','#ef476f','#ffd166','#9ca3af'];
+    let pillIdx = 0;
+    const pills = Object.entries(bySubstatus).map(([k, v]) => {
+      const c = pillColors[pillIdx++ % pillColors.length];
+      return `<div style="background:${c}15;color:${c};border:1px solid ${c}40;border-radius:999px;padding:6px 14px;font-size:13px;font-weight:600;">
+        ${SUBSTATUS_LABELS[k] || k} <span style="background:${c};color:white;border-radius:999px;padding:1px 7px;font-size:11px;margin-left:4px;">${v}</span>
+      </div>`;
+    }).join('');
+    document.getElementById('dev-summary-pills').innerHTML = pills ||
+      `<div style="color:#9ca3af;font-size:13px;">Sin datos de subestado</div>`;
+
+    if (!returns.length && !claims.length) {
+      document.getElementById('dev-content').innerHTML =
+        '<div class="loading">No hay devoluciones ni reclamos para mostrar.</div>';
+      return;
+    }
+
+    const STATUS_MAP = { opened: 'Abierta', closed: 'Cerrada', resolved: 'Resuelta' };
+    const STATUS_CLR = { opened: '#f77f00', closed: '#9ca3af', resolved: '#06d6a0' };
+    const SUB_MAP    = { pending_review: 'Pendiente de revisión', in_transit: 'En camino',
+                         waiting_seller: 'Esperando acción', approved: 'Aprobada', rejected: 'Rechazada' };
+
+    function devCard(d) {
+      const statusColor = STATUS_CLR[d.status] || '#9ca3af';
+      const statusLabel = STATUS_MAP[d.status]  || d.status || '—';
+      const subLabel    = SUB_MAP[d.sub_status || d.substatus] || null;
+      const dt = d.date_created
+        ? new Date(d.date_created).toLocaleString('es-UY', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })
+        : '—';
+      const thumb = d.item_thumbnail
+        ? `<img src="${d.item_thumbnail}" style="width:56px;height:56px;object-fit:contain;border-radius:8px;border:1px solid #e5e7eb;flex-shrink:0;" />`
+        : `<div style="width:56px;height:56px;border-radius:8px;background:#f0f2f5;flex-shrink:0;"></div>`;
+      const logisticBadge = d.logistic_type
+        ? `<span style="background:#1a1d23;color:white;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;letter-spacing:.05em;">${d.logistic_type.toUpperCase()}</span>`
+        : '';
+      const buyer = d.buyer_nickname || d.buyer_name || '—';
+      const variantRow = d.variation_name
+        ? `<div style="font-size:12px;color:#6b7280;">${d.variation_name}</div>` : '';
+      const skuRow = d.item_sku
+        ? `<span style="color:#9ca3af;">SKU: ${d.item_sku}</span>` : '';
+      const priceRow = d.unit_price
+        ? `<span>$${Number(d.unit_price).toLocaleString('es-UY')}</span>` : '';
+      const qtyRow = d.quantity
+        ? `<span>${d.quantity} unidad${d.quantity > 1 ? 'es' : ''}</span>` : '';
+      const urgentBanner = subLabel
+        ? `<div style="padding:10px 16px;background:#fff8f0;border-left:3px solid #f77f00;font-size:13px;font-weight:600;color:#c2410c;">${subLabel}</div>` : '';
+
+      return `
+        <div style="background:white;border-radius:12px;border:1px solid #e5e7eb;margin-bottom:12px;overflow:hidden;">
+          <div class="dev-card-header" style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #f0f2f5;background:#fafafa;">
+            <span style="font-size:13px;font-weight:600;color:#4361ee;">#${d.resource_id || d.id}</span>
+            <span style="font-size:12px;color:#6b7280;">${dt}</span>
+            ${logisticBadge}
+            <div style="flex:1;"></div>
+            <span style="font-size:13px;font-weight:500;color:#374151;">${buyer}</span>
+            <span style="background:${statusColor}15;color:${statusColor};border-radius:999px;padding:3px 10px;font-size:12px;font-weight:600;">${statusLabel}</span>
+          </div>
+          ${urgentBanner}
+          <div class="dev-card-product" style="display:flex;align-items:center;gap:14px;padding:14px 16px;">
+            ${thumb}
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.item_title || d.item_id || '—'}</div>
+              ${variantRow}
+              <div style="display:flex;gap:16px;font-size:12px;color:#6b7280;margin-top:4px;">
+                ${priceRow}${qtyRow}${skuRow}
+              </div>
+            </div>
+            <div style="font-size:12px;color:#9ca3af;">Motivo: ${d.reason_id || d.type || '—'}</div>
+          </div>
+        </div>`;
+    }
+
+    let html = '';
+    if (returns.length) {
+      html += `<div style="font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;margin-top:4px;">↩ Devoluciones (${returns.length})</div>`;
+      html += returns.map(devCard).join('');
+    }
+    if (claims.length) {
+      html += `<div style="font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin:${returns.length ? '20px' : '4px'} 0 8px;">⚠ Reclamos (${claims.length})</div>`;
+      html += claims.map(devCard).join('');
+    }
+
+    document.getElementById('dev-content').innerHTML = html;
+  } catch(e) {
+    console.error('[devoluciones]', e);
+    document.getElementById('dev-content').innerHTML =
+      `<div class="loading">Error: ${e.message}</div>`;
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+// ── Sidebar toggle ──
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  const ov = document.getElementById('sidebar-overlay');
+  sb.classList.toggle('open');
+  ov.classList.toggle('show');
+}
+
+// ── Auth ──
+let sessionToken = localStorage.getItem('session_token');
+let currentUser  = null;
+
+function authHeaders() {
+  return sessionToken ? { 'x-session-token': sessionToken } : {};
+}
+
+function showLogin() {
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('ml-connect-screen').style.display = 'none';
+}
+
+async function doLogin() {
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl    = document.getElementById('login-error');
+  errEl.style.display = 'none';
+  if (!username || !password) { errEl.textContent = 'Ingresá usuario y contraseña.'; errEl.style.display = ''; return; }
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) { errEl.textContent = data.error || 'Error al ingresar'; errEl.style.display = ''; return; }
+    sessionToken = data.token;
+    currentUser  = data.user;
+    localStorage.setItem('session_token', sessionToken);
+    document.getElementById('login-screen').style.display = 'none';
+    await afterUserLogin();
+  } catch(e) {
+    errEl.textContent = 'Error de conexión'; errEl.style.display = '';
+  }
+}
+
+async function doLogout() {
+  if (sessionToken) {
+    fetch('/api/auth/logout', { method: 'POST', headers: authHeaders() }).catch(() => {});
+  }
+  localStorage.removeItem('session_token');
+  sessionToken = null;
+  currentUser  = null;
+  location.reload();
+}
+
+async function afterUserLogin() {
+  const u = currentUser;
+  document.getElementById('user-name').textContent = u.name || u.username;
+  document.getElementById('user-role').textContent = u.role === 'admin' ? 'Administrador' : 'Usuario';
+  document.getElementById('user-avatar').textContent = (u.name || u.username).charAt(0).toUpperCase();
+
+  if (u.role === 'admin') {
+    document.querySelectorAll('.admin-only').forEach(el => el.style.display = '');
+  }
+
+  const mlRes = await fetch('/api/auth-status', { headers: authHeaders() });
+  const { authenticated } = await mlRes.json();
+
+  if (!authenticated) {
+    document.getElementById('ml-connect-screen').style.display = 'flex';
+    document.getElementById('ml-connect-user-msg').textContent =
+      `Hola ${u.name || u.username}, conectá tu cuenta de MercadoLibre para continuar.`;
+    return;
+  }
+
+  showApp();
+}
+
+function showApp() {
+  document.getElementById('ml-connect-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  const savedPage = localStorage.getItem('currentPage') || 'tareas';
+  showPage(savedPage);
+}
+
+async function init() {
+  if (sessionToken) {
+    try {
+      const res  = await fetch('/api/auth/me', { headers: authHeaders() });
+      if (res.ok) {
+        currentUser = await res.json();
+        await afterUserLogin();
+        return;
+      }
+    } catch(e) {}
+    localStorage.removeItem('session_token');
+    sessionToken = null;
+  }
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+init();
+
+// ── Users CRUD ──
+async function loadUsersPage() {
+  document.getElementById('users-table-content').innerHTML = '<div class="loading"><span class="spinner"></span>Cargando...</div>';
+  const res   = await fetch('/api/users', { headers: authHeaders() });
+  const users = await res.json();
+  if (!users.length) {
+    document.getElementById('users-table-content').innerHTML = '<div class="loading">Sin usuarios.</div>';
+    return;
+  }
+  const rows = users.map(u => `<tr>
+    <td style="font-weight:600;">${u.name}</td>
+    <td style="font-family:monospace;color:#6b7280;">${u.username}</td>
+    <td><span style="background:${u.role==='admin'?'#ede9fe':'#f3f4f6'};color:${u.role==='admin'?'#5b21b6':'#374151'};padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;">${u.role==='admin'?'Admin':'Usuario'}</span></td>
+    <td style="font-size:12px;color:#9ca3af;">${u.createdAt ? new Date(u.createdAt).toLocaleDateString('es-UY') : '—'}</td>
+    <td style="display:flex;gap:6px;">
+      <button onclick='editUser(${JSON.stringify(u).replace(/'/g,"&#39;")})' style="background:#e0e7ff;border:none;border-radius:6px;padding:5px 12px;cursor:pointer;color:#4361ee;font-size:12px;font-weight:700;">Editar</button>
+      ${u.id !== currentUser?.id ? `<button onclick="deleteUser('${u.id}','${u.name}')" style="background:#fee2e2;border:none;border-radius:6px;padding:5px 10px;cursor:pointer;color:#ef4444;font-size:12px;font-weight:700;">✕</button>` : ''}
+    </td>
+  </tr>`).join('');
+  document.getElementById('users-table-content').innerHTML = `<table>
+    <thead><tr>
+      <th>Nombre</th><th>Usuario</th><th>Rol</th><th>Creado</th><th>Acciones</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+function showUserForm(data) {
+  document.getElementById('user-modal-title').textContent = data ? 'Editar usuario' : 'Nuevo usuario';
+  document.getElementById('edit-user-id').value       = data?.id       || '';
+  document.getElementById('edit-user-name').value     = data?.name     || '';
+  document.getElementById('edit-user-username').value = data?.username || '';
+  document.getElementById('edit-user-password').value = '';
+  document.getElementById('edit-user-role').value     = data?.role     || 'user';
+  document.getElementById('edit-user-username').disabled = !!data;
+  document.getElementById('pass-hint').style.display  = data ? '' : 'none';
+  document.getElementById('user-modal').style.display = 'flex';
+}
+function editUser(data) { showUserForm(data); }
+function closeUserForm() {
+  document.getElementById('user-modal').style.display = 'none';
+  document.getElementById('edit-user-username').disabled = false;
+}
+async function saveUser() {
+  const id       = document.getElementById('edit-user-id').value;
+  const name     = document.getElementById('edit-user-name').value.trim();
+  const username = document.getElementById('edit-user-username').value.trim();
+  const password = document.getElementById('edit-user-password').value;
+  const role     = document.getElementById('edit-user-role').value;
+  if (!name) return alert('Ingresá el nombre.');
+  if (!id && !username) return alert('Ingresá un usuario.');
+  if (!id && !password) return alert('Ingresá una contraseña.');
+  const body = id ? { name, role, ...(password ? { password } : {}) }
+                  : { name, username, password, role };
+  const res = await fetch(id ? `/api/users/${id}` : '/api/users', {
+    method: id ? 'PUT' : 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) { const e = await res.json(); return alert(e.error); }
+  closeUserForm();
+  loadUsersPage();
+}
+async function deleteUser(id, name) {
+  if (!confirm(`¿Eliminás al usuario "${name}"?`)) return;
+  const res = await fetch(`/api/users/${id}`, { method: 'DELETE', headers: authHeaders() });
+  if (!res.ok) { const e = await res.json(); return alert(e.error); }
+  loadUsersPage();
+}
+
+// ── Analizar tabs (pendientes, mensajes, preguntas frecuentes, reglas) ──
+let analizarSeleccionados = [];
+let preguntasStatsData = [];
+let currentAnalizarTab = 'pendientes';
+
+function showAnalizarTab(tab) {
+  currentAnalizarTab = tab;
+  ['pendientes','mensajes','preguntas','reglas'].forEach(t => {
+    const el = document.getElementById('analizar-tab-' + t);
+    if (el) el.style.display = t === tab ? '' : 'none';
+    const btn = document.getElementById('tab-' + t);
+    if (btn) { btn.style.background = t === tab ? '#7c3aed' : '#e5e7eb'; btn.style.color = t === tab ? 'white' : '#374151'; }
+  });
+  if (tab === 'preguntas' && !preguntasStatsData.length) loadPreguntasStats();
+  if (tab === 'pendientes' && !pendientesData.length) loadPendientes();
+  if (tab === 'mensajes' && !mensajesData.length) loadMensajes();
+  if (tab === 'reglas') { loadReglas(); loadSkuMap(); }
+}
+
+async function initAnalizarPage(defaultTab = 'pendientes') {
+  showAnalizarTab(defaultTab);
+}
+
+// ── Preguntas pendientes ──
+let pendientesData = [];
+
+async function loadPendientes() {
+  const list = document.getElementById('pendientes-list');
+  const count = document.getElementById('pendientes-count');
+  list.innerHTML = '<p style="color:#9ca3af;font-size:13px;padding:16px;">Cargando preguntas...</p>';
+  count.textContent = '';
+  const dias = document.getElementById('pendientes-dias')?.value || 7;
+  const r = await fetch(`/api/ml/preguntas/pendientes?dias=${dias}`, { headers: authHeaders() });
+  if (!r.ok) { list.innerHTML = '<p style="color:#ef4444;">Error al cargar</p>'; return; }
+  const d = await r.json();
+  pendientesData = d.questions || [];
+  const totalMl = d.total_ml || d.total;
+  const extra = totalMl > pendientesData.length ? ` (${totalMl} en total, filtrando por fecha)` : '';
+  count.textContent = `${pendientesData.length} sin responder${extra}`;
+  renderPendientes();
+}
+
+function renderPendientes() {
+  const list = document.getElementById('pendientes-list');
+  if (!pendientesData.length) {
+    list.innerHTML = '<div class="card" style="text-align:center;color:#9ca3af;padding:32px;">No hay preguntas pendientes</div>';
+    return;
+  }
+  list.innerHTML = pendientesData.map((q, idx) => `
+    <div class="card" style="margin-bottom:12px;" id="pend-card-${q.id}">
+      <div style="display:flex;gap:12px;align-items:flex-start;">
+        ${q.item_thumbnail ? `<img src="${q.item_thumbnail}" style="width:48px;height:48px;object-fit:contain;border-radius:6px;background:#f9fafb;flex-shrink:0;" onerror="this.style.display='none'">` : ''}
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:2px;">${q.item_title?.slice(0,70) || q.item_id} · ${new Date(q.date_created).toLocaleDateString('es-UY')}</div>
+          <div style="font-size:14px;font-weight:600;color:#111827;margin-bottom:10px;">${q.text}</div>
+
+          <div id="pend-ia-${q.id}" style="display:none;margin-bottom:8px;">
+            <label style="font-size:11px;color:#6b7280;font-weight:600;display:block;margin-bottom:4px;">Respuesta sugerida (editá antes de enviar):</label>
+            <textarea id="pend-txt-${q.id}" rows="3"
+              style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
+          </div>
+
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <button onclick="generarRespuestaIA(${idx})"
+              id="btn-ia-${q.id}"
+              style="padding:6px 12px;background:#7c3aed;color:white;border:none;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer;">
+              🤖 Generar con IA
+            </button>
+            <div id="pend-feedback-${q.id}" style="display:none;gap:6px;align-items:center;">
+              <span style="font-size:11px;color:#9ca3af;">¿Cómo quedó?</span>
+              <button onclick="feedbackRespuesta(${q.id},'buena')" id="fb-buena-${q.id}"
+                style="padding:4px 10px;background:#f0fdf4;border:1px solid #86efac;border-radius:5px;font-size:12px;cursor:pointer;color:#166534;">
+                👍 Buena
+              </button>
+              <button onclick="feedbackRespuesta(${q.id},'mala')" id="fb-mala-${q.id}"
+                style="padding:4px 10px;background:#fef2f2;border:1px solid #fca5a5;border-radius:5px;font-size:12px;cursor:pointer;color:#991b1b;">
+                👎 Mala
+              </button>
+            </div>
+            <button onclick="enviarRespuesta(${q.id})"
+              id="btn-enviar-${q.id}"
+              style="display:none;padding:6px 12px;background:#059669;color:white;border:none;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer;">
+              ✉️ Publicar en ML
+            </button>
+            <button onclick="omitirPendiente(${q.id})"
+              style="padding:6px 10px;background:#f3f4f6;color:#374151;border:none;border-radius:5px;font-size:12px;cursor:pointer;">
+              Omitir
+            </button>
+          </div>
+          <div id="pend-status-${q.id}" style="margin-top:6px;font-size:12px;"></div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+async function generarRespuestaIA(idx) {
+  const q = pendientesData[idx];
+  if (!q) return;
+  const btn = document.getElementById(`btn-ia-${q.id}`);
+  btn.textContent = '⏳ Generando...';
+  btn.disabled = true;
+
+  const r = await fetch('/api/ml/preguntas/simular', {
+    method: 'POST',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ questions: [{ id: q.id, item_id: q.item_id, item_title: q.item_title, text: q.text }] })
+  });
+  const d = await r.json();
+  const result = d.results?.[0];
+
+  if (result?.respuesta) {
+    document.getElementById(`pend-ia-${q.id}`).style.display = '';
+    document.getElementById(`pend-txt-${q.id}`).value = result.respuesta;
+    document.getElementById(`btn-enviar-${q.id}`).style.display = '';
+    const fb = document.getElementById(`pend-feedback-${q.id}`);
+    fb.style.display = 'flex';
+    btn.textContent = '↺ Regenerar';
+    btn.disabled = false;
+  } else {
+    btn.textContent = '🤖 Generar con IA';
+    btn.disabled = false;
+    alert('Error: ' + (result?.error || 'desconocido'));
+  }
+}
+
+let feedbackStats = { buena: 0, mala: 0 };
+
+async function feedbackRespuesta(questionId, tipo) {
+  feedbackStats[tipo]++;
+  const fbDiv = document.getElementById(`pend-feedback-${questionId}`);
+  if (tipo === 'buena') {
+    const q = pendientesData.find(p => p.id === questionId);
+    const respuesta = document.getElementById(`pend-txt-${questionId}`)?.value;
+    if (q && respuesta) {
+      fetch('/api/ml/preguntas/feedback', {
+        method: 'POST',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pregunta: q.text, respuesta, item_id: q.item_id, item_title: q.item_title, tipo: 'pregunta' })
+      }).catch(() => {});
+    }
+    const mlItemUrl = q?.item_id ? `https://www.mercadolibre.com.uy/p/${q.item_id}` : null;
+    fbDiv.innerHTML = `<span style="font-size:12px;color:#166534;font-weight:600;">👍 Buena — guardada para aprendizaje</span>${mlItemUrl ? ` <a href="${mlItemUrl}" target="_blank" style="font-size:11px;color:#1d4ed8;text-decoration:underline;margin-left:6px;">Ver publicación →</a>` : ''}`;
+  } else {
+    const txtId = `pend-txt-${questionId}`;
+    const actual = document.getElementById(txtId)?.value || '';
+    fbDiv.innerHTML = `
+      <div style="width:100%;">
+        <span style="font-size:12px;color:#991b1b;font-weight:600;">👎 Mala — ¿cómo la escribirías vos?</span>
+        <textarea id="fb-correccion-${questionId}" rows="2"
+          style="width:100%;margin-top:4px;padding:6px 8px;border:1px solid #fca5a5;border-radius:5px;font-size:12px;font-family:inherit;resize:vertical;box-sizing:border-box;"
+          placeholder="Escribí la respuesta correcta...">${actual}</textarea>
+        <div style="display:flex;gap:6px;margin-top:4px;">
+          <button onclick="guardarCorreccion(${questionId})"
+            style="padding:4px 10px;background:#991b1b;color:white;border:none;border-radius:4px;font-size:11px;cursor:pointer;">
+            Guardar corrección
+          </button>
+          <button onclick="document.getElementById('pend-feedback-${questionId}').innerHTML='<span style=\\'font-size:12px;color:#991b1b;font-weight:600;\\'>👎 Marcada como mala</span>'"
+            style="padding:4px 8px;background:#f3f4f6;border:none;border-radius:4px;font-size:11px;cursor:pointer;">
+            Omitir
+          </button>
+        </div>
+      </div>`;
+  }
+  actualizarResumenFeedback();
+}
+
+function guardarCorreccion(questionId) {
+  const correccion = document.getElementById(`fb-correccion-${questionId}`)?.value?.trim();
+  const fbDiv = document.getElementById(`pend-feedback-${questionId}`);
+  if (!correccion) { fbDiv.innerHTML = '<span style="font-size:12px;color:#991b1b;font-weight:600;">👎 Marcada como mala</span>'; return; }
+  const txt = document.getElementById(`pend-txt-${questionId}`);
+  if (txt) txt.value = correccion;
+  fbDiv.innerHTML = '<span style="font-size:12px;color:#166534;font-weight:600;">✓ Corrección guardada — podés publicarla</span>';
+  const btnEnv = document.getElementById(`btn-enviar-${questionId}`);
+  if (btnEnv) btnEnv.style.display = '';
+}
+
+function actualizarResumenFeedback() {
+  const total = feedbackStats.buena + feedbackStats.mala;
+  if (!total) return;
+  const pct = Math.round(feedbackStats.buena / total * 100);
+  const color = pct >= 70 ? '#166534' : pct >= 40 ? '#92400e' : '#991b1b';
+  const resumen = document.getElementById('feedback-resumen');
+  if (resumen) {
+    resumen.style.display = '';
+    resumen.innerHTML = `<span style="color:${color};font-weight:700;">${pct}% buenas</span> <span style="color:#9ca3af;">(${feedbackStats.buena} buenas / ${feedbackStats.mala} malas)</span>`;
+  }
+}
+
+async function simularTodas() {
+  const btn = document.getElementById('btn-simular-todas');
+  btn.textContent = '⏳ Generando...';
+  btn.disabled = true;
+
+  const r = await fetch('/api/ml/preguntas/simular', {
+    method: 'POST',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ questions: pendientesData.map(q => ({ id: q.id, item_id: q.item_id, item_title: q.item_title, text: q.text })) })
+  });
+  const d = await r.json();
+  const results = d.results || [];
+
+  results.forEach(result => {
+    if (result.respuesta) {
+      document.getElementById(`pend-ia-${result.id}`)?.style && (document.getElementById(`pend-ia-${result.id}`).style.display = '');
+      const txt = document.getElementById(`pend-txt-${result.id}`);
+      if (txt) txt.value = result.respuesta;
+      const btnEnv = document.getElementById(`btn-enviar-${result.id}`);
+      if (btnEnv) btnEnv.style.display = '';
+      const btnIA = document.getElementById(`btn-ia-${result.id}`);
+      if (btnIA) { btnIA.textContent = '↺ Regenerar'; btnIA.disabled = false; }
+      const fb = document.getElementById(`pend-feedback-${result.id}`);
+      if (fb) fb.style.display = 'flex';
+    }
+  });
+
+  btn.textContent = '🤖 Generar todas con IA';
+  btn.disabled = false;
+}
+
+async function enviarRespuesta(questionId) {
+  const texto = document.getElementById(`pend-txt-${questionId}`)?.value?.trim();
+  if (!texto) { alert('La respuesta está vacía'); return; }
+
+  const btn = document.getElementById(`btn-enviar-${questionId}`);
+  const status = document.getElementById(`pend-status-${questionId}`);
+  btn.textContent = '⏳ Enviando...';
+  btn.disabled = true;
+
+  const qData = pendientesData.find(q => q.id === questionId);
+  const r = await fetch('/api/ml/preguntas/responder-ml', {
+    method: 'POST',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      question_id: questionId,
+      text: texto,
+      pregunta: qData?.text || null,
+      item_id: qData?.item_id || null,
+      item_title: qData?.item_title || null
+    })
+  });
+  const d = await r.json();
+
+  if (d.ok) {
+    status.innerHTML = '<span style="color:#059669;font-weight:600;">✓ Publicada en ML</span>';
+    btn.style.display = 'none';
+    setTimeout(() => {
+      pendientesData = pendientesData.filter(q => q.id !== questionId);
+      document.getElementById(`pend-card-${questionId}`)?.remove();
+      document.getElementById('pendientes-count').textContent = `${pendientesData.length} sin responder`;
+    }, 1500);
+  } else {
+    status.innerHTML = `<span style="color:#ef4444;">Error: ${JSON.stringify(d.error)?.slice(0,100)}</span>`;
+    btn.textContent = '✉️ Publicar en ML';
+    btn.disabled = false;
+  }
+}
+
+function omitirPendiente(questionId) {
+  pendientesData = pendientesData.filter(q => q.id !== questionId);
+  document.getElementById(`pend-card-${questionId}`)?.remove();
+  document.getElementById('pendientes-count').textContent = `${pendientesData.length} sin responder`;
+}
+
+// ── Mensajes post-venta ──
+let mensajesData = [];
+
+async function loadMensajes(force = false) {
+  const list = document.getElementById('mensajes-list');
+  const count = document.getElementById('mensajes-count');
+  list.innerHTML = '<p style="color:#9ca3af;font-size:13px;padding:16px;">Cargando mensajes...</p>';
+  count.textContent = '';
+  const dias = document.getElementById('mensajes-dias')?.value || 14;
+  const url = `/api/ml/mensajes/pendientes?dias=${dias}${force ? '&force=1' : ''}`;
+  const r = await fetch(url, { headers: authHeaders() });
+  if (!r.ok) { list.innerHTML = '<p style="color:#ef4444;">Error al cargar</p>'; return; }
+  const d = await r.json();
+  mensajesData = d.threads || [];
+  const cacheTag = d.cached ? ' <span style="color:#9ca3af;font-weight:normal;font-size:11px;">(cache)</span>' : '';
+  count.innerHTML = `${mensajesData.length} hilos esperando respuesta${cacheTag}`;
+  renderMensajes();
+}
+
+function renderMensajes() {
+  const list = document.getElementById('mensajes-list');
+  if (!mensajesData.length) {
+    list.innerHTML = '<div class="card" style="text-align:center;color:#9ca3af;padding:32px;">No hay mensajes pendientes de respuesta</div>';
+    return;
+  }
+  const statusLabel = { paid: 'Pagada', cancelled: 'Cancelada', pending: 'Pendiente' };
+  const statusColor = { paid: '#059669', cancelled: '#ef4444', pending: '#f59e0b' };
+  list.innerHTML = mensajesData.map((t, idx) => `
+    <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;padding:16px;margin-bottom:12px;" id="msg-card-${t.pack_id}">
+      <div style="display:flex;gap:12px;align-items:flex-start;">
+        ${t.item_thumbnail ? `<img src="${t.item_thumbnail}" style="width:48px;height:48px;object-fit:contain;border-radius:6px;background:#f9fafb;flex-shrink:0;" onerror="this.style.display='none'">` : ''}
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+            <span style="font-size:11px;font-weight:600;color:#374151;">${t.buyer_name}</span>
+            <span style="font-size:11px;color:${statusColor[t.order_status]||'#6b7280'};background:${statusColor[t.order_status]||'#6b7280'}18;padding:1px 6px;border-radius:10px;">${statusLabel[t.order_status]||t.order_status}</span>
+            <span style="font-size:11px;color:#9ca3af;">${t.item_title?.slice(0,50)}</span>
+            <span style="font-size:11px;color:#9ca3af;">${new Date(t.last_message_date).toLocaleDateString('es-UY', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span>
+            ${t.unread ? '<span style="font-size:10px;background:#eff6ff;color:#1d4ed8;padding:1px 6px;border-radius:10px;font-weight:700;">No leído</span>' : ''}
+            <a href="https://www.mercadolibre.com.uy/ventas/${t.order_id}/detalle" target="_blank" style="font-size:11px;color:#1d4ed8;text-decoration:underline;margin-left:2px;">Ver orden →</a>
+          </div>
+
+          <div id="msg-hist-${t.pack_id}" style="display:none;background:#f9fafb;border-radius:6px;padding:8px 10px;margin-bottom:8px;font-size:12px;">
+            ${t.messages.map(m => `
+              <div style="margin-bottom:6px;">
+                <span style="font-weight:600;color:${m.from_buyer?'#1d4ed8':'#059669'};">${m.from_buyer?'Comprador':'Vos'}:</span>
+                <span style="color:#374151;margin-left:4px;">${m.text}</span>
+                <span style="color:#d1d5db;margin-left:6px;font-size:10px;">${new Date(m.date).toLocaleTimeString('es-UY',{hour:'2-digit',minute:'2-digit'})}</span>
+              </div>`).join('')}
+          </div>
+
+          <div style="background:#eff6ff;border-left:3px solid #3b82f6;padding:8px 10px;border-radius:0 6px 6px 0;font-size:13px;color:#1e3a5f;margin-bottom:10px;">
+            <b>Comprador:</b> ${t.last_message}
+          </div>
+
+          <div id="msg-ia-${t.pack_id}" style="display:none;margin-bottom:8px;">
+            <div id="msg-accion-${t.pack_id}" style="display:none;margin-bottom:6px;padding:6px 10px;background:#fef9c3;border-radius:5px;font-size:12px;color:#713f12;"></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+              <label style="font-size:11px;color:#6b7280;font-weight:600;">Respuesta sugerida:</label>
+              <button onclick="marcarRespuestaMala('${t.pack_id}')" id="msg-btn-mala-${t.pack_id}"
+                style="padding:2px 8px;background:#fef2f2;border:1px solid #fca5a5;color:#991b1b;border-radius:5px;font-size:11px;cursor:pointer;">
+                👎 Mala respuesta
+              </button>
+            </div>
+            <textarea id="msg-txt-${t.pack_id}" rows="3"
+              style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
+          </div>
+
+          <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
+            <button onclick="toggleMsgHist('${t.pack_id}')"
+              style="padding:5px 10px;background:#f3f4f6;border:none;border-radius:5px;font-size:11px;cursor:pointer;color:#6b7280;white-space:nowrap;">
+              Ver historial (${t.messages.length})
+            </button>
+            <button onclick="generarRespuestaMensaje(${idx})"
+              id="msg-btn-ia-${t.pack_id}"
+              style="padding:6px 14px;background:#7c3aed;color:white;border:none;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">
+              🤖 Sugerir respuesta
+            </button>
+            <button onclick="enviarMensaje('${t.pack_id}',${t.buyer_id})"
+              id="msg-btn-enviar-${t.pack_id}"
+              style="display:none;padding:6px 14px;background:#059669;color:white;border:none;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">
+              ✉️ Enviar
+            </button>
+            <button onclick="omitirMensaje('${t.pack_id}')"
+              style="padding:5px 10px;background:#f3f4f6;color:#6b7280;border:none;border-radius:5px;font-size:11px;cursor:pointer;white-space:nowrap;">
+              Omitir
+            </button>
+          </div>
+          <div id="msg-status-${t.pack_id}" style="margin-top:6px;font-size:12px;"></div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+async function generarRespuestaMensaje(idx) {
+  const t = mensajesData[idx];
+  if (!t) return;
+  const btn = document.getElementById(`msg-btn-ia-${t.pack_id}`);
+  btn.textContent = '⏳ Analizando...';
+  btn.disabled = true;
+
+  const r = await fetch('/api/ml/mensajes/simular', {
+    method: 'POST',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pack_id: t.pack_id, item_id: t.item_id, item_title: t.item_title, order_status: t.order_status, messages: t.messages })
+  });
+  const d = await r.json();
+
+  if (d.respuesta && d.respuesta.trim().startsWith('{')) {
+    try { const inner = JSON.parse(d.respuesta); if (inner.respuesta) { d.respuesta = inner.respuesta; if (!d.accion) d.accion = inner.accion; } } catch(_) {}
+  }
+  if (d.respuesta) {
+    document.getElementById(`msg-ia-${t.pack_id}`).style.display = '';
+    document.getElementById(`msg-txt-${t.pack_id}`).value = d.respuesta;
+    document.getElementById(`msg-btn-enviar-${t.pack_id}`).style.display = '';
+    if (d.accion) {
+      const ac = document.getElementById(`msg-accion-${t.pack_id}`);
+      ac.style.display = '';
+      const esEnvio = /envi|despacho|DAC|retiro|coordin|domicilio|direcci/i.test(d.accion);
+      let envioHtml = '';
+      if (esEnvio && t.shipping) {
+        const s = t.shipping;
+        const partes = [s.receiver_name, s.address, s.city, s.state, s.zip, s.comments].filter(Boolean);
+        envioHtml = `<div style="margin-top:6px;padding:8px 10px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;font-size:12px;color:#0369a1;">
+          <b>📦 Datos de envío</b><br>
+          ${partes.join(' — ')}<br>
+          <span style="color:#64748b;">Estado: ${s.status || '—'} · ID envío: ${s.id}</span>
+        </div>`;
+      }
+      ac.innerHTML = `<b>⚡ Acción sugerida:</b> ${d.accion}${envioHtml}`;
+    }
+    btn.textContent = '↺ Regenerar';
+    btn.disabled = false;
+  } else {
+    btn.textContent = '🤖 Sugerir respuesta';
+    btn.disabled = false;
+    alert('Error: ' + (d.error || 'desconocido'));
+  }
+}
+
+async function marcarRespuestaMala(packId) {
+  const respuesta_mala = document.getElementById(`msg-txt-${packId}`)?.value?.trim();
+  if (!respuesta_mala) return;
+  const motivo = prompt('¿Por qué es mala? (opcional, ej: "agradece demasiado", "muy larga")') ?? '';
+  const t = mensajesData.find(x => x.pack_id == packId);
+  const historial = t ? t.messages.map(m => `[${m.from_buyer ? 'COMPRADOR' : 'VENDEDOR'}]: ${m.text}`).join('\n') : '';
+  await fetch('/api/ml/mensajes/feedback-malo', {
+    method: 'POST',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ historial, respuesta_mala, motivo })
+  });
+  document.getElementById(`msg-txt-${packId}`).value = '';
+  document.getElementById(`msg-ia-${packId}`).style.display = 'none';
+  document.getElementById(`msg-btn-enviar-${packId}`).style.display = 'none';
+  const btnIA = document.getElementById(`msg-btn-ia-${packId}`);
+  if (btnIA) { btnIA.textContent = '🤖 Sugerir respuesta'; btnIA.disabled = false; }
+  const status = document.getElementById(`msg-status-${packId}`);
+  if (status) { status.style.color = '#059669'; status.textContent = '✓ Feedback guardado — regenerá para una nueva respuesta'; setTimeout(() => status.textContent = '', 3000); }
+}
+
+async function enviarMensaje(packId, buyerId) {
+  const texto = document.getElementById(`msg-txt-${packId}`)?.value?.trim();
+  if (!texto) { alert('El mensaje está vacío'); return; }
+  const btn = document.getElementById(`msg-btn-enviar-${packId}`);
+  const status = document.getElementById(`msg-status-${packId}`);
+  btn.textContent = '⏳ Enviando...';
+  btn.disabled = true;
+
+  const r = await fetch('/api/ml/mensajes/responder', {
+    method: 'POST',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pack_id: packId, buyer_id: buyerId, text: texto })
+  });
+  const d = await r.json();
+
+  if (d.ok) {
+    const thread = mensajesData.find(t => String(t.pack_id) === String(packId));
+    const mlUrl = `https://www.mercadolibre.com.uy/ventas/${thread?.order_id || packId}/detalle`;
+    status.innerHTML = `<span style="color:#059669;font-weight:600;">✓ Mensaje enviado</span> <a href="${mlUrl}" target="_blank" style="margin-left:8px;font-size:12px;color:#1d4ed8;text-decoration:underline;">Ver en ML →</a>`;
+    btn.style.display = 'none';
+    if (thread) {
+      fetch('/api/ml/preguntas/feedback', {
+        method: 'POST',
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pregunta: thread.last_message, respuesta: texto, item_id: thread.item_id, item_title: thread.item_title, tipo: 'postventa' })
+      }).catch(() => {});
+    }
+    setTimeout(() => {
+      mensajesData = mensajesData.filter(t => String(t.pack_id) !== String(packId));
+      document.getElementById(`msg-card-${packId}`)?.remove();
+      document.getElementById('mensajes-count').textContent = `${mensajesData.length} hilos esperando respuesta`;
+    }, 1500);
+  } else {
+    status.innerHTML = `<span style="color:#ef4444;">Error: ${JSON.stringify(d.error)?.slice(0,100)}</span>`;
+    btn.textContent = '✉️ Enviar';
+    btn.disabled = false;
+  }
+}
+
+function toggleMsgHist(packId) {
+  const el = document.getElementById(`msg-hist-${packId}`);
+  if (el) el.style.display = el.style.display === 'none' ? '' : 'none';
+}
+
+function omitirMensaje(packId) {
+  mensajesData = mensajesData.filter(t => String(t.pack_id) !== String(packId));
+  document.getElementById(`msg-card-${packId}`)?.remove();
+  document.getElementById('mensajes-count').textContent = `${mensajesData.length} hilos esperando respuesta`;
+}
+
+// ── Reglas del negocio ──
+async function loadSkuMap() {
+  const r = await fetch('/api/config/sku-map', { headers: authHeaders() });
+  const map = await r.json();
+  const list = document.getElementById('skumap-list');
+  if (!list) return;
+  const entries = Object.entries(map);
+  if (!entries.length) { list.innerHTML = '<p style="font-size:12px;color:#9ca3af;">Sin mapeos configurados</p>'; return; }
+  list.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px;">
+    <thead><tr style="background:#f9fafb;">
+      <th style="padding:7px 12px;text-align:left;font-size:11px;color:#6b7280;">SKU Odoo</th>
+      <th style="padding:7px 12px;text-align:left;font-size:11px;color:#6b7280;">ID ML</th>
+      <th style="padding:7px 12px;width:40px;"></th>
+    </tr></thead>
+    <tbody>${entries.map(([sku, mlId]) => `
+      <tr style="border-top:1px solid #f3f4f6;">
+        <td style="padding:7px 12px;font-family:monospace;color:#7c3aed;font-weight:600;">${sku}</td>
+        <td style="padding:7px 12px;color:#374151;">MLU${mlId}</td>
+        <td style="padding:7px 12px;text-align:center;">
+          <button onclick="eliminarSkuMap('${sku}')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;" title="Eliminar">×</button>
+        </td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+async function agregarSkuMap() {
+  const sku  = document.getElementById('skumap-sku').value.trim();
+  const mlId = document.getElementById('skumap-mlid').value.trim().replace(/[^0-9]/g, '');
+  if (!sku || !mlId) return alert('Completá SKU e ID de ML');
+  const r = await fetch('/api/config/sku-map', { method: 'POST', headers: { ...authHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify({ sku, ml_id: mlId }) });
+  if (r.ok) { document.getElementById('skumap-sku').value = ''; document.getElementById('skumap-mlid').value = ''; loadSkuMap(); }
+}
+
+async function eliminarSkuMap(sku) {
+  await fetch(`/api/config/sku-map/${encodeURIComponent(sku)}`, { method: 'DELETE', headers: authHeaders() });
+  loadSkuMap();
+}
+
+const REGLA_CAT_COLORS = {
+  'General':    { bg:'#f0fdf4', color:'#166534', border:'#bbf7d0' },
+  'Envíos':     { bg:'#eff6ff', color:'#1e40af', border:'#bfdbfe' },
+  'Retiros':    { bg:'#fefce8', color:'#713f12', border:'#fde68a' },
+  'Post-venta': { bg:'#fdf4ff', color:'#6b21a8', border:'#e9d5ff' },
+  'Preguntas':  { bg:'#fff7ed', color:'#7c2d12', border:'#fed7aa' },
+  'Tareas':     { bg:'#f0f9ff', color:'#0c4a6e', border:'#bae6fd' },
+};
+const REGLA_CAT_ORDER = ['General','Envíos','Retiros','Post-venta','Preguntas','Tareas'];
+
+async function loadReglas() {
+  const list = document.getElementById('reglas-list');
+  if (!list) return;
+  const r = await fetch('/api/config/reglas', { headers: authHeaders() });
+  const reglas = await r.json();
+  if (!reglas.length) {
+    list.innerHTML = '<div class="card" style="color:#9ca3af;text-align:center;padding:32px;">No hay reglas todavía. Agregá la primera arriba.</div>';
+    document.getElementById('reglas-interpretacion').style.display = 'none';
+    return;
+  }
+  const grupos = {};
+  for (const reg of reglas) {
+    const cat = reg.categoria || 'General';
+    if (!grupos[cat]) grupos[cat] = [];
+    grupos[cat].push(reg);
+  }
+  const catOrden = [...REGLA_CAT_ORDER.filter(c => grupos[c]), ...Object.keys(grupos).filter(c => !REGLA_CAT_ORDER.includes(c))];
+  list.innerHTML = catOrden.map(cat => {
+    const c = REGLA_CAT_COLORS[cat] || { bg:'#f9fafb', color:'#374151', border:'#e5e7eb' };
+    return `<div class="card" style="margin-bottom:12px;padding:0;overflow:hidden;border:1px solid ${c.border};">
+      <div style="background:${c.bg};padding:8px 14px;border-bottom:1px solid ${c.border};">
+        <span style="font-size:12px;font-weight:700;color:${c.color};">${cat}</span>
+        <span style="font-size:11px;color:#9ca3af;margin-left:6px;">${grupos[cat].length} regla${grupos[cat].length > 1 ? 's' : ''}</span>
+      </div>
+      ${grupos[cat].map(reg => `
+        <div style="display:flex;align-items:center;gap:12px;padding:9px 14px;border-bottom:1px solid #f3f4f6;">
+          <span style="flex:1;font-size:13px;color:#111827;">${reg.texto}</span>
+          <button onclick="eliminarRegla(${reg.id})" style="padding:3px 9px;background:#fef2f2;border:1px solid #fca5a5;color:#991b1b;border-radius:5px;font-size:12px;cursor:pointer;flex-shrink:0;">Eliminar</button>
+        </div>`).join('')}
+    </div>`;
+  }).join('');
+  interpretarReglas();
+}
+
+async function interpretarReglas() {
+  const box = document.getElementById('reglas-interpretacion');
+  const txt = document.getElementById('reglas-interpretacion-text');
+  const btn = document.getElementById('btn-interpretar');
+  if (!box || !txt) return;
+  box.style.display = '';
+  txt.textContent = 'Analizando...';
+  if (btn) btn.disabled = true;
+  const r = await fetch('/api/config/reglas/interpretar', { headers: authHeaders() });
+  const d = await r.json();
+  const lineas = (d.interpretacion || d.error || '').split('\n').filter(l => l.trim());
+  txt.innerHTML = lineas.map(l => {
+    const [sit, ...rest] = l.replace(/^[-•]\s*/, '').split('→');
+    const accion = rest.join('→').trim();
+    return accion
+      ? `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+           <span style="background:#ede9fe;color:#6d28d9;padding:3px 10px;border-radius:999px;font-size:12px;white-space:nowrap;">${sit.trim()}</span>
+           <span style="color:#9ca3af;">→</span>
+           <span style="font-size:13px;color:#111827;font-weight:600;">${accion}</span>
+         </div>`
+      : `<div style="font-size:13px;color:#374151;margin-bottom:4px;">${l}</div>`;
+  }).join('');
+  if (btn) btn.disabled = false;
+}
+
+async function agregarRegla() {
+  const texto = document.getElementById('regla-texto').value.trim();
+  const categoria = document.getElementById('regla-categoria').value.trim();
+  if (!texto) return;
+  await fetch('/api/config/reglas', {
+    method: 'POST',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ texto, categoria })
+  });
+  document.getElementById('regla-texto').value = '';
+  loadReglas();
+}
+
+async function eliminarRegla(id) {
+  await fetch(`/api/config/reglas/${id}`, { method: 'DELETE', headers: authHeaders() });
+  loadReglas();
+}
+
+// ── Importar historial ──
+let importPolling = null;
+async function importarHistorial() {
+  const btn = document.getElementById('btn-importar-historial');
+  const estado = document.getElementById('importar-estado');
+  btn.disabled = true;
+  btn.textContent = '⏳ Importando...';
+  estado.style.display = 'block';
+  estado.textContent = 'Iniciando importación...';
+
+  const r = await fetch('/api/ml/preguntas/importar-historial', { method: 'POST', headers: authHeaders() });
+  if (!r.ok) {
+    estado.textContent = 'Error al iniciar importación';
+    btn.disabled = false;
+    btn.textContent = '⬇ Importar historial ML';
+    return;
+  }
+
+  clearInterval(importPolling);
+  importPolling = setInterval(async () => {
+    const s = await fetch('/api/ml/preguntas/importar-estado', { headers: authHeaders() });
+    if (!s.ok) return;
+    const d = await s.json();
+    estado.textContent = d.error
+      ? `Error: ${d.error}`
+      : d.running
+        ? `Procesando ${d.progress} / ${d.total || '?'} preguntas... (${d.importadas} nuevas)`
+        : `✓ Listo: ${d.importadas} preguntas nuevas importadas de ${d.total} totales`;
+    if (!d.running) {
+      clearInterval(importPolling);
+      btn.disabled = false;
+      btn.textContent = '⬇ Importar historial ML';
+      if (!d.error) loadPreguntasStats();
+    }
+  }, 1500);
+}
+
+// ── Preguntas frecuentes ──
+async function loadPreguntasStats() {
+  const list = document.getElementById('preguntas-stats-list');
+  list.innerHTML = '<p style="color:#9ca3af;font-size:13px;padding:16px;">Cargando...</p>';
+  document.getElementById('preguntas-detalle').innerHTML = '';
+  const r = await fetch('/api/ml/preguntas/stats', { headers: authHeaders() });
+  if (!r.ok) { list.innerHTML = '<p style="color:#ef4444;">Error al cargar</p>'; return; }
+  const d = await r.json();
+  preguntasStatsData = d.pubs || [];
+  renderPreguntasStats(preguntasStatsData, d.total);
+}
+
+function filtrarPreguntasPubs() {
+  const q = (document.getElementById('preguntas-search').value || '').toLowerCase();
+  const filtered = q ? preguntasStatsData.filter(p => p.titulo?.toLowerCase().includes(q) || p.id.toLowerCase().includes(q)) : preguntasStatsData;
+  renderPreguntasStats(filtered, null);
+}
+
+function renderPreguntasStats(pubs, total) {
+  const list = document.getElementById('preguntas-stats-list');
+  if (!pubs.length) { list.innerHTML = '<p style="color:#9ca3af;padding:16px;">Sin datos</p>'; return; }
+  const totalLabel = total != null ? `<p style="font-size:12px;color:#9ca3af;margin-bottom:12px;">${pubs.length} publicaciones · ${total} preguntas en los últimos 2 meses</p>` : '';
+  list.innerHTML = totalLabel + `
+    <div class="card" style="padding:0;overflow:hidden;">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead><tr style="background:#f9fafb;">
+          <th style="padding:10px 16px;text-align:left;font-weight:600;color:#6b7280;">Publicación</th>
+          <th style="padding:10px 16px;text-align:center;font-weight:600;color:#6b7280;">Preguntas</th>
+          <th style="padding:10px 16px;text-align:center;font-weight:600;color:#6b7280;">Acciones</th>
+        </tr></thead>
+        <tbody>
+          ${pubs.map((p, idx) => `
+            <tr style="border-top:1px solid #f3f4f6;${idx%2===1?'background:#fafafa':''}" id="pub-row-${p.id}">
+              <td style="padding:10px 16px;">
+                <div style="font-weight:600;color:#111827;">${p.titulo?.slice(0,60) || p.id}</div>
+                <div style="font-size:11px;color:#9ca3af;">${p.id}</div>
+              </td>
+              <td style="padding:10px 16px;text-align:center;">
+                <span style="background:#eff6ff;color:#1d4ed8;padding:2px 8px;border-radius:12px;font-weight:700;">${p.total}</span>
+              </td>
+              <td style="padding:10px 16px;text-align:center;">
+                <button onclick="verPreguntasDetalle('${p.id}')" style="padding:4px 10px;background:#7c3aed;color:white;border:none;border-radius:4px;font-size:12px;cursor:pointer;">Ver preguntas</button>
+              </td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+async function verPreguntasDetalle(itemId) {
+  const det = document.getElementById('preguntas-detalle');
+  det.innerHTML = '<p style="color:#9ca3af;font-size:13px;padding:16px;">Cargando preguntas...</p>';
+  det.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const r = await fetch(`/api/ml/preguntas/${itemId}`, { headers: authHeaders() });
+  if (!r.ok) { det.innerHTML = '<p style="color:#ef4444;">Error</p>'; return; }
+  const d = await r.json();
+  const qa = d.qa || [];
+  const titulo = d.titulo || itemId;
+  det.innerHTML = `
+    <div class="card" style="margin-top:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
+        <div>
+          <h3 style="margin:0 0 4px;font-size:15px;">${titulo}</h3>
+          <span style="font-size:12px;color:#9ca3af;">${qa.length} preguntas</span>
+        </div>
+        <button onclick="document.getElementById('preguntas-detalle').innerHTML=''" style="background:none;border:none;font-size:18px;cursor:pointer;color:#9ca3af;">✕</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        ${qa.map((item, i) => `
+          <div style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
+            <div style="background:#f9fafb;padding:10px 14px;font-size:13px;color:#374151;border-bottom:1px solid #e5e7eb;">
+              <b style="color:#7c3aed;">P:</b> ${item.q || ''}
+            </div>
+            <div style="padding:10px 14px;font-size:13px;color:#111827;display:flex;gap:10px;align-items:flex-start;">
+              <div style="flex:1;"><b style="color:#059669;">R:</b> ${item.a || '<span style="color:#9ca3af;font-style:italic;">sin respuesta</span>'}</div>
+              <button onclick="responderConIA(${i},'${itemId}',${JSON.stringify(item.q||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'")},'${titulo.replace(/'/g,"\\'")}')"
+                style="flex-shrink:0;padding:4px 8px;background:#f3f4f6;border:none;border-radius:4px;font-size:11px;cursor:pointer;color:#374151;">
+                🤖 IA
+              </button>
+            </div>
+            <div id="ia-resp-${itemId}-${i}" style="display:none;background:#f0fdf4;padding:10px 14px;font-size:13px;color:#065f46;border-top:1px solid #d1fae5;"></div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+async function responderConIA(idx, itemId, pregunta, titulo) {
+  const cont = document.getElementById(`ia-resp-${itemId}-${idx}`);
+  cont.style.display = '';
+  cont.textContent = 'Generando respuesta...';
+  try {
+    const r = await fetch('/api/ml/preguntas/responder', {
+      method: 'POST',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pregunta, itemId, titulo })
+    });
+    const d = await r.json();
+    if (d.respuesta) {
+      cont.innerHTML = `<b>Sugerencia IA:</b> ${d.respuesta}
+        <button onclick="navigator.clipboard.writeText(${JSON.stringify(d.respuesta)}).then(()=>this.textContent='✓ Copiado!')"
+          style="margin-left:10px;padding:2px 8px;background:#059669;color:white;border:none;border-radius:4px;font-size:11px;cursor:pointer;">
+          📋 Copiar
+        </button>`;
+    } else {
+      cont.textContent = 'Error: ' + (d.error || 'desconocido');
+    }
+  } catch(e) { cont.textContent = 'Error: ' + e.message; }
+}
+</script>
+</body>
+</html>

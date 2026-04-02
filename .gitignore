@@ -1,0 +1,9 @@
+node_modules/
+.env
+.DS_Store
+
+# Datos en caché y tokens — no subir
+data/debug_*.json
+
+# Sí subir estos (configuración del negocio)
+# data/users.json
