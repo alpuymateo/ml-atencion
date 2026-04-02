@@ -1015,13 +1015,27 @@ Resumí cada regla en formato diagrama de una línea: "situación → acción/da
 app.get('/api/ml/preguntas/pendientes', requireToken, async (req, res) => {
   try {
     const dias = parseInt(req.query.dias) || 7;
-    const r = await axios.get(`${ML_API_URL}/my/received_questions/search`, {
-      params: { status: 'UNANSWERED', limit: 50 },
-      headers: { Authorization: `Bearer ${tokenData.access_token}` }
-    });
-    const questions = r.data.questions || [];
+    const status = req.query.status === 'ANSWERED' ? 'ANSWERED' : 'UNANSWERED';
     const cutoff = new Date(Date.now() - dias * 24 * 60 * 60 * 1000);
-    const filtered = dias === 0 ? questions : questions.filter(q => new Date(q.date_created) >= cutoff);
+    let questions = [];
+    let offset = 0;
+    const PAGE = 50;
+    let keepGoing = true;
+    while (keepGoing) {
+      const r = await axios.get(`${ML_API_URL}/my/received_questions/search`, {
+        params: { status, limit: PAGE, offset, sort_fields: 'date_created', sort_types: 'DESC' },
+        headers: { Authorization: `Bearer ${tokenData.access_token}` }
+      });
+      const batch = r.data.questions || [];
+      if (!batch.length) break;
+      for (const q of batch) {
+        if (dias > 0 && new Date(q.date_created) < cutoff) { keepGoing = false; break; }
+        questions.push(q);
+      }
+      offset += PAGE;
+      if (offset >= (r.data.total || 0)) break;
+    }
+    const filtered = questions;
 
     const itemMap = {};
     cachedItems.forEach(i => { itemMap[i.id] = i; });
@@ -1029,11 +1043,13 @@ app.get('/api/ml/preguntas/pendientes', requireToken, async (req, res) => {
       const item = itemMap[q.item_id] || {};
       let item_title = item.title || '';
       let item_thumbnail = item.thumbnail || '';
-      if (q.item_id && (!item_title || !item_thumbnail)) {
+      let item_permalink = item.permalink || '';
+      if (q.item_id && (!item_title || !item_thumbnail || !item_permalink)) {
         const ctx = await fetchItemContext(q.item_id).catch(() => null);
         if (ctx) {
           if (!item_title) item_title = ctx.title || q.item_id;
           if (!item_thumbnail) item_thumbnail = ctx.thumbnail || '';
+          if (!item_permalink) item_permalink = ctx.permalink || '';
         }
       }
       return {
@@ -1041,9 +1057,12 @@ app.get('/api/ml/preguntas/pendientes', requireToken, async (req, res) => {
         item_id: q.item_id,
         item_title: item_title || q.item_id,
         item_thumbnail,
+        item_permalink,
         text: q.text,
         date_created: q.date_created,
-        from_id: q.from?.id
+        from_id: q.from?.id,
+        status: q.status,
+        answer: q.answer ? { text: q.answer.text, date_created: q.answer.date_created } : null
       };
     }));
     res.json({ questions: enriched, total: enriched.length, total_ml: r.data.total });
@@ -1075,10 +1094,23 @@ async function fetchItemContext(itemId) {
       .filter(a => a.value_name)
       .map(a => `${a.name}: ${a.value_name}`)
       .join(', ');
+    const shipping = item.shipping || {};
+    const shippingInfo = {
+      free_shipping: !!shipping.free_shipping,
+      logistic_type: shipping.logistic_type || '',
+      local_pick_up: !!shipping.local_pick_up,
+      store_pick_up: !!shipping.store_pick_up
+    };
+    const variations = (item.variations || [])
+      .filter(v => v.available_quantity > 0 && v.attribute_combinations?.length)
+      .map(v => v.attribute_combinations.map(a => a.value_name).join(' / '));
     const ctx = {
       title: item.title || itemId,
       price: item.price,
       thumbnail: item.thumbnail || '',
+      permalink: item.permalink || '',
+      shipping: shippingInfo,
+      variations,
       attrs,
       description: desc.slice(0, 800)
     };
@@ -1093,6 +1125,15 @@ async function fetchItemContext(itemId) {
 function buildItemContextText(ctx) {
   let text = `Producto: ${ctx.title}`;
   if (ctx.price) text += `\nPrecio: $${ctx.price}`;
+  if (ctx.shipping) {
+    if (ctx.shipping.free_shipping) {
+      text += `\nEnvío: GRATIS a todo el país`;
+    } else {
+      text += `\nEnvío: con costo (calculado por Mercado Libre según destino)`;
+    }
+    if (ctx.shipping.local_pick_up) text += `\nRetiro en persona: disponible`;
+  }
+  if (ctx.variations?.length) text += `\nVariantes disponibles: ${ctx.variations.join(', ')}`;
   if (ctx.attrs) text += `\nAtributos: ${ctx.attrs}`;
   if (ctx.description) text += `\nDescripción: ${ctx.description}`;
   return text;

@@ -461,15 +461,20 @@
       <div id="analizar-tab-pendientes">
         <div class="card" style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
           <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-            <b style="font-size:14px;">Preguntas sin responder en ML</b>
+            <b style="font-size:14px;">Preguntas en ML</b>
             <span id="pendientes-count" style="font-size:12px;color:#9ca3af;"></span>
             <span id="feedback-resumen" style="display:none;font-size:12px;background:#f9fafb;padding:3px 10px;border-radius:12px;border:1px solid #e5e7eb;"></span>
+            <select id="pendientes-status" onchange="loadPendientes()" style="padding:4px 8px;border:1px solid #d1d5db;border-radius:5px;font-size:12px;">
+              <option value="UNANSWERED" selected>Pendientes</option>
+              <option value="ANSWERED">Respondidas</option>
+            </select>
             <select id="pendientes-dias" onchange="loadPendientes()" style="padding:4px 8px;border:1px solid #d1d5db;border-radius:5px;font-size:12px;">
               <option value="1">Hoy</option>
               <option value="3">&Uacute;ltimos 3 d&iacute;as</option>
               <option value="7">&Uacute;ltimos 7 d&iacute;as</option>
+              <option value="20" selected>&Uacute;ltimos 20 d&iacute;as</option>
               <option value="30">&Uacute;ltimos 30 d&iacute;as</option>
-              <option value="0" selected>Todas</option>
+              <option value="0">Todas</option>
             </select>
           </div>
           <div style="display:flex;gap:8px;">
@@ -845,7 +850,7 @@ async function loadTareas() {
             : '';
           return `<div style="background:white;border-radius:10px;border:1px solid #fde68a;padding:12px 16px;margin-bottom:8px;">
             <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
-              <span style="font-size:11px;color:#92400e;font-weight:700;">📦 ${q.item_id}</span>
+              ${q.item_permalink ? `<a href="${q.item_permalink}" target="_blank" style="font-size:11px;color:#92400e;font-weight:700;text-decoration:none;">📦 ${q.item_title || q.item_id}</a>` : `<span style="font-size:11px;color:#92400e;font-weight:700;">📦 ${q.item_title || q.item_id}</span>`}
               <span style="font-size:11px;color:#9ca3af;">${d}</span>
             </div>
             <div style="font-size:14px;color:#1a1d23;">${q.text}</div>
@@ -1024,7 +1029,7 @@ async function loadDevoluciones() {
           <div class="dev-card-product" style="display:flex;align-items:center;gap:14px;padding:14px 16px;">
             ${thumb}
             <div style="flex:1;min-width:0;">
-              <div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.item_title || d.item_id || '—'}</div>
+              <div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.item_permalink ? `<a href="${d.item_permalink}" target="_blank" style="color:#1d4ed8;text-decoration:none;">${d.item_title || d.item_id || '—'}</a>` : (d.item_title || d.item_id || '—')}</div>
               ${variantRow}
               <div style="display:flex;gap:16px;font-size:12px;color:#6b7280;margin-top:4px;">
                 ${priceRow}${qtyRow}${skuRow}
@@ -1253,37 +1258,80 @@ async function initAnalizarPage(defaultTab = 'pendientes') {
 
 // ── Preguntas pendientes ──
 let pendientesData = [];
+let pendientesPage = 0;
+const PREGUNTAS_PER_PAGE = 50;
 
 async function loadPendientes() {
   const list = document.getElementById('pendientes-list');
   const count = document.getElementById('pendientes-count');
   list.innerHTML = '<p style="color:#9ca3af;font-size:13px;padding:16px;">Cargando preguntas...</p>';
   count.textContent = '';
-  const dias = document.getElementById('pendientes-dias')?.value || 7;
-  const r = await fetch(`/api/ml/preguntas/pendientes?dias=${dias}`, { headers: authHeaders() });
+  const dias = document.getElementById('pendientes-dias')?.value || 20;
+  const status = document.getElementById('pendientes-status')?.value || 'UNANSWERED';
+  const r = await fetch(`/api/ml/preguntas/pendientes?dias=${dias}&status=${status}`, { headers: authHeaders() });
   if (!r.ok) { list.innerHTML = '<p style="color:#ef4444;">Error al cargar</p>'; return; }
   const d = await r.json();
   pendientesData = d.questions || [];
   const totalMl = d.total_ml || d.total;
   const extra = totalMl > pendientesData.length ? ` (${totalMl} en total, filtrando por fecha)` : '';
-  count.textContent = `${pendientesData.length} sin responder${extra}`;
+  const label = status === 'ANSWERED' ? 'respondidas' : 'sin responder';
+  count.textContent = `${pendientesData.length} ${label}${extra}`;
+  const btnSimular = document.getElementById('btn-simular-todas');
+  if (btnSimular) btnSimular.textContent = status === 'ANSWERED' ? '🤖 Simular todas con IA' : '🤖 Generar todas con IA';
+  pendientesPage = 0;
   renderPendientes();
 }
 
 function renderPendientes() {
   const list = document.getElementById('pendientes-list');
+  const isAnswered = document.getElementById('pendientes-status')?.value === 'ANSWERED';
   if (!pendientesData.length) {
-    list.innerHTML = '<div class="card" style="text-align:center;color:#9ca3af;padding:32px;">No hay preguntas pendientes</div>';
+    list.innerHTML = `<div class="card" style="text-align:center;color:#9ca3af;padding:32px;">No hay preguntas ${isAnswered ? 'respondidas' : 'pendientes'}</div>`;
     return;
   }
-  list.innerHTML = pendientesData.map((q, idx) => `
+  const totalPages = Math.ceil(pendientesData.length / PREGUNTAS_PER_PAGE);
+  const start = pendientesPage * PREGUNTAS_PER_PAGE;
+  const pageData = pendientesData.slice(start, start + PREGUNTAS_PER_PAGE);
+
+  const paginationBar = totalPages > 1 ? `
+    <div style="display:flex;align-items:center;justify-content:center;gap:6px;padding:12px 0;flex-wrap:wrap;">
+      ${Array.from({ length: totalPages }, (_, i) => `
+        <button onclick="pendientesPage=${i};renderPendientes();"
+          style="padding:6px 12px;border:1px solid ${i === pendientesPage ? '#7c3aed' : '#d1d5db'};background:${i === pendientesPage ? '#7c3aed' : 'white'};color:${i === pendientesPage ? 'white' : '#374151'};border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">
+          ${i * PREGUNTAS_PER_PAGE + 1}–${Math.min((i + 1) * PREGUNTAS_PER_PAGE, pendientesData.length)}
+        </button>
+      `).join('')}
+      <span style="font-size:11px;color:#9ca3af;margin-left:8px;">${pendientesData.length} total</span>
+    </div>` : '';
+
+  list.innerHTML = paginationBar + pageData.map((q, i) => {
+    const idx = start + i;
+    return `
     <div class="card" style="margin-bottom:12px;" id="pend-card-${q.id}">
       <div style="display:flex;gap:12px;align-items:flex-start;">
         ${q.item_thumbnail ? `<img src="${q.item_thumbnail}" style="width:48px;height:48px;object-fit:contain;border-radius:6px;background:#f9fafb;flex-shrink:0;" onerror="this.style.display='none'">` : ''}
         <div style="flex:1;min-width:0;">
-          <div style="font-size:11px;color:#9ca3af;margin-bottom:2px;">${q.item_title?.slice(0,70) || q.item_id} · ${new Date(q.date_created).toLocaleDateString('es-UY')}</div>
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:2px;">${q.item_permalink ? `<a href="${q.item_permalink}" target="_blank" style="color:#1d4ed8;text-decoration:none;font-weight:600;">${q.item_title?.slice(0,70) || q.item_id}</a>` : (q.item_title?.slice(0,70) || q.item_id)} · ${new Date(q.date_created).toLocaleDateString('es-UY')}</div>
           <div style="font-size:14px;font-weight:600;color:#111827;margin-bottom:10px;">${q.text}</div>
 
+          ${q.answer ? `
+          <div style="background:#f0fdf4;border-left:3px solid #22c55e;padding:8px 12px;border-radius:4px;font-size:13px;color:#166534;margin-bottom:8px;">
+            <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;">Respuesta · ${q.answer.date_created ? new Date(q.answer.date_created).toLocaleDateString('es-UY') : ''}</span><br>
+            ${q.answer.text}
+          </div>
+          <div id="pend-ia-${q.id}" style="display:none;margin-bottom:8px;">
+            <div style="background:#ede9fe;border-left:3px solid #7c3aed;padding:8px 12px;border-radius:4px;font-size:13px;color:#4c1d95;">
+              <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;">🤖 Simulación IA</span><br>
+              <span id="pend-sim-text-${q.id}"></span>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <button onclick="generarRespuestaIA(${idx})"
+              id="btn-ia-${q.id}"
+              style="padding:6px 12px;background:#7c3aed;color:white;border:none;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer;">
+              🤖 Simular con IA
+            </button>
+          </div>` : `
           <div id="pend-ia-${q.id}" style="display:none;margin-bottom:8px;">
             <label style="font-size:11px;color:#6b7280;font-weight:600;display:block;margin-bottom:4px;">Respuesta sugerida (editá antes de enviar):</label>
             <textarea id="pend-txt-${q.id}" rows="3"
@@ -1318,9 +1366,11 @@ function renderPendientes() {
             </button>
           </div>
           <div id="pend-status-${q.id}" style="margin-top:6px;font-size:12px;"></div>
+          `}
         </div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('') + paginationBar;
 }
 
 async function generarRespuestaIA(idx) {
@@ -1340,14 +1390,21 @@ async function generarRespuestaIA(idx) {
 
   if (result?.respuesta) {
     document.getElementById(`pend-ia-${q.id}`).style.display = '';
-    document.getElementById(`pend-txt-${q.id}`).value = result.respuesta;
-    document.getElementById(`btn-enviar-${q.id}`).style.display = '';
-    const fb = document.getElementById(`pend-feedback-${q.id}`);
-    fb.style.display = 'flex';
-    btn.textContent = '↺ Regenerar';
+    if (q.answer) {
+      // Respondida: mostrar simulación en el div
+      document.getElementById(`pend-sim-text-${q.id}`).textContent = result.respuesta;
+      btn.textContent = '↺ Resimular';
+    } else {
+      // Pendiente: mostrar en textarea para editar
+      document.getElementById(`pend-txt-${q.id}`).value = result.respuesta;
+      document.getElementById(`btn-enviar-${q.id}`).style.display = '';
+      const fb = document.getElementById(`pend-feedback-${q.id}`);
+      fb.style.display = 'flex';
+      btn.textContent = '↺ Regenerar';
+    }
     btn.disabled = false;
   } else {
-    btn.textContent = '🤖 Generar con IA';
+    btn.textContent = q.answer ? '🤖 Simular con IA' : '🤖 Generar con IA';
     btn.disabled = false;
     alert('Error: ' + (result?.error || 'desconocido'));
   }
