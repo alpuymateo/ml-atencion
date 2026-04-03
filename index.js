@@ -36,6 +36,51 @@ const ML_AUTH_URL = 'https://auth.mercadolibre.com.uy';
 let tokenData    = null;
 let cachedClaims = [];
 
+// ── SoyDelivery config ──
+const SD_API_ID = process.env.SD_API_ID;
+const SD_API_KEY = process.env.SD_API_KEY;
+const SD_NEGOCIO_ID = parseInt(process.env.SD_NEGOCIO_ID) || 0;
+const SD_NEGOCIO_CLAVE = parseInt(process.env.SD_NEGOCIO_CLAVE) || 0;
+const SD_API_URL = 'https://soydelivery.com.uy/rest';
+const SD_MAP_FILE = path.join(OWN_DATA_DIR, 'sd_mapping.json');
+
+// Mapeo shipment_id → soydelivery_id
+let sdMapping = {};
+try { if (fs.existsSync(SD_MAP_FILE)) sdMapping = JSON.parse(fs.readFileSync(SD_MAP_FILE, 'utf8')); } catch {}
+function saveSdMapping() {
+  try { fs.writeFileSync(SD_MAP_FILE, JSON.stringify(sdMapping, null, 2)); } catch {}
+}
+
+let sdToken = null;
+let sdTokenExpiry = 0;
+async function getSdToken() {
+  if (sdToken && Date.now() < sdTokenExpiry) return sdToken;
+  if (!SD_API_ID || !SD_API_KEY) return null;
+  try {
+    const r = await axios.post(`${SD_API_URL}/sdws_autenticar`, { ApiId: parseInt(SD_API_ID), ApiKey: SD_API_KEY });
+    if (r.data.AccessToken) {
+      sdToken = r.data.AccessToken;
+      sdTokenExpiry = Date.now() + 14 * 60 * 1000; // 14 min (expira en 15)
+      return sdToken;
+    }
+  } catch(e) { console.error('[soydelivery] auth error:', e.message); }
+  return null;
+}
+
+async function consultarSoyDelivery(pedidoId) {
+  const token = await getSdToken();
+  if (!token) return null;
+  try {
+    const r = await axios.post(`${SD_API_URL}/awsconsultarpedido1`, {
+      Negocio_id: SD_NEGOCIO_ID,
+      Negocio_clave: SD_NEGOCIO_CLAVE,
+      Pedido_id: pedidoId
+    }, { headers: { Authorization: `Bearer ${token}` } });
+    if (r.data.Error_code === 0) return r.data;
+  } catch {}
+  return null;
+}
+
 // ── Persistencia del token ML ──
 const OWN_TOKEN_FILE = path.join(OWN_DATA_DIR, 'ml_token.json');
 const SHARED_TOKEN_FILE = path.join(DATA_DIR, 'ml_token.json');
@@ -1213,6 +1258,16 @@ app.get('/api/ml/buscar', requireToken, async (req, res) => {
       } catch {}
     }
 
+    // 5b. Consultar SoyDelivery si es Flex
+    let soydelivery = null;
+    if (shipment && shipment.logistic_type === 'self_service') {
+      const shipId = String(shipment.id);
+      const sdId = sdMapping[shipId];
+      if (sdId) {
+        soydelivery = await consultarSoyDelivery(sdId);
+      }
+    }
+
     // 6. Armar respuesta
     res.json({
       found: true,
@@ -1280,11 +1335,56 @@ app.get('/api/ml/buscar', requireToken, async (req, res) => {
         date: m.date_created,
       })),
       item_detail: itemDetail,
+      soydelivery: soydelivery ? {
+        estado: soydelivery.Pedido_estado_desc,
+        estado_id: soydelivery.Pedido_estado_id,
+        delivery_nombre: soydelivery.Delivery_nombre_apellido,
+        delivery_telefono: soydelivery.Delivery_telefono,
+        delivery_ubicacion: soydelivery.Delivery_location,
+        fecha_entrega: soydelivery.Fecha_entrega,
+        franja_horaria: soydelivery.Franja_horaria_desc,
+        fecha_estimada: soydelivery.Fecha_estimada_entrega,
+      } : null,
     });
   } catch(e) {
     console.error('[buscar]', e.message);
     res.status(500).json({ error: e.message });
   }
+});
+
+// ── SoyDelivery Webhooks ──
+// Recibe notificaciones de SoyDelivery y guarda el mapeo shipment_id → sd_pedido_id
+app.post('/webhook/soydelivery/:event', (req, res) => {
+  const event = req.params.event;
+  const data = req.body;
+  console.log(`[soydelivery/webhook] ${event}:`, JSON.stringify(data).slice(0, 300));
+
+  const pedidoId = data.Pedido_id || data.pedido_id;
+  const externalId = data.Pedido_external_id || data.pedido_external_id;
+
+  if (pedidoId && externalId) {
+    sdMapping[externalId] = pedidoId;
+    saveSdMapping();
+    console.log(`[soydelivery] mapping: ${externalId} → ${pedidoId}`);
+  }
+
+  res.json({ ok: true });
+});
+
+// Endpoint genérico para cualquier webhook de SoyDelivery
+app.post('/webhook/soydelivery', (req, res) => {
+  const data = req.body;
+  console.log('[soydelivery/webhook]:', JSON.stringify(data).slice(0, 300));
+
+  const pedidoId = data.Pedido_id || data.pedido_id;
+  const externalId = data.Pedido_external_id || data.pedido_external_id;
+
+  if (pedidoId && externalId) {
+    sdMapping[externalId] = pedidoId;
+    saveSdMapping();
+  }
+
+  res.json({ ok: true });
 });
 
 // GET /api/ml/preguntas/pendientes
