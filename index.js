@@ -1547,23 +1547,39 @@ async function actualizarRetiros() {
           const sd = sdHist.PedidoConsultaSDT;
           entry.sd_estado = sd.PedidoNegocioEstadoIntNombre;
           entry.sd_estado_id = sd.PedidoEstado;
+          // Buscar fecha de retiro en historial
+          const retiroEvento = (sd.PedidoHistorial || []).find(h => h.PedidoHistorialEstado === 'R');
+          entry.fecha_retiro = retiroEvento?.PedidoHistorialFecha || null;
+          entry.retirado_por = retiroEvento ? retiroEvento.PedidoHistorialDetalle.replace(/^Pedido retirado por\s*/i, '') : null;
+          entry.retirado = !!retiroEvento;
           entry.cadeteria = 'SoyDelivery';
           soydelivery.push(entry);
         } else {
+          entry.retirado = ship.status === 'shipped';
           entry.cadeteria = 'Robert';
           robert.push(entry);
         }
       } else if (ship.logistic_type === 'default') {
+        entry.retirado = false; // DAC no tiene retiro via API por ahora
         entry.cadeteria = 'DAC';
         dac.push(entry);
       } else {
+        entry.retirado = ship.status === 'shipped';
         entry.cadeteria = 'Mercado Envíos';
         mercadoenvios.push(entry);
       }
     }
 
+    // Clasificar en pendientes y retirados hoy
+    const today = new Date().toISOString().slice(0, 10);
+    const allEntries = [...soydelivery, ...robert, ...dac, ...mercadoenvios];
+    const pendientes = allEntries.filter(e => !e.retirado);
+    const retiradosHoy = allEntries.filter(e => e.retirado && (!e.fecha_retiro || e.fecha_retiro.slice(0, 10) === today || new Date(e.fecha_retiro).toISOString().slice(0,10) === today));
+
     retirosCache = {
-      total: soydelivery.length + robert.length + dac.length + mercadoenvios.length,
+      total: allEntries.length,
+      pendientes,
+      retirados_hoy: retiradosHoy,
       soydelivery, robert, dac, mercadoenvios,
       updated_at: new Date().toISOString(),
     };
