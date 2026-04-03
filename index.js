@@ -1099,12 +1099,20 @@ app.get('/api/ml/buscar', requireToken, async (req, res) => {
     const isNumeric = /^\d+$/.test(q);
 
     if (isNumeric && q.length > 10) {
-      // Probablemente un order ID
+      // Probablemente un order ID o pack ID
       try {
         const r = await axios.get(`${ML_API_URL}/orders/${q}`, { headers });
         order = r.data;
       } catch(e) {
-        // Puede ser tracking, buscamos por shipment
+        // Intentar como pack ID
+        try {
+          const p = await axios.get(`${ML_API_URL}/packs/${q}`, { headers });
+          if (p.data.orders?.length) {
+            const orderId = p.data.orders[0].id;
+            const o = await axios.get(`${ML_API_URL}/orders/${orderId}`, { headers });
+            order = o.data;
+          }
+        } catch {}
       }
     }
 
