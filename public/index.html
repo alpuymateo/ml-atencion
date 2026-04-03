@@ -2068,197 +2068,164 @@ async function buscarVenta() {
     const o = d.order;
     const s = d.shipping;
     const statusColors = { paid: '#059669', cancelled: '#dc2626', confirmed: '#2563eb' };
+    const statusLabels = { paid: 'Pagada', cancelled: 'Cancelada', confirmed: 'Confirmada' };
     const shipColors = { delivered: '#059669', shipped: '#2563eb', pending: '#d97706', not_delivered: '#dc2626' };
-    const logisticLabels = { fulfillment: 'Mercado Env\u00edos Full', self_service: 'Flex', drop_off: 'Mercado Env\u00edos', xd_drop_off: 'Mercado Env\u00edos', cross_docking: 'Mercado Env\u00edos 1' };
+    const shipLabels = { delivered: 'Entregado', shipped: 'En camino', pending: 'Pendiente', not_delivered: 'No entregado' };
+    const logisticLabels = { fulfillment: 'ME Full', self_service: 'Flex', drop_off: 'Mercado Env\u00edos', xd_drop_off: 'Mercado Env\u00edos', cross_docking: 'ME1' };
+    const sdStatusColors = { P: '#d97706', S: '#2563eb', A: '#2563eb', R: '#7c3aed', E: '#059669', N: '#dc2626', T: '#dc2626', Z: '#6b7280', X: '#6b7280' };
 
     let html = '';
 
-    // Producto con foto
-    if (d.item_detail?.thumbnail) {
-      html += `<div class="card" style="margin-bottom:12px;display:flex;gap:16px;align-items:center;">
-        <img src="${d.item_detail.thumbnail}" style="width:80px;height:80px;object-fit:contain;border-radius:8px;background:#f9fafb;border:1px solid #e5e7eb;">
-        <div>
-          <div style="font-size:15px;font-weight:700;">${d.item_detail.permalink ? `<a href="${d.item_detail.permalink}" target="_blank" style="color:#1d4ed8;text-decoration:none;">${d.item_detail.title}</a>` : d.item_detail.title}</div>
-          ${d.item_detail.price ? `<div style="font-size:13px;color:#6b7280;margin-top:4px;">Precio actual: $${d.item_detail.price}</div>` : ''}
+    // ── RESUMEN RÁPIDO ──
+    const hasClaim = d.claims.length > 0;
+    const claimOpen = d.claims.some(c => c.status === 'opened');
+    html += `<div class="card" style="margin-bottom:16px;padding:16px 20px;">
+      <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+        ${d.item_detail?.thumbnail ? `<img src="${d.item_detail.thumbnail}" style="width:56px;height:56px;object-fit:contain;border-radius:8px;background:#f9fafb;border:1px solid #e5e7eb;">` : ''}
+        <div style="flex:1;min-width:200px;">
+          <div style="font-size:16px;font-weight:700;">${d.item_detail?.permalink ? `<a href="${d.item_detail.permalink}" target="_blank" style="color:#111;text-decoration:none;">${o.items[0]?.title || ''}</a>` : (o.items[0]?.title || '')}</div>
+          <div style="font-size:13px;color:#6b7280;margin-top:2px;">${o.buyer.first_name || ''} ${o.buyer.last_name || ''} <span style="color:#9ca3af;">(${o.buyer.nickname})</span> · ${o.items[0]?.quantity || 1} unid. · $${o.total_amount}</div>
         </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <span style="padding:4px 10px;border-radius:12px;font-size:11px;font-weight:700;color:white;background:${statusColors[o.status] || '#6b7280'};">${statusLabels[o.status] || o.status}</span>
+          ${s ? `<span style="padding:4px 10px;border-radius:12px;font-size:11px;font-weight:700;color:white;background:${shipColors[s.status] || '#6b7280'};">${shipLabels[s.status] || s.status}</span>` : ''}
+          <span style="padding:4px 10px;border-radius:12px;font-size:11px;font-weight:700;color:#4c1d95;background:#ede9fe;">${s ? (logisticLabels[s.logistic_type] || s.logistic_type) : 'Sin env\u00edo'}</span>
+          ${claimOpen ? `<span style="padding:4px 10px;border-radius:12px;font-size:11px;font-weight:700;color:white;background:#dc2626;">Reclamo abierto</span>` : ''}
+          ${d.soydelivery ? `<span style="padding:4px 10px;border-radius:12px;font-size:11px;font-weight:700;color:white;background:${sdStatusColors[d.soydelivery.estado_id] || '#6b7280'};">SD: ${d.soydelivery.estado}</span>` : ''}
+        </div>
+      </div>
+
+      <!-- Acciones rápidas -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;">
+        <a href="https://www.mercadolibre.com.uy/ventas/${o.id}/detalle" target="_blank" style="padding:6px 14px;background:#FFE600;color:#111;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;">Ver en ML</a>
+        ${d.item_detail?.permalink ? `<a href="${d.item_detail.permalink}" target="_blank" style="padding:6px 14px;background:#eff6ff;color:#1d4ed8;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;">Ver publicaci&oacute;n</a>` : ''}
+        ${hasClaim ? `<a href="https://www.mercadolibre.com.uy/ventas/${o.id}/reclamo" target="_blank" style="padding:6px 14px;background:#fef2f2;color:#dc2626;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;">Ir al reclamo</a>` : ''}
+        ${s?.receiver_address ? `<a href="https://www.google.com/maps/search/${encodeURIComponent((s.receiver_address.street||'')+' '+(s.receiver_address.number||'')+' '+(s.receiver_address.city||''))}" target="_blank" style="padding:6px 14px;background:#f0fdf4;color:#059669;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;">Ver direcci&oacute;n</a>` : ''}
+        ${d.soydelivery?.delivery_telefono ? `<a href="tel:${d.soydelivery.delivery_telefono}" style="padding:6px 14px;background:#fff7ed;color:#f97316;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;">Llamar repartidor</a>` : ''}
+      </div>
+    </div>`;
+
+    // ── GRID: Envío + Cadetería lado a lado ──
+    html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">`;
+
+    // Envío
+    if (s) {
+      html += `<div class="card" style="margin:0;">
+        <div style="font-size:14px;font-weight:700;margin-bottom:10px;">Env&iacute;o ML</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+          <span style="padding:3px 8px;border-radius:10px;font-size:11px;font-weight:600;color:white;background:${shipColors[s.status] || '#6b7280'};">${shipLabels[s.status] || s.status}${s.substatus ? ' - ' + s.substatus : ''}</span>
+        </div>
+        ${s.tracking_number ? `<div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">Tracking:</span> <b>${s.tracking_number}</b></div>` : ''}
+        ${s.tracking_method ? `<div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">Transporte:</span> <b>${s.tracking_method}</b></div>` : ''}
+        ${s.receiver_address ? `<div style="font-size:12px;margin-bottom:8px;"><span style="color:#6b7280;">Destino:</span> ${s.receiver_address.street || ''} ${s.receiver_address.number || ''}, ${s.receiver_address.city || ''}, ${s.receiver_address.state || ''}</div>` : ''}
+        ${s.history ? `<div style="border-top:1px solid #f3f4f6;padding-top:8px;margin-top:4px;">
+          ${[
+            { label: 'Creado', date: s.history.date_created, icon: '#9ca3af' },
+            { label: 'Listo', date: s.history.date_ready_to_ship, icon: '#d97706' },
+            { label: 'Despachado', date: s.history.date_shipped, icon: '#2563eb' },
+            { label: '1er intento', date: s.history.date_first_visit, icon: '#7c3aed' },
+            { label: 'Entregado', date: s.history.date_delivered, icon: '#059669' },
+            { label: 'No entregado', date: s.history.date_not_delivered, icon: '#dc2626' },
+            { label: 'Devuelto', date: s.history.date_returned, icon: '#dc2626' },
+          ].filter(e => e.date).map(e => `
+            <div style="display:flex;gap:6px;align-items:center;padding:2px 0;font-size:11px;">
+              <span style="width:6px;height:6px;border-radius:50%;background:${e.icon};flex-shrink:0;"></span>
+              <span style="color:#6b7280;min-width:80px;">${e.label}</span>
+              <span style="font-weight:600;">${new Date(e.date).toLocaleString('es-UY',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span>
+            </div>
+          `).join('')}
+        </div>` : ''}
       </div>`;
     }
 
-    // Orden
+    // Cadetería (SoyDelivery o placeholder)
+    if (d.soydelivery) {
+      const sd = d.soydelivery;
+      html += `<div class="card" style="margin:0;border-left:3px solid #f97316;">
+        <div style="font-size:14px;font-weight:700;color:#f97316;margin-bottom:10px;">Cadeter&iacute;a — SoyDelivery</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+          <span style="padding:3px 8px;border-radius:10px;font-size:11px;font-weight:600;color:white;background:${sdStatusColors[sd.estado_id] || '#6b7280'};">${sd.estado}</span>
+        </div>
+        ${sd.delivery_nombre ? `<div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">Repartidor:</span> <b>${sd.delivery_nombre}</b></div>` : ''}
+        ${sd.delivery_telefono ? `<div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">Tel:</span> <a href="tel:${sd.delivery_telefono}" style="color:#1d4ed8;font-weight:600;">${sd.delivery_telefono}</a></div>` : ''}
+        ${sd.fecha_entrega && sd.fecha_entrega !== '0000-00-00' ? `<div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">Fecha:</span> <b>${sd.fecha_entrega}</b></div>` : ''}
+        ${sd.franja_horaria ? `<div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">Franja:</span> ${sd.franja_horaria}</div>` : ''}
+        ${sd.fecha_estimada && !sd.fecha_estimada.startsWith('0000') ? `<div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">ETA:</span> <b>${new Date(sd.fecha_estimada).toLocaleString('es-UY',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</b></div>` : ''}
+        ${sd.delivery_ubicacion ? `<div style="font-size:12px;"><a href="https://www.google.com/maps?q=${sd.delivery_ubicacion}" target="_blank" style="color:#1d4ed8;">Ver ubicaci&oacute;n en mapa</a></div>` : ''}
+      </div>`;
+    } else if (s?.logistic_type === 'self_service') {
+      html += `<div class="card" style="margin:0;border-left:3px solid #f97316;">
+        <div style="font-size:14px;font-weight:700;color:#f97316;margin-bottom:10px;">Cadeter&iacute;a</div>
+        <div style="font-size:12px;color:#9ca3af;">Sin datos de cadeter&iacute;a vinculados a&uacute;n</div>
+      </div>`;
+    } else if (s) {
+      html += `<div class="card" style="margin:0;">
+        <div style="font-size:14px;font-weight:700;margin-bottom:10px;">Transporte</div>
+        <div style="font-size:12px;color:#6b7280;">Env&iacute;o gestionado por Mercado Libre</div>
+      </div>`;
+    }
+
+    html += `</div>`; // cierra grid
+
+    // ── DETALLE: Productos ──
     html += `<div class="card" style="margin-bottom:12px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
-        <div>
-          <span style="font-size:18px;font-weight:700;">Orden #${o.id}</span>
-          <span style="margin-left:10px;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;color:white;background:${statusColors[o.status] || '#6b7280'};">${o.status}</span>
-        </div>
-        <span style="font-size:12px;color:#9ca3af;">${new Date(o.date_created).toLocaleString('es-UY')}</span>
+      <div style="font-size:14px;font-weight:700;margin-bottom:8px;">Detalle de la orden</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px;">
+        <div style="font-size:12px;"><span style="color:#6b7280;">Orden:</span> <b>#${o.id}</b></div>
+        <div style="font-size:12px;"><span style="color:#6b7280;">Fecha:</span> ${new Date(o.date_created).toLocaleString('es-UY')}</div>
+        <div style="font-size:12px;"><span style="color:#6b7280;">Total:</span> <b>$${o.total_amount} ${o.currency_id}</b></div>
       </div>
-      <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:12px;">
-        <div>
-          <span style="font-size:11px;color:#6b7280;font-weight:600;">Comprador</span><br>
-          <span style="font-size:14px;font-weight:600;">${o.buyer.first_name || ''} ${o.buyer.last_name || ''}</span>
-          <span style="font-size:12px;color:#9ca3af;margin-left:6px;">${o.buyer.nickname}</span>
-        </div>
-        <div>
-          <span style="font-size:11px;color:#6b7280;font-weight:600;">Total</span><br>
-          <span style="font-size:14px;font-weight:600;">$${o.total_amount} ${o.currency_id}</span>
-        </div>
-      </div>
-      <div style="font-size:11px;color:#6b7280;font-weight:600;margin-bottom:6px;">Productos</div>
       ${o.items.map(i => `
         <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#f9fafb;border-radius:6px;margin-bottom:4px;">
           <div>
             <span style="font-size:13px;font-weight:600;">${i.title}</span>
             ${i.sku ? `<span style="font-size:11px;color:#9ca3af;margin-left:6px;">SKU: ${i.sku}</span>` : ''}
           </div>
-          <div style="text-align:right;">
-            <span style="font-size:13px;">${i.quantity} x $${i.unit_price}</span>
-          </div>
+          <span style="font-size:13px;white-space:nowrap;">${i.quantity} x $${i.unit_price}</span>
         </div>
       `).join('')}
     </div>`;
 
-    // Envío
-    if (s) {
-      html += `<div class="card" style="margin-bottom:12px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
-          <div>
-            <span style="font-size:16px;font-weight:700;">Env&iacute;o</span>
-            <span style="margin-left:10px;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;color:white;background:${shipColors[s.status] || '#6b7280'};">${s.status}${s.substatus ? ' - ' + s.substatus : ''}</span>
-            <span style="margin-left:6px;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;color:#4c1d95;background:#ede9fe;">${logisticLabels[s.logistic_type] || s.logistic_type || 'N/A'}</span>
-          </div>
-        </div>
-        <div style="display:flex;gap:20px;flex-wrap:wrap;">
-          ${s.tracking_number ? `<div>
-            <span style="font-size:11px;color:#6b7280;font-weight:600;">Tracking</span><br>
-            <span style="font-size:14px;font-weight:600;">${s.tracking_number}</span>
-          </div>` : ''}
-          ${s.receiver_address ? `<div>
-            <span style="font-size:11px;color:#6b7280;font-weight:600;">Destino</span><br>
-            <span style="font-size:13px;">${s.receiver_address.street || ''} ${s.receiver_address.number || ''}, ${s.receiver_address.city || ''}, ${s.receiver_address.state || ''} ${s.receiver_address.zip_code || ''}</span>
-          </div>` : ''}
-        </div>
-        ${s.tracking_method ? `<div style="margin-top:8px;font-size:12px;"><b>Repartidor:</b> ${s.tracking_method}</div>` : ''}
-        ${s.history ? `<div style="margin-top:10px;">
-          <div style="font-size:11px;color:#6b7280;font-weight:600;margin-bottom:6px;">Historial de env&iacute;o</div>
-          ${[
-            { label: 'Creado', date: s.history.date_created },
-            { label: 'Listo para enviar', date: s.history.date_ready_to_ship },
-            { label: 'Primera etiqueta', date: s.history.date_first_printed },
-            { label: 'Despachado', date: s.history.date_shipped },
-            { label: 'Primer intento de entrega', date: s.history.date_first_visit },
-            { label: 'Entregado', date: s.history.date_delivered },
-            { label: 'No entregado', date: s.history.date_not_delivered },
-            { label: 'Devuelto', date: s.history.date_returned },
-            { label: 'Cancelado', date: s.history.date_cancelled },
-          ].filter(e => e.date).map(e => `
-            <div style="display:flex;gap:8px;align-items:center;padding:4px 0;font-size:12px;">
-              <span style="width:8px;height:8px;border-radius:50%;background:#7c3aed;flex-shrink:0;"></span>
-              <span style="color:#6b7280;min-width:130px;">${e.label}</span>
-              <span style="font-weight:600;">${new Date(e.date).toLocaleString('es-UY')}</span>
-            </div>
-          `).join('')}
-        </div>` : `<div style="margin-top:8px;font-size:11px;color:#9ca3af;">
-          Creado: ${new Date(s.date_created).toLocaleString('es-UY')} · Actualizado: ${new Date(s.last_updated).toLocaleString('es-UY')}
-        </div>`}
-      </div>`;
-    }
-
-    // Reclamos
+    // ── RECLAMOS ──
     if (d.claims.length) {
-      html += d.claims.map(c => {
-        const actionLabels = { send_message_to_complainant: 'Enviar mensaje', refund: 'Reembolsar', open_dispute: 'Abrir disputa' };
-        return `
+      const actionLabels = { send_message_to_complainant: 'Enviar mensaje', refund: 'Reembolsar', open_dispute: 'Abrir disputa' };
+      html += d.claims.map(c => `
         <div class="card" style="margin-bottom:12px;border-left:3px solid #dc2626;">
-          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
-            <div>
-              <span style="font-size:16px;font-weight:700;color:#dc2626;">Reclamo #${c.id}</span>
-              <span style="margin-left:10px;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;color:white;background:${c.status === 'opened' ? '#dc2626' : '#059669'};">${c.status}</span>
-              <span style="margin-left:6px;font-size:12px;color:#6b7280;">${c.type} · ${c.stage} · ${c.reason_id}</span>
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+              <span style="font-size:14px;font-weight:700;color:#dc2626;">Reclamo</span>
+              <span style="padding:3px 8px;border-radius:10px;font-size:11px;font-weight:600;color:white;background:${c.status === 'opened' ? '#dc2626' : '#059669'};">${c.status === 'opened' ? 'Abierto' : c.status}</span>
+              <span style="font-size:11px;color:#9ca3af;">${c.reason_id}</span>
             </div>
-            <span style="font-size:12px;color:#9ca3af;">${new Date(c.date_created).toLocaleString('es-UY')}</span>
+            <span style="font-size:11px;color:#9ca3af;">${new Date(c.date_created).toLocaleString('es-UY')}</span>
           </div>
           ${c.available_actions.length ? `
-            <div style="margin-bottom:12px;padding:10px 14px;background:#fef3c7;border-radius:6px;">
-              <div style="font-size:11px;color:#92400e;font-weight:600;margin-bottom:4px;">Acciones disponibles</div>
+            <div style="margin-bottom:10px;padding:8px 12px;background:#fef3c7;border-radius:6px;">
               ${c.available_actions.map(a => `
-                <div style="font-size:13px;color:#92400e;">
+                <div style="font-size:12px;color:#92400e;">
                   ${actionLabels[a.action] || a.action}${a.due_date ? ` · <b>Vence: ${new Date(a.due_date).toLocaleString('es-UY')}</b>` : ''}
                 </div>
               `).join('')}
             </div>
           ` : ''}
-          ${c.messages.length ? `
-            <div style="font-size:11px;color:#6b7280;font-weight:600;margin-bottom:6px;">Mensajes del reclamo</div>
-            ${c.messages.sort((a,b) => new Date(a.date) - new Date(b.date)).map(m => `
-              <div style="padding:8px 12px;margin-bottom:4px;border-radius:6px;background:${m.from === 'complainant' ? '#fef2f2' : '#f0fdf4'};border-left:3px solid ${m.from === 'complainant' ? '#fca5a5' : '#86efac'};">
-                <div style="font-size:11px;color:#6b7280;margin-bottom:2px;">
-                  <b>${m.from === 'complainant' ? 'Comprador' : 'Vendedor'}</b> · ${new Date(m.date).toLocaleString('es-UY')}
-                </div>
-                <div style="font-size:13px;">${m.text}</div>
-              </div>
-            `).join('')}
-          ` : ''}
-        </div>`;
-      }).join('');
-    } else {
-      html += `<div class="card" style="margin-bottom:12px;border-left:3px solid #059669;">
-        <span style="font-size:14px;font-weight:600;color:#059669;">Sin reclamos</span>
-      </div>`;
+          ${c.messages.length ? c.messages.sort((a,b) => new Date(a.date) - new Date(b.date)).map(m => `
+            <div style="padding:6px 10px;margin-bottom:3px;border-radius:6px;background:${m.from === 'complainant' ? '#fef2f2' : '#f0fdf4'};border-left:3px solid ${m.from === 'complainant' ? '#fca5a5' : '#86efac'};font-size:12px;">
+              <span style="color:#6b7280;"><b>${m.from === 'complainant' ? 'Comprador' : 'Vendedor'}</b> · ${new Date(m.date).toLocaleString('es-UY',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span><br>
+              ${m.text}
+            </div>
+          `).join('') : ''}
+        </div>
+      `).join('');
     }
 
-    // SoyDelivery
-    if (d.soydelivery) {
-      const sd = d.soydelivery;
-      const sdStatusColors = { P: '#d97706', S: '#2563eb', A: '#2563eb', R: '#7c3aed', E: '#059669', N: '#dc2626', T: '#dc2626', Z: '#6b7280', X: '#6b7280' };
-      html += `<div class="card" style="margin-bottom:12px;border-left:3px solid #f97316;">
-        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
-          <div>
-            <span style="font-size:16px;font-weight:700;color:#f97316;">SoyDelivery</span>
-            <span style="margin-left:10px;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;color:white;background:${sdStatusColors[sd.estado_id] || '#6b7280'};">${sd.estado}</span>
-          </div>
-        </div>
-        <div style="display:flex;gap:20px;flex-wrap:wrap;">
-          ${sd.delivery_nombre ? `<div>
-            <span style="font-size:11px;color:#6b7280;font-weight:600;">Repartidor</span><br>
-            <span style="font-size:14px;font-weight:600;">${sd.delivery_nombre}</span>
-            ${sd.delivery_telefono ? `<br><span style="font-size:13px;color:#6b7280;">Tel: ${sd.delivery_telefono}</span>` : ''}
-          </div>` : ''}
-          ${sd.fecha_entrega && sd.fecha_entrega !== '0000-00-00' ? `<div>
-            <span style="font-size:11px;color:#6b7280;font-weight:600;">Fecha entrega</span><br>
-            <span style="font-size:13px;">${sd.fecha_entrega}</span>
-          </div>` : ''}
-          ${sd.franja_horaria ? `<div>
-            <span style="font-size:11px;color:#6b7280;font-weight:600;">Franja</span><br>
-            <span style="font-size:13px;">${sd.franja_horaria}</span>
-          </div>` : ''}
-          ${sd.fecha_estimada && !sd.fecha_estimada.startsWith('0000') ? `<div>
-            <span style="font-size:11px;color:#6b7280;font-weight:600;">Estimada</span><br>
-            <span style="font-size:13px;">${new Date(sd.fecha_estimada).toLocaleString('es-UY')}</span>
-          </div>` : ''}
-          ${sd.delivery_ubicacion ? `<div>
-            <span style="font-size:11px;color:#6b7280;font-weight:600;">Ubicaci&oacute;n</span><br>
-            <a href="https://www.google.com/maps?q=${sd.delivery_ubicacion}" target="_blank" style="font-size:13px;color:#1d4ed8;">Ver en mapa</a>
-          </div>` : ''}
-        </div>
-      </div>`;
-    } else if (d.shipping?.logistic_type === 'self_service') {
-      html += `<div class="card" style="margin-bottom:12px;border-left:3px solid #f97316;">
-        <span style="font-size:14px;font-weight:600;color:#f97316;">SoyDelivery</span>
-        <span style="font-size:12px;color:#9ca3af;margin-left:8px;">Sin datos — el webhook a&uacute;n no registr&oacute; este env&iacute;o</span>
-      </div>`;
-    }
-
-    // Mensajes post-venta
+    // ── MENSAJES POST-VENTA ──
     if (d.messages.length) {
       html += `<div class="card" style="margin-bottom:12px;">
-        <div style="font-size:16px;font-weight:700;margin-bottom:12px;">Mensajes post-venta</div>
+        <div style="font-size:14px;font-weight:700;margin-bottom:8px;">Mensajes post-venta</div>
         ${d.messages.sort((a,b) => new Date(a.date) - new Date(b.date)).map(m => `
-          <div style="padding:8px 12px;margin-bottom:4px;border-radius:6px;background:${m.from === 'comprador' ? '#eff6ff' : '#f9fafb'};border-left:3px solid ${m.from === 'comprador' ? '#93c5fd' : '#d1d5db'};">
-            <div style="font-size:11px;color:#6b7280;margin-bottom:2px;">
-              <b>${m.from === 'comprador' ? 'Comprador' : 'Vendedor'}</b> · ${new Date(m.date).toLocaleString('es-UY')}
-            </div>
-            <div style="font-size:13px;">${m.text}</div>
+          <div style="padding:6px 10px;margin-bottom:3px;border-radius:6px;background:${m.from === 'comprador' ? '#eff6ff' : '#f9fafb'};border-left:3px solid ${m.from === 'comprador' ? '#93c5fd' : '#d1d5db'};font-size:12px;">
+            <span style="color:#6b7280;"><b>${m.from === 'comprador' ? 'Comprador' : 'Vendedor'}</b> · ${new Date(m.date).toLocaleString('es-UY',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span><br>
+            ${m.text}
           </div>
         `).join('')}
       </div>`;
