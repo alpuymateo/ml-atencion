@@ -1479,6 +1479,94 @@ app.get('/api/ml/buscar', requireToken, async (req, res) => {
   }
 });
 
+// GET /api/ml/retiros — Paquetes pendientes de retiro/en tránsito agrupados por cadetería
+app.get('/api/ml/retiros', requireToken, async (req, res) => {
+  try {
+    const headers = { Authorization: `Bearer ${tokenData.access_token}` };
+    const sellerId = tokenData.user_id || 352172083;
+
+    // Traer órdenes pagadas recientes
+    let allOrders = [];
+    let offset = 0;
+    while (offset < 200) {
+      const r = await axios.get(`${ML_API_URL}/orders/search`, {
+        params: { seller: sellerId, sort: 'date_desc', limit: 50, offset, 'order.status': 'paid' },
+        headers
+      });
+      const batch = r.data.results || [];
+      allOrders = allOrders.concat(batch);
+      offset += 50;
+      if (batch.length < 50) break;
+    }
+
+    const soydelivery = [];
+    const robert = [];
+    const dac = [];
+    const mercadoenvios = [];
+
+    for (const o of allOrders) {
+      if (!o.shipping?.id) continue;
+      let ship;
+      try {
+        const s = await axios.get(`${ML_API_URL}/shipments/${o.shipping.id}`, { headers });
+        ship = s.data;
+      } catch { continue; }
+
+      if (ship.status === 'delivered' || ship.status === 'cancelled') continue;
+
+      const item = o.order_items?.[0]?.item;
+      const entry = {
+        order_id: o.id,
+        pack_id: o.pack_id,
+        buyer: o.buyer?.nickname,
+        buyer_name: `${o.buyer?.first_name || ''} ${o.buyer?.last_name || ''}`.trim(),
+        item_title: item?.title || '',
+        item_id: item?.id,
+        quantity: o.order_items?.[0]?.quantity || 1,
+        ship_status: ship.status,
+        ship_substatus: ship.substatus,
+        logistic_type: ship.logistic_type,
+        tracking: ship.tracking_number,
+        date_created: o.date_created,
+        receiver_city: ship.receiver_address?.city?.name || '',
+        receiver_state: ship.receiver_address?.state?.name || '',
+      };
+
+      if (ship.logistic_type === 'self_service') {
+        // Consultar SoyDelivery para ver si es SD o Robert
+        const sdHist = await consultarSoyDeliveryHistorial(ship.id);
+        if (sdHist?.PedidoConsultaSDT) {
+          const sd = sdHist.PedidoConsultaSDT;
+          entry.sd_estado = sd.PedidoNegocioEstadoIntNombre;
+          entry.sd_estado_id = sd.PedidoEstado;
+          entry.cadeteria = 'SoyDelivery';
+          soydelivery.push(entry);
+        } else {
+          entry.cadeteria = 'Robert';
+          robert.push(entry);
+        }
+      } else if (ship.logistic_type === 'default') {
+        entry.cadeteria = 'DAC';
+        dac.push(entry);
+      } else {
+        entry.cadeteria = 'Mercado Envíos';
+        mercadoenvios.push(entry);
+      }
+    }
+
+    res.json({
+      total: soydelivery.length + robert.length + dac.length + mercadoenvios.length,
+      soydelivery,
+      robert,
+      dac,
+      mercadoenvios,
+    });
+  } catch(e) {
+    console.error('[retiros]', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ── SoyDelivery Webhooks ──
 // Recibe notificaciones de SoyDelivery y guarda el mapeo shipment_id → sd_pedido_id
 app.post('/webhook/soydelivery/:event', (req, res) => {
