@@ -1459,13 +1459,22 @@ app.get('/api/ml/buscar', requireToken, async (req, res) => {
   }
 });
 
-// GET /api/ml/retiros — Paquetes pendientes de retiro/en tránsito agrupados por cadetería
-app.get('/api/ml/retiros', requireToken, async (req, res) => {
+// ── Retiros cache ──
+let retirosCache = null;
+let retirosUpdating = false;
+const RETIROS_CACHE_FILE = path.join(OWN_DATA_DIR, 'retiros_cache.json');
+
+// Cargar cache de disco al arrancar
+try { if (fs.existsSync(RETIROS_CACHE_FILE)) { retirosCache = JSON.parse(fs.readFileSync(RETIROS_CACHE_FILE, 'utf8')); console.log(`[retiros] cache cargado: ${retirosCache.total} envíos activos`); } } catch {}
+
+async function actualizarRetiros() {
+  if (retirosUpdating || !tokenData?.access_token) return;
+  retirosUpdating = true;
+  console.log('[retiros] actualizando...');
   try {
     const headers = { Authorization: `Bearer ${tokenData.access_token}` };
     const sellerId = tokenData.user_id || 352172083;
 
-    // Traer órdenes pagadas recientes
     let allOrders = [];
     let offset = 0;
     while (offset < 200) {
@@ -1513,7 +1522,6 @@ app.get('/api/ml/retiros', requireToken, async (req, res) => {
       };
 
       if (ship.logistic_type === 'self_service') {
-        // Consultar SoyDelivery para ver si es SD o Robert
         const sdHist = await consultarSoyDeliveryHistorial(ship.id);
         if (sdHist?.PedidoConsultaSDT) {
           const sd = sdHist.PedidoConsultaSDT;
@@ -1534,16 +1542,33 @@ app.get('/api/ml/retiros', requireToken, async (req, res) => {
       }
     }
 
-    res.json({
+    retirosCache = {
       total: soydelivery.length + robert.length + dac.length + mercadoenvios.length,
-      soydelivery,
-      robert,
-      dac,
-      mercadoenvios,
-    });
+      soydelivery, robert, dac, mercadoenvios,
+      updated_at: new Date().toISOString(),
+    };
+    try { fs.writeFileSync(RETIROS_CACHE_FILE, JSON.stringify(retirosCache)); } catch {}
+    console.log(`[retiros] actualizado: ${retirosCache.total} envíos activos`);
   } catch(e) {
-    console.error('[retiros]', e.message);
-    res.status(500).json({ error: e.message });
+    console.error('[retiros] error:', e.message);
+  } finally {
+    retirosUpdating = false;
+  }
+}
+
+// Actualizar al arrancar (después de 10s para que el token esté listo) y cada 5 min
+setTimeout(() => actualizarRetiros(), 10000);
+setInterval(() => actualizarRetiros(), 5 * 60 * 1000);
+
+// GET /api/ml/retiros — Devuelve cache, opcionalmente fuerza refresh
+app.get('/api/ml/retiros', requireToken, async (req, res) => {
+  if (req.query.refresh === '1') {
+    await actualizarRetiros();
+  }
+  if (retirosCache) {
+    res.json(retirosCache);
+  } else {
+    res.json({ total: 0, soydelivery: [], robert: [], dac: [], mercadoenvios: [], updated_at: null });
   }
 });
 
