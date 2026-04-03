@@ -1163,8 +1163,8 @@ app.get('/api/ml/buscar', requireToken, async (req, res) => {
 
     // 3. Buscar claims
     try {
-      const c = await axios.get(`${ML_API_URL}/v1/claims/search`, {
-        params: { resource_id: order.id, resource: 'order' },
+      const c = await axios.get(`${ML_API_URL}/post-purchase/v1/claims/search`, {
+        params: { order_id: order.id },
         headers
       });
       claims = c.data.data || [];
@@ -1177,6 +1177,15 @@ app.get('/api/ml/buscar', requireToken, async (req, res) => {
         } catch {}
       }
     } catch {}
+
+    // 3b. Historial del envío
+    let shipmentHistory = null;
+    if (shipment?.id) {
+      try {
+        const h = await axios.get(`${ML_API_URL}/shipments/${shipment.id}/history`, { headers });
+        shipmentHistory = h.data;
+      } catch {}
+    }
 
     // 4. Obtener mensajes post-venta
     const packId = order.pack_id || order.id;
@@ -1237,6 +1246,8 @@ app.get('/api/ml/buscar', requireToken, async (req, res) => {
           number: shipment.receiver_address.street_number,
           zip_code: shipment.receiver_address.zip_code,
         } : null,
+        tracking_method: shipmentHistory?.tracking_method || '',
+        history: shipmentHistory?.date_history || null,
       } : null,
       claims: claims.map(c => {
         const sellerActions = (c.players || []).find(p => p.role === 'respondent')?.available_actions || [];

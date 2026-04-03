@@ -2069,7 +2069,7 @@ async function buscarVenta() {
     const s = d.shipping;
     const statusColors = { paid: '#059669', cancelled: '#dc2626', confirmed: '#2563eb' };
     const shipColors = { delivered: '#059669', shipped: '#2563eb', pending: '#d97706', not_delivered: '#dc2626' };
-    const logisticLabels = { fulfillment: 'Mercado Env\u00edos Full', self_service: 'Mercado Env\u00edos', drop_off: 'Mercado Env\u00edos', xd_drop_off: 'Mercado Env\u00edos', cross_docking: 'Mercado Env\u00edos 1', default: 'Flex' };
+    const logisticLabels = { fulfillment: 'Mercado Env\u00edos Full', self_service: 'Flex', drop_off: 'Mercado Env\u00edos', xd_drop_off: 'Mercado Env\u00edos', cross_docking: 'Mercado Env\u00edos 1' };
 
     let html = '';
 
@@ -2138,9 +2138,28 @@ async function buscarVenta() {
             <span style="font-size:13px;">${s.receiver_address.street || ''} ${s.receiver_address.number || ''}, ${s.receiver_address.city || ''}, ${s.receiver_address.state || ''} ${s.receiver_address.zip_code || ''}</span>
           </div>` : ''}
         </div>
-        <div style="margin-top:8px;font-size:11px;color:#9ca3af;">
+        ${s.tracking_method ? `<div style="margin-top:8px;font-size:12px;"><b>Repartidor:</b> ${s.tracking_method}</div>` : ''}
+        ${s.history ? `<div style="margin-top:10px;">
+          <div style="font-size:11px;color:#6b7280;font-weight:600;margin-bottom:6px;">Historial de env&iacute;o</div>
+          ${[
+            { label: 'Creado', date: s.history.date_created },
+            { label: 'Listo para enviar', date: s.history.date_ready_to_ship },
+            { label: 'Primera etiqueta', date: s.history.date_first_printed },
+            { label: 'Despachado', date: s.history.date_shipped },
+            { label: 'Entregado', date: s.history.date_delivered },
+            { label: 'No entregado', date: s.history.date_not_delivered },
+            { label: 'Devuelto', date: s.history.date_returned },
+            { label: 'Cancelado', date: s.history.date_cancelled },
+          ].filter(e => e.date).map(e => `
+            <div style="display:flex;gap:8px;align-items:center;padding:4px 0;font-size:12px;">
+              <span style="width:8px;height:8px;border-radius:50%;background:#7c3aed;flex-shrink:0;"></span>
+              <span style="color:#6b7280;min-width:130px;">${e.label}</span>
+              <span style="font-weight:600;">${new Date(e.date).toLocaleString('es-UY')}</span>
+            </div>
+          `).join('')}
+        </div>` : `<div style="margin-top:8px;font-size:11px;color:#9ca3af;">
           Creado: ${new Date(s.date_created).toLocaleString('es-UY')} · Actualizado: ${new Date(s.last_updated).toLocaleString('es-UY')}
-        </div>
+        </div>`}
       </div>`;
     }
 
