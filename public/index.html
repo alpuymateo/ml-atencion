@@ -2154,19 +2154,38 @@ async function buscarVenta() {
     }
 
     // Cadetería (SoyDelivery o placeholder)
-    if (d.soydelivery) {
-      const sd = d.soydelivery;
+    const sdh = d.sd_historial;
+    const sd = d.soydelivery;
+    if (sdh || sd) {
+      const sdEstadoLabels = { P: 'Pendiente', S: 'Solicitando', A: 'Aceptado', R: 'Retirado', T: 'No retirado', E: 'Entregado', N: 'No entregado', Z: 'Devuelto', X: 'Cancelado' };
+      const estado = sd?.estado || (sdh ? sdEstadoLabels[sdh.estado] || sdh.estado : '');
+      const estadoId = sd?.estado_id || sdh?.estado;
       html += `<div class="card" style="margin:0;border-left:3px solid #f97316;">
-        <div style="font-size:14px;font-weight:700;color:#f97316;margin-bottom:10px;">Cadeter&iacute;a — SoyDelivery</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
-          <span style="padding:3px 8px;border-radius:10px;font-size:11px;font-weight:600;color:white;background:${sdStatusColors[sd.estado_id] || '#6b7280'};">${sd.estado}</span>
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+          <span style="font-size:14px;font-weight:700;color:#f97316;">Cadeter&iacute;a — SoyDelivery</span>
+          <span style="padding:3px 8px;border-radius:10px;font-size:11px;font-weight:600;color:white;background:${sdStatusColors[estadoId] || '#6b7280'};">${estado}</span>
         </div>
-        ${sd.delivery_nombre ? `<div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">Repartidor:</span> <b>${sd.delivery_nombre}</b></div>` : ''}
-        ${sd.delivery_telefono ? `<div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">Tel:</span> <a href="tel:${sd.delivery_telefono}" style="color:#1d4ed8;font-weight:600;">${sd.delivery_telefono}</a></div>` : ''}
-        ${sd.fecha_entrega && sd.fecha_entrega !== '0000-00-00' ? `<div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">Fecha:</span> <b>${sd.fecha_entrega}</b></div>` : ''}
-        ${sd.franja_horaria ? `<div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">Franja:</span> ${sd.franja_horaria}</div>` : ''}
-        ${sd.fecha_estimada && !sd.fecha_estimada.startsWith('0000') ? `<div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">ETA:</span> <b>${new Date(sd.fecha_estimada).toLocaleString('es-UY',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</b></div>` : ''}
-        ${sd.delivery_ubicacion ? `<div style="font-size:12px;"><a href="https://www.google.com/maps?q=${sd.delivery_ubicacion}" target="_blank" style="color:#1d4ed8;">Ver ubicaci&oacute;n en mapa</a></div>` : ''}
+        ${sdh?.estado_interno ? `<div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">Estado interno:</span> <b>${sdh.estado_interno}</b></div>` : ''}
+        ${sd?.delivery_nombre ? `<div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">Repartidor:</span> <b>${sd.delivery_nombre}</b></div>` : ''}
+        ${sd?.delivery_telefono ? `<div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">Tel:</span> <a href="tel:${sd.delivery_telefono}" style="color:#1d4ed8;font-weight:600;">${sd.delivery_telefono}</a></div>` : ''}
+        ${sdh?.fecha_entrega && sdh.fecha_entrega !== '0000-00-00' ? `<div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">Fecha entrega:</span> <b>${sdh.fecha_entrega}</b></div>` : ''}
+        ${sd?.fecha_estimada && !sd.fecha_estimada.startsWith('0000') ? `<div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">ETA:</span> <b>${new Date(sd.fecha_estimada).toLocaleString('es-UY',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</b></div>` : ''}
+        ${sd?.delivery_ubicacion ? `<div style="font-size:12px;margin-bottom:6px;"><a href="https://www.google.com/maps?q=${sd.delivery_ubicacion}" target="_blank" style="color:#1d4ed8;">Ver ubicaci&oacute;n en mapa</a></div>` : ''}
+        ${sdh?.historial?.length ? `
+          <div style="border-top:1px solid #f3f4f6;padding-top:8px;margin-top:6px;">
+            <div style="font-size:11px;color:#6b7280;font-weight:600;margin-bottom:6px;">Historial cadeter&iacute;a</div>
+            ${sdh.historial.map(h => `
+              <div style="display:flex;gap:8px;padding:4px 0;font-size:11px;border-bottom:1px solid #f9fafb;">
+                <span style="width:6px;height:6px;border-radius:50%;background:${sdStatusColors[h.estado] || '#6b7280'};flex-shrink:0;margin-top:4px;"></span>
+                <div style="flex:1;">
+                  <div style="font-weight:600;color:#374151;">${h.detalle}</div>
+                  ${h.estado_nombre ? `<div style="color:#9ca3af;font-size:10px;margin-top:1px;">${h.estado_nombre.replace(/\r?\n/g, ' ').slice(0, 120)}</div>` : ''}
+                </div>
+                <span style="color:#9ca3af;white-space:nowrap;">${new Date(h.fecha).toLocaleString('es-UY',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
       </div>`;
     } else if (s?.logistic_type === 'self_service') {
       html += `<div class="card" style="margin:0;border-left:3px solid #f97316;">
