@@ -292,6 +292,10 @@
         <span class="nav-icon">↩️</span> Devoluciones
       </div>
 
+      <div class="nav-item" data-page="buscador" onclick="showPage('buscador')">
+        <span class="nav-icon">🔍</span> Buscador
+      </div>
+
       <div class="nav-section-label">MercadoLibre</div>
       <div class="nav-item" data-page="ml-preguntas" onclick="showPage('ml-preguntas')">
         <span class="nav-icon">💬</span> Preguntas
@@ -573,6 +577,20 @@
     </div>
 
     <!-- Usuarios -->
+    <div id="page-buscador" style="display:none">
+      <h2 style="font-size:20px;font-weight:700;margin-bottom:16px;">Buscador de ventas</h2>
+      <div class="card" style="margin-bottom:16px;">
+        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+          <div style="flex:1;min-width:200px;">
+            <label style="font-size:12px;color:#6b7280;font-weight:600;display:block;margin-bottom:4px;">N&uacute;mero de venta, tracking o nickname</label>
+            <input type="text" id="buscar-input" class="search-input" style="width:100%;" placeholder="Ej: 2000015797058784, 46768933429, CAMA2069701" onkeydown="if(event.key==='Enter')buscarVenta()"/>
+          </div>
+          <button onclick="buscarVenta()" style="padding:10px 20px;background:#7c3aed;color:white;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;">Buscar</button>
+        </div>
+      </div>
+      <div id="buscar-resultado"></div>
+    </div>
+
     <div id="page-usuarios" style="display:none">
       <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;">
         <div>
@@ -657,7 +675,7 @@ function fmtDateTime(d) {
 }
 
 // ── Navigation ──
-const PAGES = ['tareas', 'reclamos', 'devoluciones', 'ml-analizar', 'usuarios'];
+const PAGES = ['tareas', 'reclamos', 'devoluciones', 'buscador', 'ml-analizar', 'usuarios'];
 const ML_TAB_PAGES = { 'ml-preguntas': 'pendientes', 'ml-postventa': 'mensajes', 'ml-reglas': 'reglas' };
 
 function showPage(page) {
@@ -2028,6 +2046,137 @@ async function responderConIA(idx, itemId, pregunta, titulo) {
       cont.textContent = 'Error: ' + (d.error || 'desconocido');
     }
   } catch(e) { cont.textContent = 'Error: ' + e.message; }
+}
+
+// ── Buscador de ventas ──
+async function buscarVenta() {
+  const input = document.getElementById('buscar-input');
+  const resultado = document.getElementById('buscar-resultado');
+  const q = input.value.trim();
+  if (!q) return;
+  resultado.innerHTML = '<p style="color:#9ca3af;font-size:13px;padding:16px;">Buscando...</p>';
+
+  try {
+    const r = await fetch(`/api/ml/buscar?q=${encodeURIComponent(q)}`, { headers: authHeaders() });
+    const d = await r.json();
+
+    if (!d.found) {
+      resultado.innerHTML = '<div class="card" style="text-align:center;color:#9ca3af;padding:32px;">No se encontr&oacute; ninguna venta con ese dato</div>';
+      return;
+    }
+
+    const o = d.order;
+    const s = d.shipping;
+    const statusColors = { paid: '#059669', cancelled: '#dc2626', confirmed: '#2563eb' };
+    const shipColors = { delivered: '#059669', shipped: '#2563eb', pending: '#d97706', not_delivered: '#dc2626' };
+
+    let html = '';
+
+    // Orden
+    html += `<div class="card" style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+        <div>
+          <span style="font-size:18px;font-weight:700;">Orden #${o.id}</span>
+          <span style="margin-left:10px;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;color:white;background:${statusColors[o.status] || '#6b7280'};">${o.status}</span>
+        </div>
+        <span style="font-size:12px;color:#9ca3af;">${new Date(o.date_created).toLocaleString('es-UY')}</span>
+      </div>
+      <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:12px;">
+        <div>
+          <span style="font-size:11px;color:#6b7280;font-weight:600;">Comprador</span><br>
+          <span style="font-size:14px;font-weight:600;">${o.buyer.first_name || ''} ${o.buyer.last_name || ''}</span>
+          <span style="font-size:12px;color:#9ca3af;margin-left:6px;">${o.buyer.nickname}</span>
+        </div>
+        <div>
+          <span style="font-size:11px;color:#6b7280;font-weight:600;">Total</span><br>
+          <span style="font-size:14px;font-weight:600;">$${o.total_amount} ${o.currency_id}</span>
+        </div>
+      </div>
+      <div style="font-size:11px;color:#6b7280;font-weight:600;margin-bottom:6px;">Productos</div>
+      ${o.items.map(i => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#f9fafb;border-radius:6px;margin-bottom:4px;">
+          <div>
+            <span style="font-size:13px;font-weight:600;">${i.title}</span>
+            ${i.sku ? `<span style="font-size:11px;color:#9ca3af;margin-left:6px;">SKU: ${i.sku}</span>` : ''}
+          </div>
+          <div style="text-align:right;">
+            <span style="font-size:13px;">${i.quantity} x $${i.unit_price}</span>
+          </div>
+        </div>
+      `).join('')}
+    </div>`;
+
+    // Envío
+    if (s) {
+      html += `<div class="card" style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+          <div>
+            <span style="font-size:16px;font-weight:700;">Env&iacute;o</span>
+            <span style="margin-left:10px;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;color:white;background:${shipColors[s.status] || '#6b7280'};">${s.status}${s.substatus ? ' - ' + s.substatus : ''}</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:20px;flex-wrap:wrap;">
+          ${s.tracking_number ? `<div>
+            <span style="font-size:11px;color:#6b7280;font-weight:600;">Tracking</span><br>
+            <span style="font-size:14px;font-weight:600;">${s.tracking_number}</span>
+          </div>` : ''}
+          ${s.receiver_address ? `<div>
+            <span style="font-size:11px;color:#6b7280;font-weight:600;">Destino</span><br>
+            <span style="font-size:13px;">${s.receiver_address.street || ''} ${s.receiver_address.number || ''}, ${s.receiver_address.city || ''}, ${s.receiver_address.state || ''} ${s.receiver_address.zip_code || ''}</span>
+          </div>` : ''}
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:#9ca3af;">
+          Creado: ${new Date(s.date_created).toLocaleString('es-UY')} · Actualizado: ${new Date(s.last_updated).toLocaleString('es-UY')}
+        </div>
+      </div>`;
+    }
+
+    // Reclamos
+    if (d.claims.length) {
+      html += d.claims.map(c => `
+        <div class="card" style="margin-bottom:12px;border-left:3px solid #dc2626;">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+            <div>
+              <span style="font-size:16px;font-weight:700;color:#dc2626;">Reclamo #${c.id}</span>
+              <span style="margin-left:10px;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;color:white;background:${c.status === 'opened' ? '#dc2626' : '#059669'};">${c.status}</span>
+              <span style="margin-left:6px;font-size:12px;color:#6b7280;">${c.type} · ${c.stage} · ${c.reason_id}</span>
+            </div>
+            <span style="font-size:12px;color:#9ca3af;">${new Date(c.date_created).toLocaleString('es-UY')}</span>
+          </div>
+          ${c.messages.length ? `
+            <div style="font-size:11px;color:#6b7280;font-weight:600;margin-bottom:6px;">Mensajes del reclamo</div>
+            ${c.messages.sort((a,b) => new Date(a.date) - new Date(b.date)).map(m => `
+              <div style="padding:8px 12px;margin-bottom:4px;border-radius:6px;background:${m.from === 'complainant' ? '#fef2f2' : '#f0fdf4'};border-left:3px solid ${m.from === 'complainant' ? '#fca5a5' : '#86efac'};">
+                <div style="font-size:11px;color:#6b7280;margin-bottom:2px;">
+                  <b>${m.from === 'complainant' ? 'Comprador' : 'Vendedor'}</b> · ${new Date(m.date).toLocaleString('es-UY')}
+                </div>
+                <div style="font-size:13px;">${m.text}</div>
+              </div>
+            `).join('')}
+          ` : ''}
+        </div>
+      `).join('');
+    }
+
+    // Mensajes post-venta
+    if (d.messages.length) {
+      html += `<div class="card" style="margin-bottom:12px;">
+        <div style="font-size:16px;font-weight:700;margin-bottom:12px;">Mensajes post-venta</div>
+        ${d.messages.sort((a,b) => new Date(a.date) - new Date(b.date)).map(m => `
+          <div style="padding:8px 12px;margin-bottom:4px;border-radius:6px;background:${m.from === 'comprador' ? '#eff6ff' : '#f9fafb'};border-left:3px solid ${m.from === 'comprador' ? '#93c5fd' : '#d1d5db'};">
+            <div style="font-size:11px;color:#6b7280;margin-bottom:2px;">
+              <b>${m.from === 'comprador' ? 'Comprador' : 'Vendedor'}</b> · ${new Date(m.date).toLocaleString('es-UY')}
+            </div>
+            <div style="font-size:13px;">${m.text}</div>
+          </div>
+        `).join('')}
+      </div>`;
+    }
+
+    resultado.innerHTML = html;
+  } catch(e) {
+    resultado.innerHTML = `<div class="card" style="color:#dc2626;">Error: ${e.message}</div>`;
+  }
 }
 </script>
 </body>

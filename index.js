@@ -1082,6 +1082,188 @@ Resumí cada regla en formato diagrama de una línea: "situación → acción/da
   }
 });
 
+// GET /api/ml/buscar — Buscar por orden, tracking o nickname
+app.get('/api/ml/buscar', requireToken, async (req, res) => {
+  const q = (req.query.q || '').trim();
+  if (!q) return res.status(400).json({ error: 'query requerido' });
+  const headers = { Authorization: `Bearer ${tokenData.access_token}` };
+
+  try {
+    let order = null;
+    let shipment = null;
+    let claims = [];
+    let claimMessages = [];
+    let messages = [];
+
+    // 1. Detectar tipo de búsqueda e intentar encontrar la orden
+    const isNumeric = /^\d+$/.test(q);
+
+    if (isNumeric && q.length > 10) {
+      // Probablemente un order ID
+      try {
+        const r = await axios.get(`${ML_API_URL}/orders/${q}`, { headers });
+        order = r.data;
+      } catch(e) {
+        // Puede ser tracking, buscamos por shipment
+      }
+    }
+
+    if (!order && isNumeric) {
+      // Buscar por tracking en órdenes recientes
+      let offset = 0;
+      let found = false;
+      while (!found && offset < 200) {
+        const r = await axios.get(`${ML_API_URL}/orders/search`, {
+          params: { seller: tokenData.user_id || 352172083, sort: 'date_desc', limit: 50, offset },
+          headers
+        });
+        for (const o of (r.data.results || [])) {
+          if (o.shipping?.id) {
+            try {
+              const s = await axios.get(`${ML_API_URL}/shipments/${o.shipping.id}`, { headers });
+              if (s.data.tracking_number === q) {
+                order = o;
+                shipment = s.data;
+                found = true;
+                break;
+              }
+            } catch {}
+          }
+        }
+        offset += 50;
+        if ((r.data.results || []).length < 50) break;
+      }
+    }
+
+    if (!order && !isNumeric) {
+      // Buscar por nickname
+      const nickname = q.toUpperCase();
+      let offset = 0;
+      while (!order && offset < 300) {
+        const r = await axios.get(`${ML_API_URL}/orders/search`, {
+          params: { seller: tokenData.user_id || 352172083, sort: 'date_desc', limit: 50, offset },
+          headers
+        });
+        const match = (r.data.results || []).find(o => o.buyer?.nickname === nickname);
+        if (match) { order = match; break; }
+        offset += 50;
+        if ((r.data.results || []).length < 50) break;
+      }
+    }
+
+    if (!order) return res.json({ found: false, query: q });
+
+    // 2. Obtener shipment si no lo tenemos
+    if (!shipment && order.shipping?.id) {
+      try {
+        const s = await axios.get(`${ML_API_URL}/shipments/${order.shipping.id}`, { headers });
+        shipment = s.data;
+      } catch {}
+    }
+
+    // 3. Buscar claims
+    try {
+      const c = await axios.get(`${ML_API_URL}/v1/claims/search`, {
+        params: { resource_id: order.id, resource: 'order' },
+        headers
+      });
+      claims = c.data.data || [];
+
+      // Obtener mensajes de cada claim
+      for (const claim of claims) {
+        try {
+          const m = await axios.get(`${ML_API_URL}/post-purchase/v1/claims/${claim.id}/messages`, { headers });
+          claimMessages.push({ claim_id: claim.id, messages: m.data || [] });
+        } catch {}
+      }
+    } catch {}
+
+    // 4. Obtener mensajes post-venta
+    const packId = order.pack_id || order.id;
+    try {
+      const m = await axios.get(`${ML_API_URL}/messages/packs/${packId}/sellers/${order.seller?.id || 352172083}`, {
+        headers,
+        params: { tag: 'post_sale' }
+      });
+      messages = m.data.messages || [];
+    } catch {}
+
+    // 5. Obtener detalle del item
+    let itemDetail = null;
+    const firstItem = order.order_items?.[0]?.item;
+    if (firstItem?.id) {
+      try {
+        const ctx = await fetchItemContext(firstItem.id);
+        itemDetail = ctx;
+      } catch {}
+    }
+
+    // 6. Armar respuesta
+    res.json({
+      found: true,
+      order: {
+        id: order.id,
+        status: order.status,
+        date_created: order.date_created,
+        total_amount: order.total_amount,
+        currency_id: order.currency_id,
+        buyer: {
+          id: order.buyer?.id,
+          nickname: order.buyer?.nickname,
+          first_name: order.buyer?.first_name,
+          last_name: order.buyer?.last_name,
+        },
+        items: order.order_items?.map(i => ({
+          id: i.item?.id,
+          title: i.item?.title,
+          quantity: i.quantity,
+          unit_price: i.unit_price,
+          sku: i.item?.seller_sku,
+        })),
+      },
+      shipping: shipment ? {
+        id: shipment.id,
+        status: shipment.status,
+        substatus: shipment.substatus,
+        tracking_number: shipment.tracking_number,
+        tracking_url: shipment.tracking_url,
+        date_created: shipment.date_created,
+        last_updated: shipment.last_updated,
+        receiver_address: shipment.receiver_address ? {
+          city: shipment.receiver_address.city?.name,
+          state: shipment.receiver_address.state?.name,
+          street: shipment.receiver_address.street_name,
+          number: shipment.receiver_address.street_number,
+          zip_code: shipment.receiver_address.zip_code,
+        } : null,
+      } : null,
+      claims: claims.map(c => ({
+        id: c.id,
+        status: c.status,
+        type: c.type,
+        stage: c.stage,
+        reason_id: c.reason_id,
+        date_created: c.date_created,
+        resolution: c.resolution,
+        messages: (claimMessages.find(cm => cm.claim_id === c.id)?.messages || []).map(m => ({
+          from: m.sender_role,
+          text: m.message,
+          date: m.date_created,
+        })),
+      })),
+      messages: messages.map(m => ({
+        from: m.from?.user_id === order.buyer?.id ? 'comprador' : 'vendedor',
+        text: m.text,
+        date: m.date_created,
+      })),
+      item_detail: itemDetail,
+    });
+  } catch(e) {
+    console.error('[buscar]', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // GET /api/ml/preguntas/pendientes
 app.get('/api/ml/preguntas/pendientes', requireToken, async (req, res) => {
   try {
