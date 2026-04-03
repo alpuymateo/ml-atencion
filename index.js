@@ -1109,45 +1109,43 @@ app.get('/api/ml/buscar', requireToken, async (req, res) => {
     }
 
     if (!order && isNumeric) {
-      // Buscar por tracking en órdenes recientes
-      let offset = 0;
-      let found = false;
-      while (!found && offset < 200) {
-        const r = await axios.get(`${ML_API_URL}/orders/search`, {
-          params: { seller: tokenData.user_id || 352172083, sort: 'date_desc', limit: 50, offset },
-          headers
-        });
-        for (const o of (r.data.results || [])) {
-          if (o.shipping?.id) {
-            try {
-              const s = await axios.get(`${ML_API_URL}/shipments/${o.shipping.id}`, { headers });
-              if (s.data.tracking_number === q) {
-                order = o;
-                shipment = s.data;
-                found = true;
-                break;
-              }
-            } catch {}
-          }
+      // Intentar como shipment ID directo (en Flex el tracking = shipment ID)
+      try {
+        const s = await axios.get(`${ML_API_URL}/shipments/${q}`, { headers });
+        if (s.data?.order_id) {
+          shipment = s.data;
+          try {
+            const o = await axios.get(`${ML_API_URL}/orders/${s.data.order_id}`, { headers });
+            order = o.data;
+          } catch {}
         }
-        offset += 50;
-        if ((r.data.results || []).length < 50) break;
-      }
+      } catch {}
     }
 
     if (!order && !isNumeric) {
-      // Buscar por nickname
+      // Buscar por nickname — primero intentar con q parameter
       const nickname = q.toUpperCase();
-      let offset = 0;
-      while (!order && offset < 300) {
+      try {
         const r = await axios.get(`${ML_API_URL}/orders/search`, {
-          params: { seller: tokenData.user_id || 352172083, sort: 'date_desc', limit: 50, offset },
+          params: { seller: tokenData.user_id || 352172083, q: nickname, sort: 'date_desc', limit: 50 },
           headers
         });
         const match = (r.data.results || []).find(o => o.buyer?.nickname === nickname);
-        if (match) { order = match; break; }
-        offset += 50;
-        if ((r.data.results || []).length < 50) break;
+        if (match) order = match;
+      } catch {}
+      // Fallback: recorrer órdenes recientes
+      if (!order) {
+        let offset = 0;
+        while (!order && offset < 500) {
+          const r = await axios.get(`${ML_API_URL}/orders/search`, {
+            params: { seller: tokenData.user_id || 352172083, sort: 'date_desc', limit: 50, offset },
+            headers
+          });
+          const match = (r.data.results || []).find(o => o.buyer?.nickname === nickname);
+          if (match) { order = match; break; }
+          offset += 50;
+          if ((r.data.results || []).length < 50) break;
+        }
       }
     }
 
