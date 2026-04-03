@@ -2096,9 +2096,15 @@ async function loadRetiros(forceRefresh) {
     const d = await r.json();
     if (d.error) { list.innerHTML = `<div class="card" style="color:#dc2626;">${d.error}</div>`; return; }
 
-    // Updated timestamp
-    if (d.updated_at && updatedEl) {
-      updatedEl.textContent = 'Actualizado: ' + new Date(d.updated_at).toLocaleString('es-UY', {hour:'2-digit',minute:'2-digit'});
+    // Updated timestamp + loading
+    if (updatedEl) {
+      if (d.loading && !d.updated_at) {
+        updatedEl.innerHTML = '<span style="color:#d97706;">Construyendo cache por primera vez... puede tardar unos minutos</span>';
+        list.innerHTML = '<div class="card" style="text-align:center;padding:32px;"><div style="font-size:24px;margin-bottom:8px;">⏳</div><div style="color:#6b7280;">Cargando env&iacute;os activos por primera vez...<br>Esto puede tardar unos minutos.</div></div>';
+        setTimeout(() => loadRetiros(), 15000);
+        return;
+      }
+      updatedEl.textContent = d.updated_at ? 'Actualizado: ' + new Date(d.updated_at).toLocaleString('es-UY', {hour:'2-digit',minute:'2-digit'}) + (d.loading ? ' (actualizando...)' : '') : '';
     }
 
     // Resumen

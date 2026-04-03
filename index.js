@@ -1586,9 +1586,9 @@ app.get('/api/ml/retiros', requireToken, async (req, res) => {
     await actualizarRetiros();
   }
   if (retirosCache) {
-    res.json(retirosCache);
+    res.json({ ...retirosCache, loading: retirosUpdating });
   } else {
-    res.json({ total: 0, soydelivery: [], robert: [], dac: [], mercadoenvios: [], updated_at: null });
+    res.json({ total: 0, soydelivery: [], robert: [], dac: [], mercadoenvios: [], updated_at: null, loading: retirosUpdating });
   }
 });
 
