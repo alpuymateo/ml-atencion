@@ -2083,13 +2083,25 @@ async function loadRetiros(forceRefresh) {
 
     // Updated timestamp + loading
     if (updatedEl) {
-      if (d.loading && !d.updated_at) {
-        updatedEl.innerHTML = '<span style="color:#d97706;">Construyendo cache por primera vez... puede tardar unos minutos</span>';
-        list.innerHTML = '<div class="card" style="text-align:center;padding:32px;"><div style="font-size:24px;margin-bottom:8px;">⏳</div><div style="color:#6b7280;">Cargando env&iacute;os activos por primera vez...<br>Esto puede tardar unos minutos.</div></div>';
-        setTimeout(() => loadRetiros(), 15000);
-        return;
+      if (d.loading) {
+        const pct = d.progress?.total ? Math.round((d.progress.current / d.progress.total) * 100) : 0;
+        const progBar = `<div style="margin-top:6px;background:#e5e7eb;border-radius:6px;height:6px;overflow:hidden;">
+          <div style="background:#7c3aed;height:100%;width:${pct}%;transition:width 0.3s;border-radius:6px;"></div>
+        </div>`;
+        if (!d.updated_at) {
+          updatedEl.innerHTML = `<span style="color:#d97706;">Construyendo cache... ${d.progress?.current || 0}/${d.progress?.total || '?'}</span>`;
+          list.innerHTML = `<div class="card" style="text-align:center;padding:32px;">
+            <div style="font-size:24px;margin-bottom:8px;">⏳</div>
+            <div style="color:#6b7280;margin-bottom:12px;">Cargando env&iacute;os activos... ${d.progress?.current || 0} de ${d.progress?.total || '?'} procesados</div>
+            <div style="max-width:300px;margin:0 auto;">${progBar}</div>
+          </div>`;
+          setTimeout(() => loadRetiros(), 5000);
+          return;
+        }
+        updatedEl.innerHTML = `Actualizado: ${new Date(d.updated_at).toLocaleString('es-UY', {hour:'2-digit',minute:'2-digit'})} <span style="color:#d97706;">(actualizando... ${d.progress?.current || 0}/${d.progress?.total || '?'})</span>`;
+      } else {
+        updatedEl.textContent = d.updated_at ? 'Actualizado: ' + new Date(d.updated_at).toLocaleString('es-UY', {hour:'2-digit',minute:'2-digit'}) : '';
       }
-      updatedEl.textContent = d.updated_at ? 'Actualizado: ' + new Date(d.updated_at).toLocaleString('es-UY', {hour:'2-digit',minute:'2-digit'}) + (d.loading ? ' (actualizando...)' : '') : '';
     }
 
     // Resumen cards
