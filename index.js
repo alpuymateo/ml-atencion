@@ -987,7 +987,7 @@ app.post('/api/ml/mensajes/responder', requireToken, async (req, res) => {
 const PREGUNTAS_FILE      = path.join(OWN_DATA_DIR, 'preguntas_por_publicacion.json');
 const QA_KB_FILE          = path.join(OWN_DATA_DIR, 'qa_knowledge_base.json');
 const REGLAS_NEGOCIO_FILE = path.join(OWN_DATA_DIR, 'reglas_negocio.json');
-const REGLAS_NEGOCIO_DEFAULT = path.join(__dirname, 'data', 'reglas_negocio.json');
+const REGLAS_NEGOCIO_DEFAULT = path.join(__dirname, 'reglas_negocio.defaults.json');
 
 function similaridad(a, b) {
   const tokenize = s => s.toLowerCase().replace(/[^a-záéíóúüñ0-9\s]/g, '').split(/\s+/).filter(w => w.length > 2);
