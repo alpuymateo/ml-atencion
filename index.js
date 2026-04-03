@@ -1344,7 +1344,7 @@ app.get('/api/ml/buscar', requireToken, async (req, res) => {
       // Buscar número de guía DAC en mensajes post-venta
       let dacGuia = null;
       for (const m of messages) {
-        const match = (m.text || '').match(/seguimiento\s*(?:es)?:?\s*(\d{8,})/i);
+        const match = (m.text || '').match(/seguimiento\s*(?:es)?[:\.\s]*(\d{8,})/i);
         if (match) { dacGuia = match[1]; break; }
       }
       if (dacGuia) {
