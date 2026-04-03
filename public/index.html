@@ -2222,6 +2222,48 @@ async function buscarVenta() {
       </div>`;
     }
 
+    // SoyDelivery
+    if (d.soydelivery) {
+      const sd = d.soydelivery;
+      const sdStatusColors = { P: '#d97706', S: '#2563eb', A: '#2563eb', R: '#7c3aed', E: '#059669', N: '#dc2626', T: '#dc2626', Z: '#6b7280', X: '#6b7280' };
+      html += `<div class="card" style="margin-bottom:12px;border-left:3px solid #f97316;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+          <div>
+            <span style="font-size:16px;font-weight:700;color:#f97316;">SoyDelivery</span>
+            <span style="margin-left:10px;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;color:white;background:${sdStatusColors[sd.estado_id] || '#6b7280'};">${sd.estado}</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:20px;flex-wrap:wrap;">
+          ${sd.delivery_nombre ? `<div>
+            <span style="font-size:11px;color:#6b7280;font-weight:600;">Repartidor</span><br>
+            <span style="font-size:14px;font-weight:600;">${sd.delivery_nombre}</span>
+            ${sd.delivery_telefono ? `<br><span style="font-size:13px;color:#6b7280;">Tel: ${sd.delivery_telefono}</span>` : ''}
+          </div>` : ''}
+          ${sd.fecha_entrega && sd.fecha_entrega !== '0000-00-00' ? `<div>
+            <span style="font-size:11px;color:#6b7280;font-weight:600;">Fecha entrega</span><br>
+            <span style="font-size:13px;">${sd.fecha_entrega}</span>
+          </div>` : ''}
+          ${sd.franja_horaria ? `<div>
+            <span style="font-size:11px;color:#6b7280;font-weight:600;">Franja</span><br>
+            <span style="font-size:13px;">${sd.franja_horaria}</span>
+          </div>` : ''}
+          ${sd.fecha_estimada && !sd.fecha_estimada.startsWith('0000') ? `<div>
+            <span style="font-size:11px;color:#6b7280;font-weight:600;">Estimada</span><br>
+            <span style="font-size:13px;">${new Date(sd.fecha_estimada).toLocaleString('es-UY')}</span>
+          </div>` : ''}
+          ${sd.delivery_ubicacion ? `<div>
+            <span style="font-size:11px;color:#6b7280;font-weight:600;">Ubicaci&oacute;n</span><br>
+            <a href="https://www.google.com/maps?q=${sd.delivery_ubicacion}" target="_blank" style="font-size:13px;color:#1d4ed8;">Ver en mapa</a>
+          </div>` : ''}
+        </div>
+      </div>`;
+    } else if (d.shipping?.logistic_type === 'self_service') {
+      html += `<div class="card" style="margin-bottom:12px;border-left:3px solid #f97316;">
+        <span style="font-size:14px;font-weight:600;color:#f97316;">SoyDelivery</span>
+        <span style="font-size:12px;color:#9ca3af;margin-left:8px;">Sin datos — el webhook a&uacute;n no registr&oacute; este env&iacute;o</span>
+      </div>`;
+    }
+
     // Mensajes post-venta
     if (d.messages.length) {
       html += `<div class="card" style="margin-bottom:12px;">
