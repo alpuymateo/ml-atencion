@@ -1225,6 +1225,7 @@ app.get('/api/ml/buscar', requireToken, async (req, res) => {
         id: shipment.id,
         status: shipment.status,
         substatus: shipment.substatus,
+        logistic_type: shipment.logistic_type || '',
         tracking_number: shipment.tracking_number,
         tracking_url: shipment.tracking_url,
         date_created: shipment.date_created,
@@ -1237,20 +1238,25 @@ app.get('/api/ml/buscar', requireToken, async (req, res) => {
           zip_code: shipment.receiver_address.zip_code,
         } : null,
       } : null,
-      claims: claims.map(c => ({
-        id: c.id,
-        status: c.status,
-        type: c.type,
-        stage: c.stage,
-        reason_id: c.reason_id,
-        date_created: c.date_created,
-        resolution: c.resolution,
-        messages: (claimMessages.find(cm => cm.claim_id === c.id)?.messages || []).map(m => ({
-          from: m.sender_role,
-          text: m.message,
-          date: m.date_created,
-        })),
-      })),
+      claims: claims.map(c => {
+        const sellerActions = (c.players || []).find(p => p.role === 'respondent')?.available_actions || [];
+        return {
+          id: c.id,
+          status: c.status,
+          type: c.type,
+          stage: c.stage,
+          reason_id: c.reason_id,
+          date_created: c.date_created,
+          last_updated: c.last_updated,
+          resolution: c.resolution,
+          available_actions: sellerActions.map(a => ({ action: a.action, due_date: a.due_date })),
+          messages: (claimMessages.find(cm => cm.claim_id === c.id)?.messages || []).map(m => ({
+            from: m.sender_role,
+            text: m.message,
+            date: m.date_created,
+          })),
+        };
+      }),
       messages: messages.map(m => ({
         from: m.from?.user_id === order.buyer?.id ? 'comprador' : 'vendedor',
         text: m.text,

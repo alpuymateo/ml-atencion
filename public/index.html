@@ -2069,8 +2069,20 @@ async function buscarVenta() {
     const s = d.shipping;
     const statusColors = { paid: '#059669', cancelled: '#dc2626', confirmed: '#2563eb' };
     const shipColors = { delivered: '#059669', shipped: '#2563eb', pending: '#d97706', not_delivered: '#dc2626' };
+    const logisticLabels = { fulfillment: 'Mercado Env\u00edos Full', self_service: 'Mercado Env\u00edos', drop_off: 'Mercado Env\u00edos', xd_drop_off: 'Mercado Env\u00edos', cross_docking: 'Mercado Env\u00edos 1', default: 'Flex' };
 
     let html = '';
+
+    // Producto con foto
+    if (d.item_detail?.thumbnail) {
+      html += `<div class="card" style="margin-bottom:12px;display:flex;gap:16px;align-items:center;">
+        <img src="${d.item_detail.thumbnail}" style="width:80px;height:80px;object-fit:contain;border-radius:8px;background:#f9fafb;border:1px solid #e5e7eb;">
+        <div>
+          <div style="font-size:15px;font-weight:700;">${d.item_detail.permalink ? `<a href="${d.item_detail.permalink}" target="_blank" style="color:#1d4ed8;text-decoration:none;">${d.item_detail.title}</a>` : d.item_detail.title}</div>
+          ${d.item_detail.price ? `<div style="font-size:13px;color:#6b7280;margin-top:4px;">Precio actual: $${d.item_detail.price}</div>` : ''}
+        </div>
+      </div>`;
+    }
 
     // Orden
     html += `<div class="card" style="margin-bottom:12px;">
@@ -2113,6 +2125,7 @@ async function buscarVenta() {
           <div>
             <span style="font-size:16px;font-weight:700;">Env&iacute;o</span>
             <span style="margin-left:10px;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;color:white;background:${shipColors[s.status] || '#6b7280'};">${s.status}${s.substatus ? ' - ' + s.substatus : ''}</span>
+            <span style="margin-left:6px;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;color:#4c1d95;background:#ede9fe;">${logisticLabels[s.logistic_type] || s.logistic_type || 'N/A'}</span>
           </div>
         </div>
         <div style="display:flex;gap:20px;flex-wrap:wrap;">
@@ -2133,7 +2146,9 @@ async function buscarVenta() {
 
     // Reclamos
     if (d.claims.length) {
-      html += d.claims.map(c => `
+      html += d.claims.map(c => {
+        const actionLabels = { send_message_to_complainant: 'Enviar mensaje', refund: 'Reembolsar', open_dispute: 'Abrir disputa' };
+        return `
         <div class="card" style="margin-bottom:12px;border-left:3px solid #dc2626;">
           <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
             <div>
@@ -2143,6 +2158,16 @@ async function buscarVenta() {
             </div>
             <span style="font-size:12px;color:#9ca3af;">${new Date(c.date_created).toLocaleString('es-UY')}</span>
           </div>
+          ${c.available_actions.length ? `
+            <div style="margin-bottom:12px;padding:10px 14px;background:#fef3c7;border-radius:6px;">
+              <div style="font-size:11px;color:#92400e;font-weight:600;margin-bottom:4px;">Acciones disponibles</div>
+              ${c.available_actions.map(a => `
+                <div style="font-size:13px;color:#92400e;">
+                  ${actionLabels[a.action] || a.action}${a.due_date ? ` · <b>Vence: ${new Date(a.due_date).toLocaleString('es-UY')}</b>` : ''}
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
           ${c.messages.length ? `
             <div style="font-size:11px;color:#6b7280;font-weight:600;margin-bottom:6px;">Mensajes del reclamo</div>
             ${c.messages.sort((a,b) => new Date(a.date) - new Date(b.date)).map(m => `
@@ -2154,8 +2179,12 @@ async function buscarVenta() {
               </div>
             `).join('')}
           ` : ''}
-        </div>
-      `).join('');
+        </div>`;
+      }).join('');
+    } else {
+      html += `<div class="card" style="margin-bottom:12px;border-left:3px solid #059669;">
+        <span style="font-size:14px;font-weight:600;color:#059669;">Sin reclamos</span>
+      </div>`;
     }
 
     // Mensajes post-venta
