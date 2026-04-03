@@ -1,0 +1,58 @@
+[
+  {
+    "categoria": "horarios",
+    "texto": "Horarios de despacho: Lunes a Viernes 09:00 a 18:00, Sábados 09:00 a 13:00, Domingos cerrado. Realizamos envíos a todo el país."
+  },
+  {
+    "categoria": "envios",
+    "texto": "Política de envío: El tiempo de llegada depende de la zona y el tipo de envío seleccionado. Para Montevideo se puede seleccionar Mercado Envíos Flex para entrega en el día en el horario de 17 a 22hs. Para el interior del país se puede seleccionar Mercado Envíos despachado por UES con demora de 24 a 72hs hábiles. Dentro de Montevideo con la opción 'Acordar con el vendedor' se coordina el envío a partir del día hábil siguiente con entrega en 24-72hs hábiles mediante cadetería particular, que entrega de lunes a sábados de 13 a 22hs. Para el interior con 'Acordar con el vendedor' se despacha por agencia DAC al siguiente día hábil, con demora de 24-72hs hábiles. Cualquier acción comercial de alta demanda puede afectar los tiempos de envío."
+  },
+  {
+    "categoria": "envios",
+    "texto": "Restricciones de envío: Los envíos al interior (fuera de Montevideo) no cuentan con envío gratis. En el caso de Canelones el costo varía según la zona. Algunos envíos de productos mayores a 1500 tienen costo de envío por políticas de Mercado Libre. No realizamos envíos por agencia en Tres Cruces."
+  },
+  {
+    "categoria": "envios",
+    "texto": "Tarifas de envío a Canelones (agencia DAC): Para la mayoría de localidades de Canelones: hasta 5kg $250, de 5 a 10kg $320, de 25 a 50kg $975, de 50 a 75kg $1.170. Para la zona metropolitana de Canelones (Las Piedras, Pando, Ciudad de la Costa, Solymar, Barros Blancos, La Paz, Progreso, Barra de Carrasco, Parque Carrasco, Shangrilá, Lagomar, El Pinar, Joaquín Suárez, entre otras): hasta 5kg $250, de 5 a 10kg $320, de 25 a 50kg $975, de 50 a 75kg $1.190. Plazo: 5 días hábiles. Para otras zonas del interior consultar por mensaje privado indicando departamento, localidad y producto."
+  },
+  {
+    "categoria": "garantia",
+    "texto": "Política de garantía: Todos nuestros productos tienen garantía de 30 días. Las caminadoras y bicicletas spinning tienen 6 meses de garantía. Para hacer uso de la garantía el producto debe ser devuelto en las mismas condiciones que llegó junto con la factura adjunta detrás de la etiqueta de envíos."
+  },
+  {
+    "categoria": "devolucion",
+    "texto": "Política de devolución: Todos nuestros productos cuentan con garantía. Para hacer uso de ella el producto debe ser devuelto en las mismas condiciones que llegó junto con la factura adjunta detrás de la etiqueta de envíos."
+  },
+  {
+    "categoria": "factura",
+    "texto": "Política de factura: Emitimos factura con RUT. Luego de realizar la compra, enviar por mensajería interna de MercadoLibre los datos para emitir la factura."
+  },
+  {
+    "categoria": "pagos",
+    "texto": "Formas de pago: Todos los pagos se realizan a través de Mercado Pago. Aceptamos todas las tarjetas de crédito, débito y redes de cobranza."
+  },
+  {
+    "categoria": "local",
+    "texto": "Retiro en local: Sí, ofrecemos retiro en el local. Dirección: Acevedo Díaz 2125, Aguada, Montevideo. Horario de atención: lunes a viernes de 09:00 a 18:00, sábados de 09:00 a 13:00, domingos cerrado. Se pueden ver y probar algunos productos en el local. También ofrecemos opción de pick up."
+  },
+  {
+    "categoria": "mayorista",
+    "texto": "Venta mayorista: Sí, ofrecemos venta mayorista a partir de 6 productos."
+  },
+  {
+    "categoria": "personalizacion",
+    "texto": "Personalización: No ofrecemos personalización de productos."
+  },
+  {
+    "categoria": "productos",
+    "texto": "Instrucciones sobre productos: Todos nuestros productos se venden desarmados, incluyen manual de ensamble y es sencillo realizarlo en el hogar. En el caso de muebles como roperos y juegos de comedor, podemos recomendar un armador de confianza para domicilios dentro de Montevideo. Los datos de contacto se brindan por mensaje privado luego de realizada la compra. No ofrecemos servicio de colocación para puertas plegables. No tenemos hamacas armadas en el local."
+  },
+  {
+    "categoria": "productos",
+    "texto": "Cambio de opción de entrega: Si el cliente seleccionó 'Acordar con el vendedor' como opción de entrega y luego desea cambiar a 'Envío a domicilio', deberá abonar el envío previamente."
+  },
+  {
+    "categoria": "respuestas",
+    "texto": "Instrucciones de respuesta: Intentá siempre responder la pregunta exacta del usuario sin dar medidas imprecisas. Nunca prometas que alguien se va a comunicar con el cliente. No incluyas links a otros productos; indicá que pueden revisar nuestra Tienda Oficial y sus categorías. No uses frases como 'Aproveche la promoción por tiempo limitado'. Para consultas de costo de envío al interior fuera de lo indicado, pedirle al cliente que indique su departamento, localidad y producto para cotizar por mensaje privado."
+  }
+]
