@@ -171,22 +171,41 @@ function saveUsers(data) {
   fs.writeFileSync(USERS_FILE, JSON.stringify(data, null, 2), 'utf8');
 }
 
-// Crear admin por defecto si no hay usuarios
-(function ensureAdmin() {
+// Crear usuarios por defecto si no hay usuarios
+(function ensureDefaultUsers() {
   const users = loadUsers();
   if (!users.length) {
+    const defaults = [
+      { username: 'admin', name: 'Administrador', role: 'admin', pass: 'admin123' },
+      { username: 'mateo', name: 'Mateo', role: 'admin', pass: 'mateo123' },
+    ];
+    for (const d of defaults) {
+      const salt = crypto.randomBytes(16).toString('hex');
+      users.push({
+        id:       crypto.randomUUID(),
+        username: d.username,
+        name:     d.name,
+        role:     d.role,
+        salt,
+        hash:     hashPassword(d.pass, salt),
+        createdAt: new Date().toISOString(),
+      });
+    }
+    saveUsers(users);
+    console.log('[usuarios] Usuarios por defecto creados (admin/admin123, mateo/mateo123)');
+  } else if (!users.find(u => u.username === 'mateo')) {
     const salt = crypto.randomBytes(16).toString('hex');
     users.push({
       id:       crypto.randomUUID(),
-      username: 'admin',
-      name:     'Administrador',
+      username: 'mateo',
+      name:     'Mateo',
       role:     'admin',
       salt,
-      hash:     hashPassword('admin123', salt),
+      hash:     hashPassword('mateo123', salt),
       createdAt: new Date().toISOString(),
     });
     saveUsers(users);
-    console.log('[usuarios] Usuario admin creado — password: admin123  (cambialo después)');
+    console.log('[usuarios] Usuario mateo agregado');
   }
 })();
 
