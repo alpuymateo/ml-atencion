@@ -2125,72 +2125,122 @@ async function loadRetiros(forceRefresh) {
     const catColors = { SoyDelivery: '#f97316', Robert: '#2563eb', DAC: '#059669', 'Mercado Envíos': '#d97706' };
     const catIcons = { SoyDelivery: '🟠', Robert: '🔵', DAC: '🟢', 'Mercado Envíos': '🟡' };
 
-    // Contar pendientes por cadetería
+    // Contar por cadetería
     const pendByCat = {};
     pendientes.forEach(e => { pendByCat[e.cadeteria] = (pendByCat[e.cadeteria]||0) + 1; });
+    const retByCat = {};
+    retiradosHoy.forEach(e => { retByCat[e.cadeteria] = (retByCat[e.cadeteria]||0) + 1; });
 
-    resumen.innerHTML = `<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
-      <div class="card" style="flex:1;min-width:160px;margin:0;text-align:center;border-top:3px solid #dc2626;">
+    // Variable para filtro activo
+    window._retirosFilter = window._retirosFilter || null;
+    window._retirosData = { pendientes, retiradosHoy, d };
+
+    function isActive(f) { return window._retirosFilter === f ? 'outline:3px solid #7c3aed;outline-offset:2px;' : ''; }
+
+    resumen.innerHTML = `<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px;">
+      <div class="card" style="flex:1;min-width:130px;margin:0;text-align:center;border-top:3px solid #dc2626;cursor:pointer;${isActive('pendientes')}" onclick="window._retirosFilter=window._retirosFilter==='pendientes'?null:'pendientes';renderRetirosList();">
         <div style="font-size:28px;font-weight:700;color:#dc2626;">${pendientes.length}</div>
-        <div style="font-size:12px;color:#6b7280;">Pendientes de retiro</div>
-        <div style="font-size:10px;color:#9ca3af;margin-top:4px;">${Object.entries(pendByCat).map(([k,v]) => `${catIcons[k]||''} ${k}: ${v}`).join(' · ')}</div>
+        <div style="font-size:12px;color:#6b7280;">Pendientes</div>
       </div>
-      <div class="card" style="flex:1;min-width:160px;margin:0;text-align:center;border-top:3px solid #059669;">
+      <div class="card" style="flex:1;min-width:130px;margin:0;text-align:center;border-top:3px solid #059669;cursor:pointer;${isActive('retirados')}" onclick="window._retirosFilter=window._retirosFilter==='retirados'?null:'retirados';renderRetirosList();">
         <div style="font-size:28px;font-weight:700;color:#059669;">${retiradosHoy.length}</div>
         <div style="font-size:12px;color:#6b7280;">Retirados hoy</div>
       </div>
-      <div class="card" style="flex:1;min-width:160px;margin:0;text-align:center;border-top:3px solid #374151;">
+      ${Object.entries(catColors).map(([cat, color]) => {
+        const cnt = (pendByCat[cat]||0) + (retByCat[cat]||0);
+        if (!cnt) return '';
+        return `<div class="card" style="flex:1;min-width:110px;margin:0;text-align:center;border-top:3px solid ${color};cursor:pointer;${isActive('cat_'+cat)}" onclick="window._retirosFilter=window._retirosFilter==='cat_${cat}'?null:'cat_${cat}';renderRetirosList();">
+          <div style="font-size:28px;font-weight:700;color:${color};">${cnt}</div>
+          <div style="font-size:12px;color:#6b7280;">${catIcons[cat]||''} ${cat}</div>
+        </div>`;
+      }).join('')}
+      <div class="card" style="flex:1;min-width:110px;margin:0;text-align:center;border-top:3px solid #374151;cursor:pointer;${isActive(null)}" onclick="window._retirosFilter=null;renderRetirosList();">
         <div style="font-size:28px;font-weight:700;">${d.total}</div>
-        <div style="font-size:12px;color:#6b7280;">Total en tr&aacute;nsito</div>
+        <div style="font-size:12px;color:#6b7280;">Total</div>
       </div>
     </div>`;
 
-    function renderRetiroSection(title, items, borderColor, emptyMsg) {
-      if (!items.length) return `<div class="card" style="margin-bottom:16px;text-align:center;color:#9ca3af;padding:20px;">${emptyMsg}</div>`;
-      // Agrupar por cadetería
-      const byCat = {};
-      items.forEach(e => {
-        if (!byCat[e.cadeteria]) byCat[e.cadeteria] = [];
-        byCat[e.cadeteria].push(e);
-      });
-      let html = `<div style="margin-bottom:20px;">
-        <div style="font-size:16px;font-weight:700;margin-bottom:12px;padding-bottom:6px;border-bottom:3px solid ${borderColor};">
-          ${title} <span style="font-size:13px;font-weight:400;color:#9ca3af;">(${items.length})</span>
-        </div>`;
-      for (const [cat, entries] of Object.entries(byCat)) {
-        html += `<div style="margin-bottom:16px;">
-          <div style="font-size:13px;font-weight:700;color:${catColors[cat]||'#6b7280'};margin-bottom:8px;">
-            ${catIcons[cat]||''} ${cat} <span style="font-weight:400;color:#9ca3af;">(${entries.length})</span>
-          </div>`;
-        entries.forEach(e => {
-          html += `<div class="card" style="margin:0 0 6px 0;padding:10px 14px;cursor:pointer;" onclick="document.getElementById('buscar-input').value='${e.order_id}';showPage('buscador');buscarVenta();">
-            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-              <div style="flex:1;min-width:0;">
-                <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${e.item_title}</div>
-                <div style="font-size:11px;color:#9ca3af;margin-top:2px;">${e.buyer_name || e.buyer} · ${e.quantity} unid. · ${e.receiver_city}${e.receiver_state ? ', ' + e.receiver_state : ''}</div>
-              </div>
-              <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;">
-                ${e.retirado_por ? `<span style="font-size:10px;color:#059669;font-weight:600;">${e.retirado_por}</span>` : ''}
-                ${e.fecha_retiro ? `<span style="font-size:10px;color:#9ca3af;">${new Date(e.fecha_retiro).toLocaleString('es-UY',{hour:'2-digit',minute:'2-digit'})}</span>` : ''}
-                ${e.sd_estado ? `<span style="padding:1px 6px;border-radius:8px;font-size:9px;font-weight:600;background:#fff7ed;color:#f97316;">${e.sd_estado}</span>` : ''}
-              </div>
-            </div>
-          </div>`;
-        });
-        html += `</div>`;
-      }
-      html += `</div>`;
-      return html;
-    }
+    renderRetirosList();
 
-    let html = '';
-    html += renderRetiroSection('Pendientes de retiro', pendientes, '#dc2626', 'No hay paquetes pendientes de retiro');
-    html += renderRetiroSection('Retirados hoy', retiradosHoy, '#059669', 'Ningún paquete retirado hoy');
-
-    list.innerHTML = html;
+    renderRetirosList();
   } catch(e) {
     list.innerHTML = `<div class="card" style="color:#dc2626;">Error: ${e.message}</div>`;
   }
+}
+
+function renderRetirosList() {
+  const list = document.getElementById('retiros-list');
+  const resumen = document.getElementById('retiros-resumen');
+  if (!window._retirosData) return;
+  const { pendientes, retiradosHoy, d } = window._retirosData;
+  const f = window._retirosFilter;
+  const catColors = { SoyDelivery: '#f97316', Robert: '#2563eb', DAC: '#059669', 'Mercado Envíos': '#d97706' };
+  const catIcons = { SoyDelivery: '🟠', Robert: '🔵', DAC: '🟢', 'Mercado Envíos': '🟡' };
+
+  // Actualizar highlight de cards
+  resumen.querySelectorAll('.card').forEach(c => c.style.outline = '');
+  if (f) {
+    const cards = resumen.querySelectorAll('.card');
+    cards.forEach(c => {
+      if (c.onclick?.toString().includes("'" + f + "'")) c.style.outline = '3px solid #7c3aed';
+    });
+  }
+
+  // Filtrar según selección
+  let showPendientes = pendientes;
+  let showRetirados = retiradosHoy;
+
+  if (f === 'pendientes') {
+    showRetirados = [];
+  } else if (f === 'retirados') {
+    showPendientes = [];
+  } else if (f && f.startsWith('cat_')) {
+    const cat = f.replace('cat_', '');
+    showPendientes = pendientes.filter(e => e.cadeteria === cat);
+    showRetirados = retiradosHoy.filter(e => e.cadeteria === cat);
+  }
+
+  function renderSection(title, items, borderColor, emptyMsg) {
+    if (!items.length) return `<div class="card" style="margin-bottom:16px;text-align:center;color:#9ca3af;padding:16px;">${emptyMsg}</div>`;
+    const byCat = {};
+    items.forEach(e => { if (!byCat[e.cadeteria]) byCat[e.cadeteria] = []; byCat[e.cadeteria].push(e); });
+    let html = `<div style="margin-bottom:20px;">
+      <div style="font-size:16px;font-weight:700;margin-bottom:12px;padding-bottom:6px;border-bottom:3px solid ${borderColor};">
+        ${title} <span style="font-size:13px;font-weight:400;color:#9ca3af;">(${items.length})</span>
+      </div>`;
+    for (const [cat, entries] of Object.entries(byCat)) {
+      html += `<div style="margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:700;color:${catColors[cat]||'#6b7280'};margin-bottom:8px;">
+          ${catIcons[cat]||''} ${cat} <span style="font-weight:400;color:#9ca3af;">(${entries.length})</span>
+        </div>`;
+      entries.forEach(e => {
+        html += `<div class="card" style="margin:0 0 6px 0;padding:10px 14px;cursor:pointer;" onclick="document.getElementById('buscar-input').value='${e.order_id}';showPage('buscador');buscarVenta();">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${e.item_title}</div>
+              <div style="font-size:11px;color:#9ca3af;margin-top:2px;">${e.buyer_name || e.buyer} · ${e.quantity} unid. · ${e.receiver_city}${e.receiver_state ? ', ' + e.receiver_state : ''}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;">
+              ${e.retirado_por ? `<span style="font-size:10px;color:#059669;font-weight:600;">${e.retirado_por}</span>` : ''}
+              ${e.fecha_retiro ? `<span style="font-size:10px;color:#9ca3af;">${new Date(e.fecha_retiro).toLocaleString('es-UY',{hour:'2-digit',minute:'2-digit'})}</span>` : ''}
+              ${e.sd_estado ? `<span style="padding:1px 6px;border-radius:8px;font-size:9px;font-weight:600;background:#fff7ed;color:#f97316;">${e.sd_estado}</span>` : ''}
+            </div>
+          </div>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+    html += `</div>`;
+    return html;
+  }
+
+  let html = '';
+  if (showPendientes.length || !f || f === 'pendientes' || f?.startsWith('cat_'))
+    html += renderSection('Pendientes de retiro', showPendientes, '#dc2626', 'No hay paquetes pendientes');
+  if (showRetirados.length || !f || f === 'retirados' || f?.startsWith('cat_'))
+    html += renderSection('Retirados hoy', showRetirados, '#059669', 'Ningún paquete retirado hoy');
+
+  list.innerHTML = html;
 }
 
 // ── Buscador de ventas ──
