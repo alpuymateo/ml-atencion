@@ -81,6 +81,20 @@ async function consultarSoyDelivery(pedidoId) {
   return null;
 }
 
+async function consultarSoyDeliveryHistorial(shipmentId) {
+  const token = await getSdToken();
+  if (!token) return null;
+  try {
+    const r = await axios.post(`${SD_API_URL}/awsconsultapedidohistorial`, {
+      Negocio_id: SD_NEGOCIO_ID,
+      Negocio_clave: SD_NEGOCIO_CLAVE,
+      PedidoExternalId: String(shipmentId)
+    }, { headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'SoyDelivery' } });
+    if (r.data.Error_code === 200) return r.data;
+  } catch {}
+  return null;
+}
+
 // ── Persistencia del token ML ──
 const OWN_TOKEN_FILE = path.join(OWN_DATA_DIR, 'ml_token.json');
 const SHARED_TOKEN_FILE = path.join(DATA_DIR, 'ml_token.json');
@@ -1260,11 +1274,31 @@ app.get('/api/ml/buscar', requireToken, async (req, res) => {
 
     // 5b. Consultar SoyDelivery si es Flex
     let soydelivery = null;
+    let sdHistorial = null;
     if (shipment && shipment.logistic_type === 'self_service') {
-      const shipId = String(shipment.id);
-      const sdId = sdMapping[shipId];
-      if (sdId) {
-        soydelivery = await consultarSoyDelivery(sdId);
+      const histData = await consultarSoyDeliveryHistorial(shipment.id);
+      if (histData?.PedidoConsultaSDT) {
+        const sd = histData.PedidoConsultaSDT;
+        sdHistorial = {
+          pedido_id: sd.PedidoId,
+          estado: sd.PedidoEstado,
+          estado_interno: sd.PedidoNegocioEstadoIntNombre,
+          fecha_ingreso: sd.PedidoFechaIngreso,
+          fecha_entrega: sd.PedidoFechaEntrega,
+          fecha_entregado: sd.PedidoFechaEntregado,
+          explicacion: sd.PedidoEstadoExplanation,
+          historial: (sd.PedidoHistorial || []).map(h => ({
+            fecha: h.PedidoHistorialFecha,
+            estado: h.PedidoHistorialEstado,
+            detalle: h.PedidoHistorialDetalle,
+            estado_nombre: h.DiccionarioEstadoNombre,
+          })),
+        };
+        // También consultar estado actual con repartidor
+        const sdId = parseInt(sd.PedidoId);
+        if (sdId) {
+          soydelivery = await consultarSoyDelivery(sdId);
+        }
       }
     }
 
@@ -1345,6 +1379,7 @@ app.get('/api/ml/buscar', requireToken, async (req, res) => {
         franja_horaria: soydelivery.Franja_horaria_desc,
         fecha_estimada: soydelivery.Fecha_estimada_entrega,
       } : null,
+      sd_historial: sdHistorial,
     });
   } catch(e) {
     console.error('[buscar]', e.message);
