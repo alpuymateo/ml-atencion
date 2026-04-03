@@ -1482,6 +1482,7 @@ app.get('/api/ml/buscar', requireToken, async (req, res) => {
 // ── Retiros cache ──
 let retirosCache = null;
 let retirosUpdating = false;
+let retirosProgress = { current: 0, total: 0 };
 const RETIROS_CACHE_FILE = path.join(OWN_DATA_DIR, 'retiros_cache.json');
 
 // Cargar cache de disco al arrancar
@@ -1513,7 +1514,9 @@ async function actualizarRetiros() {
     const dac = [];
     const mercadoenvios = [];
 
+    retirosProgress = { current: 0, total: allOrders.length };
     for (const o of allOrders) {
+      retirosProgress.current++;
       if (!o.shipping?.id) continue;
       let ship;
       try {
@@ -1602,9 +1605,9 @@ app.get('/api/ml/retiros', requireToken, async (req, res) => {
     await actualizarRetiros();
   }
   if (retirosCache) {
-    res.json({ ...retirosCache, loading: retirosUpdating });
+    res.json({ ...retirosCache, loading: retirosUpdating, progress: retirosProgress });
   } else {
-    res.json({ total: 0, soydelivery: [], robert: [], dac: [], mercadoenvios: [], updated_at: null, loading: retirosUpdating });
+    res.json({ total: 0, pendientes: [], retirados_hoy: [], soydelivery: [], robert: [], dac: [], mercadoenvios: [], updated_at: null, loading: retirosUpdating, progress: retirosProgress });
   }
 });
 
