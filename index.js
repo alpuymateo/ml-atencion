@@ -987,6 +987,7 @@ app.post('/api/ml/mensajes/responder', requireToken, async (req, res) => {
 const PREGUNTAS_FILE      = path.join(OWN_DATA_DIR, 'preguntas_por_publicacion.json');
 const QA_KB_FILE          = path.join(OWN_DATA_DIR, 'qa_knowledge_base.json');
 const REGLAS_NEGOCIO_FILE = path.join(OWN_DATA_DIR, 'reglas_negocio.json');
+const REGLAS_NEGOCIO_DEFAULT = path.join(__dirname, 'data', 'reglas_negocio.json');
 
 function similaridad(a, b) {
   const tokenize = s => s.toLowerCase().replace(/[^a-záéíóúüñ0-9\s]/g, '').split(/\s+/).filter(w => w.length > 2);
@@ -1011,8 +1012,27 @@ function buscarSimilares(pregunta, n = 8) {
 }
 
 function loadReglasNegocio() {
+  // Si el archivo del volumen no existe o está vacío, copiar el base del repo
+  if (!fs.existsSync(REGLAS_NEGOCIO_FILE) || fs.statSync(REGLAS_NEGOCIO_FILE).size === 0) {
+    if (REGLAS_NEGOCIO_FILE !== REGLAS_NEGOCIO_DEFAULT && fs.existsSync(REGLAS_NEGOCIO_DEFAULT)) {
+      try {
+        fs.copyFileSync(REGLAS_NEGOCIO_DEFAULT, REGLAS_NEGOCIO_FILE);
+        console.log('[reglas] cargadas desde archivo base del repo');
+      } catch(e) {}
+    }
+  }
   if (!fs.existsSync(REGLAS_NEGOCIO_FILE)) return [];
-  try { return JSON.parse(fs.readFileSync(REGLAS_NEGOCIO_FILE, 'utf8')); } catch(e) { return []; }
+  try {
+    const reglas = JSON.parse(fs.readFileSync(REGLAS_NEGOCIO_FILE, 'utf8'));
+    if (!reglas.length && REGLAS_NEGOCIO_FILE !== REGLAS_NEGOCIO_DEFAULT && fs.existsSync(REGLAS_NEGOCIO_DEFAULT)) {
+      const defaults = JSON.parse(fs.readFileSync(REGLAS_NEGOCIO_DEFAULT, 'utf8'));
+      if (defaults.length) {
+        fs.writeFileSync(REGLAS_NEGOCIO_FILE, JSON.stringify(defaults, null, 2));
+        return defaults;
+      }
+    }
+    return reglas;
+  } catch(e) { return []; }
 }
 
 function filtrarReglasPorContexto(reglas, contexto) {
