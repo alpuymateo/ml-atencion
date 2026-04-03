@@ -1246,8 +1246,8 @@ app.get('/api/ml/buscar', requireToken, async (req, res) => {
           number: shipment.receiver_address.street_number,
           zip_code: shipment.receiver_address.zip_code,
         } : null,
-        tracking_method: shipmentHistory?.tracking_method || '',
-        history: shipmentHistory?.date_history || null,
+        tracking_method: shipmentHistory?.tracking_method || shipment.tracking_method || '',
+        history: shipment.status_history || shipmentHistory?.date_history || null,
       } : null,
       claims: claims.map(c => {
         const sellerActions = (c.players || []).find(p => p.role === 'respondent')?.available_actions || [];
