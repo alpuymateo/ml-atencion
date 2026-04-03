@@ -583,7 +583,11 @@
     <div id="page-retiros" style="display:none">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
         <h2 style="font-size:20px;font-weight:700;margin:0;">Retiros y env&iacute;os activos</h2>
-        <button onclick="loadRetiros()" style="padding:8px 16px;background:#7c3aed;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">Actualizar</button>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span id="retiros-updated" style="font-size:11px;color:#9ca3af;"></span>
+          <button onclick="loadRetiros()" style="padding:8px 14px;background:#e5e7eb;color:#374151;border:none;border-radius:6px;font-size:13px;cursor:pointer;">Recargar</button>
+          <button onclick="loadRetiros(true)" style="padding:8px 14px;background:#7c3aed;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">Forzar refresh</button>
+        </div>
       </div>
       <div id="retiros-resumen"></div>
       <div id="retiros-list"></div>
@@ -2079,23 +2083,30 @@ async function responderConIA(idx, itemId, pregunta, titulo) {
 }
 
 // ── Retiros ──
-async function loadRetiros() {
+async function loadRetiros(forceRefresh) {
   const list = document.getElementById('retiros-list');
   const resumen = document.getElementById('retiros-resumen');
+  const updatedEl = document.getElementById('retiros-updated');
   list.innerHTML = '<p style="color:#9ca3af;font-size:13px;padding:16px;">Cargando env&iacute;os activos...</p>';
   resumen.innerHTML = '';
 
   try {
-    const r = await fetch('/api/ml/retiros', { headers: authHeaders() });
+    const url = forceRefresh ? '/api/ml/retiros?refresh=1' : '/api/ml/retiros';
+    const r = await fetch(url, { headers: authHeaders() });
     const d = await r.json();
     if (d.error) { list.innerHTML = `<div class="card" style="color:#dc2626;">${d.error}</div>`; return; }
 
+    // Updated timestamp
+    if (d.updated_at && updatedEl) {
+      updatedEl.textContent = 'Actualizado: ' + new Date(d.updated_at).toLocaleString('es-UY', {hour:'2-digit',minute:'2-digit'});
+    }
+
     // Resumen
     const cats = [
-      { name: 'SoyDelivery', data: d.soydelivery, color: '#f97316', icon: '🟠' },
-      { name: 'Robert', data: d.robert, color: '#2563eb', icon: '🔵' },
-      { name: 'DAC', data: d.dac, color: '#059669', icon: '🟢' },
-      { name: 'Mercado Env\u00edos', data: d.mercadoenvios, color: '#FFE600', icon: '🟡' },
+      { name: 'SoyDelivery', data: d.soydelivery || [], color: '#f97316', icon: '🟠' },
+      { name: 'Robert', data: d.robert || [], color: '#2563eb', icon: '🔵' },
+      { name: 'DAC', data: d.dac || [], color: '#059669', icon: '🟢' },
+      { name: 'Mercado Env\u00edos', data: d.mercadoenvios || [], color: '#FFE600', icon: '🟡' },
     ];
 
     resumen.innerHTML = `<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
@@ -2114,30 +2125,55 @@ async function loadRetiros() {
     const statusLabels = { ready_to_ship: 'Listo', shipped: 'En camino', pending: 'Pendiente', handling: 'Preparando' };
     const statusColors = { ready_to_ship: '#d97706', shipped: '#2563eb', pending: '#9ca3af', handling: '#d97706' };
 
+    // Agrupar todos los envíos por fecha y luego por retiro (franja de 10 min)
+    const allItems = cats.flatMap(c => c.data.map(e => ({ ...e, catName: c.name, catColor: c.color, catIcon: c.icon })));
+
+    // Agrupar por fecha
+    const byDate = {};
+    allItems.forEach(e => {
+      const date = new Date(e.date_created).toLocaleDateString('es-UY', {weekday:'long', day:'2-digit', month:'2-digit', year:'numeric'});
+      if (!byDate[date]) byDate[date] = [];
+      byDate[date].push(e);
+    });
+
     let html = '';
-    for (const cat of cats) {
-      if (!cat.data.length) continue;
+    for (const [date, items] of Object.entries(byDate)) {
+      // Agrupar por retiro (franjas de 10 min dentro de cada cadetería)
+      const retiros = {};
+      items.forEach(e => {
+        const d = new Date(e.date_created);
+        const mins = Math.floor(d.getMinutes() / 10) * 10;
+        const key = e.catName + '|' + d.getHours() + ':' + String(mins).padStart(2,'0');
+        if (!retiros[key]) retiros[key] = { cat: e.catName, color: e.catColor, icon: e.catIcon, hora: d.getHours() + ':' + String(mins).padStart(2,'0'), items: [] };
+        retiros[key].items.push(e);
+      });
+
       html += `<div style="margin-bottom:20px;">
-        <div style="font-size:16px;font-weight:700;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid ${cat.color};">
-          ${cat.icon} ${cat.name} <span style="font-size:13px;font-weight:400;color:#9ca3af;">(${cat.data.length})</span>
-        </div>
-        <div style="display:grid;gap:8px;">
-          ${cat.data.map(e => `
-            <div class="card" style="margin:0;padding:12px 16px;cursor:pointer;" onclick="document.getElementById('buscar-input').value='${e.order_id}';showPage('buscador');buscarVenta();">
-              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
-                <div style="flex:1;min-width:200px;">
-                  <div style="font-size:13px;font-weight:600;">${e.item_title.slice(0,50)}</div>
-                  <div style="font-size:11px;color:#9ca3af;">${e.buyer_name || e.buyer} · ${e.quantity} unid. · ${e.receiver_city || ''} ${e.receiver_state || ''}</div>
+        <div style="font-size:15px;font-weight:700;margin-bottom:10px;text-transform:capitalize;">${date} <span style="font-size:12px;font-weight:400;color:#9ca3af;">(${items.length} env&iacute;os)</span></div>`;
+
+      for (const [key, retiro] of Object.entries(retiros)) {
+        html += `<div style="margin-bottom:12px;margin-left:8px;padding-left:12px;border-left:3px solid ${retiro.color};">
+          <div style="font-size:12px;font-weight:700;color:${retiro.color};margin-bottom:6px;">
+            ${retiro.icon} ${retiro.cat} · ${retiro.hora} hs <span style="font-weight:400;color:#9ca3af;">(${retiro.items.length} paquetes)</span>
+          </div>
+          ${retiro.items.map(e => `
+            <div style="padding:8px 12px;margin-bottom:4px;background:white;border-radius:6px;border:1px solid #f3f4f6;cursor:pointer;font-size:12px;" onclick="document.getElementById('buscar-input').value='${e.order_id}';showPage('buscador');buscarVenta();">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
+                <div style="flex:1;min-width:0;">
+                  <span style="font-weight:600;">${e.item_title.slice(0,45)}</span>
+                  <span style="color:#9ca3af;"> · ${e.buyer_name || e.buyer} · ${e.receiver_city || ''}</span>
                 </div>
-                <div style="display:flex;gap:6px;align-items:center;">
-                  ${e.sd_estado ? `<span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;background:#fff7ed;color:#f97316;">${e.sd_estado}</span>` : ''}
-                  <span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;color:white;background:${statusColors[e.ship_status] || '#6b7280'};">${statusLabels[e.ship_status] || e.ship_status}</span>
+                <div style="display:flex;gap:4px;flex-shrink:0;">
+                  ${e.sd_estado ? `<span style="padding:1px 6px;border-radius:8px;font-size:9px;font-weight:600;background:#fff7ed;color:#f97316;">${e.sd_estado}</span>` : ''}
+                  <span style="padding:1px 6px;border-radius:8px;font-size:9px;font-weight:600;color:white;background:${statusColors[e.ship_status] || '#6b7280'};">${statusLabels[e.ship_status] || e.ship_status}</span>
                 </div>
               </div>
             </div>
           `).join('')}
-        </div>
-      </div>`;
+        </div>`;
+      }
+
+      html += `</div>`;
     }
 
     list.innerHTML = html || '<div class="card" style="text-align:center;color:#9ca3af;padding:32px;">No hay env&iacute;os activos</div>';
