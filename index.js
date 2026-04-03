@@ -131,6 +131,38 @@ async function consultarDAC(referencia) {
   return null;
 }
 
+// ── Deri (Robert) config ──
+const DERI_API_KEY = process.env.DERI_API_KEY;
+const DERI_API_URL = 'https://api.deriapp.com/hub/deri/v1';
+const deriHeaders = DERI_API_KEY ? { 'api-key': DERI_API_KEY } : {};
+
+async function consultarDeriOrder(orderId) {
+  if (!DERI_API_KEY) return null;
+  try {
+    const r = await axios.get(`${DERI_API_URL}/orders/${orderId}`, { headers: deriHeaders });
+    return r.data.data || r.data;
+  } catch {}
+  return null;
+}
+
+async function consultarDeriStatuses(orderId) {
+  if (!DERI_API_KEY) return null;
+  try {
+    const r = await axios.get(`${DERI_API_URL}/orders/${orderId}/statuses`, { headers: deriHeaders });
+    return r.data.data || r.data;
+  } catch {}
+  return null;
+}
+
+async function buscarDeriOrders(params) {
+  if (!DERI_API_KEY) return [];
+  try {
+    const r = await axios.get(`${DERI_API_URL}/orders`, { headers: deriHeaders, params });
+    return r.data.data?.items || [];
+  } catch {}
+  return [];
+}
+
 // ── Persistencia del token ML ──
 const OWN_TOKEN_FILE = path.join(OWN_DATA_DIR, 'ml_token.json');
 const SHARED_TOKEN_FILE = path.join(DATA_DIR, 'ml_token.json');
@@ -1609,6 +1641,12 @@ app.get('/api/ml/retiros', requireToken, async (req, res) => {
   } else {
     res.json({ total: 0, pendientes: [], retirados_hoy: [], soydelivery: [], robert: [], dac: [], mercadoenvios: [], updated_at: null, loading: retirosUpdating, progress: retirosProgress });
   }
+});
+
+// ── Deri (Robert) Webhook ──
+app.post('/webhook/deri', (req, res) => {
+  console.log('[deri/webhook]:', JSON.stringify(req.body).slice(0, 500));
+  res.json({ ok: true });
 });
 
 // ── SoyDelivery Webhooks ──
