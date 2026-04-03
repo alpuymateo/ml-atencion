@@ -1071,6 +1071,7 @@ app.get('/api/ml/preguntas/pendientes', requireToken, async (req, res) => {
     const cutoff = new Date(Date.now() - dias * 24 * 60 * 60 * 1000);
     let questions = [];
     let offset = 0;
+    let totalMl = 0;
     const PAGE = 50;
     let keepGoing = true;
     while (keepGoing) {
@@ -1078,6 +1079,7 @@ app.get('/api/ml/preguntas/pendientes', requireToken, async (req, res) => {
         params: { status, limit: PAGE, offset, sort_fields: 'date_created', sort_types: 'DESC' },
         headers: { Authorization: `Bearer ${tokenData.access_token}` }
       });
+      totalMl = r.data.total || 0;
       const batch = r.data.questions || [];
       if (!batch.length) break;
       for (const q of batch) {
@@ -1085,7 +1087,7 @@ app.get('/api/ml/preguntas/pendientes', requireToken, async (req, res) => {
         questions.push(q);
       }
       offset += PAGE;
-      if (offset >= (r.data.total || 0)) break;
+      if (offset >= totalMl) break;
     }
     const filtered = questions;
 
@@ -1117,7 +1119,7 @@ app.get('/api/ml/preguntas/pendientes', requireToken, async (req, res) => {
         answer: q.answer ? { text: q.answer.text, date_created: q.answer.date_created } : null
       };
     }));
-    res.json({ questions: enriched, total: enriched.length, total_ml: r.data.total });
+    res.json({ questions: enriched, total: enriched.length, total_ml: totalMl });
   } catch(e) {
     console.error('[preguntas/pendientes]', e.message);
     res.status(500).json({ error: e.message });
