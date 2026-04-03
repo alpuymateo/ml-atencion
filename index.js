@@ -27,7 +27,8 @@ function getSession(token) {
   return s;
 }
 
-const { CLIENT_ID, CLIENT_SECRET, REDIRECT_URI, ANTHROPIC_API_KEY } = process.env;
+const { CLIENT_ID, CLIENT_SECRET, ANTHROPIC_API_KEY } = process.env;
+const REDIRECT_URI = (process.env.REDIRECT_URI || '').trim();
 const anthropic = ANTHROPIC_API_KEY ? new Anthropic({ apiKey: ANTHROPIC_API_KEY }) : null;
 const ML_API_URL  = 'https://api.mercadolibre.com';
 const ML_AUTH_URL = 'https://auth.mercadolibre.com.uy';
