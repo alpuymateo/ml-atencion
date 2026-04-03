@@ -95,6 +95,42 @@ async function consultarSoyDeliveryHistorial(shipmentId) {
   return null;
 }
 
+// ── DAC config ──
+const DAC_LOGIN = process.env.DAC_LOGIN;
+const DAC_PASS = process.env.DAC_PASS;
+const DAC_API_URL = 'https://altis-ws.grupoagencia.com:444/JAgencia/JAgencia.asmx';
+
+let dacSession = null;
+let dacSessionExpiry = 0;
+async function getDacSession() {
+  if (dacSession && Date.now() < dacSessionExpiry) return dacSession;
+  if (!DAC_LOGIN || !DAC_PASS) return null;
+  try {
+    const r = await axios.post(`${DAC_API_URL}/wsLogin`, { Login: DAC_LOGIN, Contrasenia: DAC_PASS });
+    if (r.data.result === 0 && r.data.data?.[0]) {
+      dacSession = r.data.data[0].ID_Session;
+      dacSessionExpiry = Date.now() + 55 * 60 * 1000;
+      return dacSession;
+    }
+  } catch(e) { console.error('[dac] login error:', e.message); }
+  return null;
+}
+
+async function consultarDAC(referencia) {
+  const session = await getDacSession();
+  if (!session) return null;
+  try {
+    const r = await axios.post(`${DAC_API_URL}/wsRastreoGuia`, {
+      K_Oficina_Origen: '',
+      K_Guia: '',
+      Referencia: referencia,
+      ID_Sesion: session
+    });
+    if (r.data.result === 0) return r.data;
+  } catch {}
+  return null;
+}
+
 // ── Persistencia del token ML ──
 const OWN_TOKEN_FILE = path.join(OWN_DATA_DIR, 'ml_token.json');
 const SHARED_TOKEN_FILE = path.join(DATA_DIR, 'ml_token.json');
@@ -1302,9 +1338,45 @@ app.get('/api/ml/buscar', requireToken, async (req, res) => {
       }
     }
 
+    // 5c. Consultar DAC si es ME1
+    let dacData = null;
+    if (shipment && shipment.logistic_type === 'default') {
+      // Buscar número de guía DAC en mensajes post-venta
+      let dacGuia = null;
+      for (const m of messages) {
+        const match = (m.text || '').match(/seguimiento\s*(?:es)?:?\s*(\d{8,})/i);
+        if (match) { dacGuia = match[1]; break; }
+      }
+      if (dacGuia) {
+        const dacResult = await consultarDAC(dacGuia);
+        if (dacResult?.data) {
+          const d = dacResult.data;
+          dacData = {
+            guia: dacGuia,
+            estado: d.Estado_de_la_Guia,
+            destinatario: (d.Destinatario || '').trim(),
+            destino: `${(d.Calle_Destinatario || '').trim()}, ${d.Ciudad_Destinatario || ''}, ${d.Estado_Destinatario || ''}`,
+            oficina_destino: d.Oficina_Destino,
+            oficina_actual: d.D_Oficina_Actual,
+            remitente: (d.Remitente || '').trim(),
+            persona_recibe: d.Persona_RecibeGuia || '',
+            ci_recibe: d.ID_RecibeGuia || '',
+            historial: (dacResult.dataHistoria || []).map(h => ({
+              estado: h.D_Estado_Guia,
+              oficina: h.D_Oficina,
+              fecha: h.F_Historia,
+              usuario: h.D_Usuario,
+            })),
+            paquetes: (dacResult.dataPaquete || []).map(p => `${p.Cantidad} x ${p.D_Tipo_Empaque}`),
+          };
+        }
+      }
+    }
+
     // 6. Armar respuesta
     res.json({
       found: true,
+      dac: dacData,
       order: {
         id: order.id,
         status: order.status,

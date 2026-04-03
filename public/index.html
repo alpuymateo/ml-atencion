@@ -2163,8 +2163,7 @@ async function buscarVenta() {
               <div style="display:flex;gap:8px;padding:4px 0;font-size:11px;border-bottom:1px solid #f9fafb;">
                 <span style="width:6px;height:6px;border-radius:50%;background:${sdStatusColors[h.estado] || '#6b7280'};flex-shrink:0;margin-top:4px;"></span>
                 <div style="flex:1;">
-                  <div style="font-weight:600;color:#374151;">${h.detalle}</div>
-                  ${h.estado_nombre ? `<div style="color:#9ca3af;font-size:10px;margin-top:1px;">${h.estado_nombre.replace(/\r?\n/g, ' ').slice(0, 120)}</div>` : ''}
+                  <div style="font-weight:600;color:#374151;">${h.detalle.replace(/\s*\(.*?\)\s*$/,'')}</div>
                 </div>
                 <span style="color:#9ca3af;white-space:nowrap;">${new Date(h.fecha).toLocaleString('es-UY',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span>
               </div>
@@ -2173,9 +2172,36 @@ async function buscarVenta() {
         ` : ''}
       </div>`;
     } else if (s?.logistic_type === 'self_service') {
-      html += `<div class="card" style="margin:0;border-left:3px solid #f97316;">
-        <div style="font-size:14px;font-weight:700;color:#f97316;margin-bottom:10px;">Cadeter&iacute;a</div>
-        <div style="font-size:12px;color:#9ca3af;">Sin datos de cadeter&iacute;a vinculados a&uacute;n</div>
+      html += `<div class="card" style="margin:0;border-left:3px solid #2563eb;">
+        <div style="font-size:14px;font-weight:700;color:#2563eb;margin-bottom:10px;">Cadeter&iacute;a — Robert</div>
+        <div style="font-size:12px;color:#9ca3af;">Integraci&oacute;n pendiente</div>
+      </div>`;
+    } else if (d.dac) {
+      const dac = d.dac;
+      const dacColors = { REGISTRADA: '#d97706', DOCUMENTADA: '#d97706', DESEMBARCADO: '#2563eb', 'PROXIMO A SALIR A REPARTO': '#7c3aed', 'EN REPARTO': '#7c3aed', ENTREGADA: '#059669', CANCELADA: '#dc2626' };
+      html += `<div class="card" style="margin:0;border-left:3px solid #059669;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+          <span style="font-size:14px;font-weight:700;color:#059669;">Cadeter&iacute;a — DAC</span>
+          <span style="padding:3px 8px;border-radius:10px;font-size:11px;font-weight:600;color:white;background:${dacColors[dac.estado] || '#6b7280'};">${dac.estado}</span>
+        </div>
+        <div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">Gu&iacute;a:</span> <b>${dac.guia}</b></div>
+        <div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">Destinatario:</span> <b>${dac.destinatario}</b></div>
+        <div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">Destino:</span> ${dac.destino}</div>
+        ${dac.oficina_destino ? `<div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">Oficina destino:</span> ${dac.oficina_destino}</div>` : ''}
+        ${dac.persona_recibe ? `<div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">Recibi&oacute;:</span> <b>${dac.persona_recibe}</b> ${dac.ci_recibe ? '(CI: ' + dac.ci_recibe + ')' : ''}</div>` : ''}
+        ${dac.paquetes?.length ? `<div style="font-size:12px;margin-bottom:6px;"><span style="color:#6b7280;">Bultos:</span> ${dac.paquetes.join(', ')}</div>` : ''}
+        ${dac.historial?.length ? `
+          <div style="border-top:1px solid #f3f4f6;padding-top:8px;margin-top:6px;">
+            <div style="font-size:11px;color:#6b7280;font-weight:600;margin-bottom:6px;">Historial DAC</div>
+            ${dac.historial.map(h => `
+              <div style="display:flex;gap:8px;padding:3px 0;font-size:11px;border-bottom:1px solid #f9fafb;">
+                <span style="width:6px;height:6px;border-radius:50%;background:${dacColors[h.estado] || '#6b7280'};flex-shrink:0;margin-top:4px;"></span>
+                <div style="flex:1;font-weight:600;color:#374151;">${h.estado} — ${h.oficina}</div>
+                <span style="color:#9ca3af;white-space:nowrap;">${h.fecha}</span>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
       </div>`;
     } else if (s) {
       html += `<div class="card" style="margin:0;">
