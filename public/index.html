@@ -299,6 +299,17 @@
         <span class="nav-icon">🚚</span> Retiros
       </div>
 
+      <div class="nav-section-label">Env&iacute;os</div>
+      <div class="nav-item" data-page="envios-dac" onclick="showPage('envios-dac')">
+        <span class="nav-icon">🟢</span> DAC
+      </div>
+      <div class="nav-item" data-page="envios-sd" onclick="showPage('envios-sd')">
+        <span class="nav-icon">🟠</span> SoyDelivery
+      </div>
+      <div class="nav-item" data-page="envios-deri" onclick="showPage('envios-deri')">
+        <span class="nav-icon">🔵</span> Robert / Deri
+      </div>
+
       <div class="nav-section-label">MercadoLibre</div>
       <div class="nav-item" data-page="ml-preguntas" onclick="showPage('ml-preguntas')">
         <span class="nav-icon">💬</span> Preguntas
@@ -593,6 +604,75 @@
       <div id="retiros-list"></div>
     </div>
 
+    <!-- ── Envíos DAC ── -->
+    <div id="page-envios-dac" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div>
+          <h2 style="font-size:20px;font-weight:700;margin:0;">🟢 Env&iacute;os DAC</h2>
+          <p style="font-size:12px;color:#6b7280;margin-top:2px;">Seguimiento de env&iacute;os por DAC (Grupo Agencia)</p>
+        </div>
+        <span id="envios-dac-updated" style="font-size:11px;color:#9ca3af;"></span>
+      </div>
+      <div class="card" style="margin-bottom:16px;">
+        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+          <div style="flex:1;min-width:200px;">
+            <label style="font-size:12px;color:#6b7280;font-weight:600;display:block;margin-bottom:4px;">Buscar por n&uacute;mero de gu&iacute;a, orden o comprador</label>
+            <input type="text" id="envios-dac-input" class="search-input" style="width:100%;" placeholder="Ej: 12345678 (gu&iacute;a DAC)" onkeydown="if(event.key==='Enter')buscarEnviosDac()"/>
+          </div>
+          <button onclick="buscarEnviosDac()" style="padding:10px 20px;background:#059669;color:white;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;">Buscar</button>
+        </div>
+      </div>
+      <div id="envios-dac-resumen"></div>
+      <div id="envios-dac-resultado"></div>
+      <div id="envios-dac-list"></div>
+    </div>
+
+    <!-- ── Envíos SoyDelivery ── -->
+    <div id="page-envios-sd" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div>
+          <h2 style="font-size:20px;font-weight:700;margin:0;">🟠 Env&iacute;os SoyDelivery</h2>
+          <p style="font-size:12px;color:#6b7280;margin-top:2px;">Seguimiento de env&iacute;os Flex por SoyDelivery</p>
+        </div>
+        <span id="envios-sd-updated" style="font-size:11px;color:#9ca3af;"></span>
+      </div>
+      <div class="card" style="margin-bottom:16px;">
+        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+          <div style="flex:1;min-width:200px;">
+            <label style="font-size:12px;color:#6b7280;font-weight:600;display:block;margin-bottom:4px;">Buscar por shipment ID, orden o comprador</label>
+            <input type="text" id="envios-sd-input" class="search-input" style="width:100%;" placeholder="Ej: 46768933429 (shipment ID)" onkeydown="if(event.key==='Enter')buscarEnviosSd()"/>
+          </div>
+          <button onclick="buscarEnviosSd()" style="padding:10px 20px;background:#f97316;color:white;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;">Buscar</button>
+        </div>
+      </div>
+      <div id="envios-sd-resumen"></div>
+      <div id="envios-sd-resultado"></div>
+      <div id="envios-sd-list"></div>
+    </div>
+
+    <!-- ── Envíos Robert / Deri ── -->
+    <div id="page-envios-deri" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div>
+          <h2 style="font-size:20px;font-weight:700;margin:0;">🔵 Env&iacute;os Robert / Deri</h2>
+          <p style="font-size:12px;color:#6b7280;margin-top:2px;">Seguimiento de env&iacute;os Flex por Robert (Deri App)</p>
+        </div>
+        <span id="envios-deri-updated" style="font-size:11px;color:#9ca3af;"></span>
+      </div>
+      <div class="card" style="margin-bottom:16px;">
+        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+          <div style="flex:1;min-width:200px;">
+            <label style="font-size:12px;color:#6b7280;font-weight:600;display:block;margin-bottom:4px;">Buscar por order ID de Deri, orden ML o comprador</label>
+            <input type="text" id="envios-deri-input" class="search-input" style="width:100%;" placeholder="Ej: 12345 (Deri order ID)" onkeydown="if(event.key==='Enter')buscarEnviosDeri()"/>
+          </div>
+          <button onclick="buscarEnviosDeri()" style="padding:10px 20px;background:#2563eb;color:white;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;">Buscar</button>
+        </div>
+      </div>
+      <div id="envios-deri-resumen"></div>
+      <div id="envios-deri-resultado"></div>
+      <div id="envios-deri-list"></div>
+    </div>
+
     <div id="page-buscador" style="display:none">
       <h2 style="font-size:20px;font-weight:700;margin-bottom:16px;">Buscador de ventas</h2>
       <div class="card" style="margin-bottom:16px;">
@@ -691,7 +771,7 @@ function fmtDateTime(d) {
 }
 
 // ── Navigation ──
-const PAGES = ['tareas', 'reclamos', 'devoluciones', 'buscador', 'retiros', 'ml-analizar', 'usuarios'];
+const PAGES = ['tareas', 'reclamos', 'devoluciones', 'buscador', 'retiros', 'envios-dac', 'envios-sd', 'envios-deri', 'ml-analizar', 'usuarios'];
 const ML_TAB_PAGES = { 'ml-preguntas': 'pendientes', 'ml-postventa': 'mensajes', 'ml-reglas': 'reglas' };
 
 function showPage(page) {
@@ -740,6 +820,15 @@ function showPage(page) {
   }
   if (page === 'usuarios') {
     loadUsersPage();
+  }
+  if (page === 'envios-dac') {
+    loadEnviosDac();
+  }
+  if (page === 'envios-sd') {
+    loadEnviosSd();
+  }
+  if (page === 'envios-deri') {
+    loadEnviosDeri();
   }
 }
 
@@ -2140,6 +2229,8 @@ async function loadRetiros(forceRefresh) {
             ${e.sd_estado ? `<span style="font-size:9px;color:#f97316;">${e.sd_estado}</span>` : ''}
             ${e.dac_guia ? `<span style="font-size:9px;color:#059669;">Guía: ${e.dac_guia}</span>` : ''}
             ${e.dac_estado ? `<span style="font-size:9px;color:#059669;">${e.dac_estado}${e.dac_destino ? ' → ' + e.dac_destino : ''}</span>` : ''}
+            ${e.cadeteria === 'DAC' && !e.receiver_phone ? `<span style="font-size:9px;color:#dc2626;font-weight:700;">⚠️ SIN TELÉFONO</span>` : ''}
+            ${e.cadeteria === 'DAC' && e.receiver_phone ? `<span style="font-size:9px;color:#6b7280;">Tel: ${e.receiver_phone}</span>` : ''}
           </div>
         </div>
       </div>`;
@@ -2180,6 +2271,270 @@ async function loadRetiros(forceRefresh) {
   } catch(e) {
     list.innerHTML = `<div class="card" style="color:#dc2626;">Error: ${e.message}</div>`;
   }
+}
+
+// ── Envíos por cadete ──
+
+function renderEnvioItem(e, color) {
+  const etapaColors = { pendiente: '#dc2626', en_camino_sin_escaneo: '#d97706', en_camino: '#2563eb', entregado: '#059669' };
+  const etapaLabels = { pendiente: 'Pendiente', en_camino_sin_escaneo: 'Sin escaneo', en_camino: 'En camino', entregado: 'Entregado' };
+  return `<div style="padding:10px 14px;margin-bottom:4px;background:white;border:1px solid #f3f4f6;border-radius:6px;cursor:pointer;font-size:12px;" onclick="document.getElementById('buscar-input').value='${e.order_id}';showPage('buscador');buscarVenta();">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:600;margin-bottom:2px;">${(e.item_title||'').slice(0,50)}</div>
+        <div style="color:#6b7280;">${e.buyer_name || e.buyer} · ${e.receiver_city || ''}, ${e.receiver_state || ''}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;">
+        <span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;color:white;background:${etapaColors[e.etapa]||'#6b7280'};">${etapaLabels[e.etapa]||e.etapa}</span>
+        ${e.dac_guia ? `<span style="font-size:10px;color:#059669;">Guía: ${e.dac_guia}</span>` : ''}
+        ${e.dac_estado ? `<span style="font-size:10px;color:#059669;">${e.dac_estado}</span>` : ''}
+        ${e.sd_estado ? `<span style="font-size:10px;color:#f97316;">${e.sd_estado}</span>` : ''}
+        ${e.retirado_por ? `<span style="font-size:10px;color:#7c3aed;">${e.retirado_por}</span>` : ''}
+        ${e.tracking ? `<span style="font-size:10px;color:#9ca3af;">#${e.tracking}</span>` : ''}
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderEnviosStages(stages, items, renderFn) {
+  let html = '';
+  for (const s of stages) {
+    if (!s.data.length) continue;
+    const id = 'envios-stage-' + s.key + '-' + Math.random().toString(36).slice(2,6);
+    html += `<div class="card" style="margin-bottom:12px;border-left:4px solid ${s.color};padding:0;overflow:hidden;">
+      <div style="padding:12px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:${s.bg};" onclick="const el=document.getElementById('${id}');const a=this.querySelector('.arrow');if(el.style.display==='none'){el.style.display='';a.textContent='▼'}else{el.style.display='none';a.textContent='▶'}">
+        <span style="font-size:15px;font-weight:700;color:${s.color};">${s.icon} ${s.label} <span style="font-weight:400;color:#9ca3af;font-size:13px;">(${s.data.length})</span></span>
+        <span class="arrow" style="font-size:12px;color:#9ca3af;">▶</span>
+      </div>
+      <div id="${id}" style="display:none;padding:8px 16px 14px;">
+        ${s.data.map(e => renderFn(e)).join('')}
+      </div>
+    </div>`;
+  }
+  return html || '<div class="card" style="text-align:center;color:#9ca3af;padding:32px;">No hay env&iacute;os activos</div>';
+}
+
+// ── DAC ──
+async function loadEnviosDac() {
+  const list = document.getElementById('envios-dac-list');
+  const resumen = document.getElementById('envios-dac-resumen');
+  const updated = document.getElementById('envios-dac-updated');
+  list.innerHTML = '<p style="color:#9ca3af;font-size:13px;padding:16px;">Cargando...</p>';
+  resumen.innerHTML = '';
+  try {
+    const r = await fetch('/api/envios/dac', { headers: authHeaders() });
+    const d = await r.json();
+    if (updated && d.updated_at) updated.textContent = 'Actualizado: ' + new Date(d.updated_at).toLocaleString('es-UY',{hour:'2-digit',minute:'2-digit'});
+
+    const stages = [
+      { key: 'dac-pend', label: 'Pendientes', data: d.pendientes||[], color: '#dc2626', icon: '📦', bg: '#fef2f2' },
+      { key: 'dac-cam', label: 'En camino', data: d.en_camino||[], color: '#2563eb', icon: '🚚', bg: '#eff6ff' },
+      { key: 'dac-ent', label: 'Entregados', data: d.entregados||[], color: '#059669', icon: '✅', bg: '#f0fdf4' },
+    ];
+    resumen.innerHTML = `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+      ${stages.map(s => `<div class="card" style="flex:1;min-width:100px;margin:0;text-align:center;border-top:3px solid ${s.color};">
+        <div style="font-size:22px;">${s.icon}</div>
+        <div style="font-size:24px;font-weight:700;color:${s.color};">${s.data.length}</div>
+        <div style="font-size:10px;color:#6b7280;">${s.label}</div>
+      </div>`).join('')}
+      <div class="card" style="flex:1;min-width:100px;margin:0;text-align:center;border-top:3px solid #059669;">
+        <div style="font-size:22px;">📊</div>
+        <div style="font-size:24px;font-weight:700;color:#059669;">${d.total||0}</div>
+        <div style="font-size:10px;color:#6b7280;">Total</div>
+      </div>
+    </div>`;
+    list.innerHTML = renderEnviosStages(stages, d.items, e => renderEnvioItem(e, '#059669'));
+  } catch(e) { list.innerHTML = `<div class="card" style="color:#dc2626;">Error: ${e.message}</div>`; }
+}
+
+async function buscarEnviosDac() {
+  const q = document.getElementById('envios-dac-input').value.trim();
+  if (!q) return;
+  const resultado = document.getElementById('envios-dac-resultado');
+  resultado.innerHTML = '<p style="color:#9ca3af;font-size:13px;padding:16px;">Buscando...</p>';
+  try {
+    const r = await fetch(`/api/envios/dac?q=${encodeURIComponent(q)}`, { headers: authHeaders() });
+    const d = await r.json();
+    if (d.guia) {
+      // Resultado directo de DAC API
+      const estadoColor = d.estado === 'ENTREGADA' ? '#059669' : d.estado === 'EN TRANSITO' ? '#2563eb' : '#d97706';
+      resultado.innerHTML = `<div class="card" style="margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <div>
+            <div style="font-size:16px;font-weight:700;">Gu&iacute;a DAC: ${d.guia}</div>
+            <div style="font-size:13px;color:#6b7280;">${d.destinatario} → ${d.destino}</div>
+          </div>
+          <span style="padding:4px 12px;border-radius:12px;font-size:12px;font-weight:700;color:white;background:${estadoColor};">${d.estado}</span>
+        </div>
+        ${d.oficina_actual ? `<div style="font-size:12px;margin-bottom:4px;"><b>Oficina actual:</b> ${d.oficina_actual}</div>` : ''}
+        ${d.oficina_destino ? `<div style="font-size:12px;margin-bottom:4px;"><b>Oficina destino:</b> ${d.oficina_destino}</div>` : ''}
+        ${d.persona_recibe ? `<div style="font-size:12px;margin-bottom:4px;"><b>Recibido por:</b> ${d.persona_recibe} ${d.ci_recibe ? '(CI: '+d.ci_recibe+')' : ''}</div>` : ''}
+        ${d.paquetes?.length ? `<div style="font-size:12px;margin-bottom:8px;"><b>Paquetes:</b> ${d.paquetes.join(', ')}</div>` : ''}
+        ${d.historial?.length ? `<div style="border-top:1px solid #e5e7eb;padding-top:8px;margin-top:8px;">
+          <div style="font-size:12px;font-weight:700;margin-bottom:6px;">Historial</div>
+          ${d.historial.map(h => `<div style="display:flex;gap:8px;padding:3px 0;font-size:11px;">
+            <span style="color:#6b7280;min-width:120px;">${h.fecha || ''}</span>
+            <span style="font-weight:600;">${h.estado}</span>
+            <span style="color:#9ca3af;">${h.oficina || ''}</span>
+          </div>`).join('')}
+        </div>` : ''}
+      </div>`;
+    } else if (d.items?.length) {
+      resultado.innerHTML = `<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:8px;">${d.total} resultados</div>${d.items.map(e => renderEnvioItem(e, '#059669')).join('')}</div>`;
+    } else {
+      resultado.innerHTML = '<div class="card" style="text-align:center;color:#9ca3af;padding:24px;">No se encontr&oacute; la gu&iacute;a</div>';
+    }
+  } catch(e) { resultado.innerHTML = `<div class="card" style="color:#dc2626;">Error: ${e.message}</div>`; }
+}
+
+// ── SoyDelivery ──
+async function loadEnviosSd() {
+  const list = document.getElementById('envios-sd-list');
+  const resumen = document.getElementById('envios-sd-resumen');
+  const updated = document.getElementById('envios-sd-updated');
+  list.innerHTML = '<p style="color:#9ca3af;font-size:13px;padding:16px;">Cargando...</p>';
+  resumen.innerHTML = '';
+  try {
+    const r = await fetch('/api/envios/soydelivery', { headers: authHeaders() });
+    const d = await r.json();
+    if (updated && d.updated_at) updated.textContent = 'Actualizado: ' + new Date(d.updated_at).toLocaleString('es-UY',{hour:'2-digit',minute:'2-digit'});
+
+    const stages = [
+      { key: 'sd-pend', label: 'Pendientes', data: d.pendientes||[], color: '#dc2626', icon: '📦', bg: '#fef2f2' },
+      { key: 'sd-sin', label: 'Sin escaneo', data: d.en_camino_sin_escaneo||[], color: '#d97706', icon: '⚠️', bg: '#fffbeb' },
+      { key: 'sd-cam', label: 'En camino', data: d.en_camino||[], color: '#2563eb', icon: '🚚', bg: '#eff6ff' },
+      { key: 'sd-ent', label: 'Entregados', data: d.entregados||[], color: '#059669', icon: '✅', bg: '#f0fdf4' },
+    ];
+    resumen.innerHTML = `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+      ${stages.map(s => `<div class="card" style="flex:1;min-width:100px;margin:0;text-align:center;border-top:3px solid ${s.color};">
+        <div style="font-size:22px;">${s.icon}</div>
+        <div style="font-size:24px;font-weight:700;color:${s.color};">${s.data.length}</div>
+        <div style="font-size:10px;color:#6b7280;">${s.label}</div>
+      </div>`).join('')}
+      <div class="card" style="flex:1;min-width:100px;margin:0;text-align:center;border-top:3px solid #f97316;">
+        <div style="font-size:22px;">📊</div>
+        <div style="font-size:24px;font-weight:700;color:#f97316;">${d.total||0}</div>
+        <div style="font-size:10px;color:#6b7280;">Total</div>
+      </div>
+    </div>`;
+    list.innerHTML = renderEnviosStages(stages, d.items, e => renderEnvioItem(e, '#f97316'));
+  } catch(e) { list.innerHTML = `<div class="card" style="color:#dc2626;">Error: ${e.message}</div>`; }
+}
+
+async function buscarEnviosSd() {
+  const q = document.getElementById('envios-sd-input').value.trim();
+  if (!q) return;
+  const resultado = document.getElementById('envios-sd-resultado');
+  resultado.innerHTML = '<p style="color:#9ca3af;font-size:13px;padding:16px;">Buscando...</p>';
+  try {
+    const r = await fetch(`/api/envios/soydelivery?q=${encodeURIComponent(q)}`, { headers: authHeaders() });
+    const d = await r.json();
+    if (d.pedido_id) {
+      const sdColors = { P: '#d97706', S: '#2563eb', A: '#2563eb', R: '#7c3aed', E: '#059669', N: '#dc2626' };
+      const sdLabels = { P: 'Pendiente', S: 'Solicitado', A: 'Aceptado', R: 'Retirado', E: 'Entregado', N: 'No entregado' };
+      resultado.innerHTML = `<div class="card" style="margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <div>
+            <div style="font-size:16px;font-weight:700;">Pedido SD #${d.pedido_id}</div>
+            <div style="font-size:13px;color:#6b7280;">${d.estado_nombre || ''}</div>
+          </div>
+          <span style="padding:4px 12px;border-radius:12px;font-size:12px;font-weight:700;color:white;background:${sdColors[d.estado]||'#6b7280'};">${sdLabels[d.estado]||d.estado}</span>
+        </div>
+        ${d.explicacion ? `<div style="font-size:12px;margin-bottom:6px;padding:6px 10px;background:#fff7ed;border-radius:6px;color:#92400e;">${d.explicacion}</div>` : ''}
+        ${d.fecha_ingreso ? `<div style="font-size:12px;margin-bottom:2px;"><b>Ingreso:</b> ${d.fecha_ingreso}</div>` : ''}
+        ${d.fecha_entrega ? `<div style="font-size:12px;margin-bottom:2px;"><b>Entrega programada:</b> ${d.fecha_entrega}</div>` : ''}
+        ${d.fecha_entregado ? `<div style="font-size:12px;margin-bottom:2px;"><b>Entregado:</b> ${d.fecha_entregado}</div>` : ''}
+        ${d.delivery ? `<div style="margin-top:8px;padding:8px 10px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;font-size:12px;">
+          <b>Repartidor:</b> ${d.delivery.nombre || 'Sin asignar'}
+          ${d.delivery.telefono ? ` · <a href="tel:${d.delivery.telefono}" style="color:#2563eb;">${d.delivery.telefono}</a>` : ''}
+          ${d.delivery.franja ? ` · ${d.delivery.franja}` : ''}
+          ${d.delivery.fecha_estimada ? `<br><b>Estimada:</b> ${d.delivery.fecha_estimada}` : ''}
+        </div>` : ''}
+        ${d.historial?.length ? `<div style="border-top:1px solid #e5e7eb;padding-top:8px;margin-top:8px;">
+          <div style="font-size:12px;font-weight:700;margin-bottom:6px;">Historial</div>
+          ${d.historial.map(h => `<div style="display:flex;gap:8px;padding:3px 0;font-size:11px;">
+            <span style="color:#6b7280;min-width:130px;">${h.fecha || ''}</span>
+            <span style="padding:1px 6px;border-radius:8px;font-size:10px;font-weight:600;color:white;background:${sdColors[h.estado]||'#6b7280'};">${h.estado_nombre||h.estado}</span>
+            <span style="color:#374151;">${h.detalle || ''}</span>
+          </div>`).join('')}
+        </div>` : ''}
+      </div>`;
+    } else if (d.items?.length) {
+      resultado.innerHTML = `<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:8px;">${d.total} resultados</div>${d.items.map(e => renderEnvioItem(e, '#f97316')).join('')}</div>`;
+    } else {
+      resultado.innerHTML = '<div class="card" style="text-align:center;color:#9ca3af;padding:24px;">No se encontr&oacute; el env&iacute;o</div>';
+    }
+  } catch(e) { resultado.innerHTML = `<div class="card" style="color:#dc2626;">Error: ${e.message}</div>`; }
+}
+
+// ── Robert / Deri ──
+async function loadEnviosDeri() {
+  const list = document.getElementById('envios-deri-list');
+  const resumen = document.getElementById('envios-deri-resumen');
+  const updated = document.getElementById('envios-deri-updated');
+  list.innerHTML = '<p style="color:#9ca3af;font-size:13px;padding:16px;">Cargando...</p>';
+  resumen.innerHTML = '';
+  try {
+    const r = await fetch('/api/envios/deri', { headers: authHeaders() });
+    const d = await r.json();
+    if (updated && d.updated_at) updated.textContent = 'Actualizado: ' + new Date(d.updated_at).toLocaleString('es-UY',{hour:'2-digit',minute:'2-digit'});
+
+    const stages = [
+      { key: 'deri-pend', label: 'Pendientes', data: d.pendientes||[], color: '#dc2626', icon: '📦', bg: '#fef2f2' },
+      { key: 'deri-cam', label: 'En camino', data: d.en_camino||[], color: '#2563eb', icon: '🚚', bg: '#eff6ff' },
+      { key: 'deri-ent', label: 'Entregados', data: d.entregados||[], color: '#059669', icon: '✅', bg: '#f0fdf4' },
+    ];
+    resumen.innerHTML = `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+      ${stages.map(s => `<div class="card" style="flex:1;min-width:100px;margin:0;text-align:center;border-top:3px solid ${s.color};">
+        <div style="font-size:22px;">${s.icon}</div>
+        <div style="font-size:24px;font-weight:700;color:${s.color};">${s.data.length}</div>
+        <div style="font-size:10px;color:#6b7280;">${s.label}</div>
+      </div>`).join('')}
+      <div class="card" style="flex:1;min-width:100px;margin:0;text-align:center;border-top:3px solid #2563eb;">
+        <div style="font-size:22px;">📊</div>
+        <div style="font-size:24px;font-weight:700;color:#2563eb;">${d.total||0}</div>
+        <div style="font-size:10px;color:#6b7280;">Total</div>
+      </div>
+    </div>`;
+    list.innerHTML = renderEnviosStages(stages, d.items, e => renderEnvioItem(e, '#2563eb'));
+  } catch(e) { list.innerHTML = `<div class="card" style="color:#dc2626;">Error: ${e.message}</div>`; }
+}
+
+async function buscarEnviosDeri() {
+  const q = document.getElementById('envios-deri-input').value.trim();
+  if (!q) return;
+  const resultado = document.getElementById('envios-deri-resultado');
+  resultado.innerHTML = '<p style="color:#9ca3af;font-size:13px;padding:16px;">Buscando...</p>';
+  try {
+    const r = await fetch(`/api/envios/deri?q=${encodeURIComponent(q)}`, { headers: authHeaders() });
+    const d = await r.json();
+    if (d.order) {
+      const o = d.order;
+      const statusColor = o.status === 'delivered' ? '#059669' : o.status === 'in_transit' ? '#2563eb' : o.status === 'pending' ? '#d97706' : '#6b7280';
+      resultado.innerHTML = `<div class="card" style="margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <div>
+            <div style="font-size:16px;font-weight:700;">Pedido Deri #${o.id || q}</div>
+            <div style="font-size:13px;color:#6b7280;">${o.recipient_name || o.recipient?.name || ''} · ${o.recipient_address || o.recipient?.address || ''}</div>
+          </div>
+          <span style="padding:4px 12px;border-radius:12px;font-size:12px;font-weight:700;color:white;background:${statusColor};">${o.status || 'desconocido'}</span>
+        </div>
+        ${o.tracking_url ? `<div style="font-size:12px;margin-bottom:4px;"><a href="${o.tracking_url}" target="_blank" style="color:#2563eb;">Ver tracking</a></div>` : ''}
+        ${d.historial?.length ? `<div style="border-top:1px solid #e5e7eb;padding-top:8px;margin-top:8px;">
+          <div style="font-size:12px;font-weight:700;margin-bottom:6px;">Historial</div>
+          ${d.historial.map(h => `<div style="display:flex;gap:8px;padding:3px 0;font-size:11px;">
+            <span style="color:#6b7280;min-width:130px;">${h.created_at || h.date || ''}</span>
+            <span style="font-weight:600;">${h.status || h.name || ''}</span>
+            <span style="color:#374151;">${h.description || ''}</span>
+          </div>`).join('')}
+        </div>` : ''}
+      </div>`;
+    } else if (d.items?.length) {
+      resultado.innerHTML = `<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:8px;">${d.total} resultados</div>${d.items.map(e => renderEnvioItem(e, '#2563eb')).join('')}</div>`;
+    } else {
+      resultado.innerHTML = '<div class="card" style="text-align:center;color:#9ca3af;padding:24px;">No se encontr&oacute; el env&iacute;o</div>';
+    }
+  } catch(e) { resultado.innerHTML = `<div class="card" style="color:#dc2626;">Error: ${e.message}</div>`; }
 }
 
 // ── Buscador de ventas ──
