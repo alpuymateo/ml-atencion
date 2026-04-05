@@ -298,6 +298,9 @@
       <div class="nav-item" data-page="retiros" onclick="showPage('retiros')">
         <span class="nav-icon">🚚</span> Retiros
       </div>
+      <div class="nav-item" data-page="retira-local" onclick="showPage('retira-local')">
+        <span class="nav-icon">🏪</span> Retira en local
+      </div>
 
       <div class="nav-section-label">Env&iacute;os</div>
       <div class="nav-item" data-page="envios-dac" onclick="showPage('envios-dac')">
@@ -673,6 +676,14 @@
       <div id="envios-deri-list"></div>
     </div>
 
+    <div id="page-retira-local" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h2 style="font-size:20px;font-weight:700;margin:0;">🏪 Retira en local</h2>
+        <button onclick="loadRetiraLocal()" style="padding:8px 14px;background:#7c3aed;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">Actualizar</button>
+      </div>
+      <div id="retira-local-list"></div>
+    </div>
+
     <div id="page-buscador" style="display:none">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
         <button id="btn-volver" style="display:none;padding:6px 12px;background:#f3f4f6;color:#374151;border:none;border-radius:6px;font-size:13px;cursor:pointer;" onclick="if(_previousPage){showPage(_previousPage);_previousPage=null;}">← Volver</button>
@@ -774,7 +785,7 @@ function fmtDateTime(d) {
 }
 
 // ── Navigation ──
-const PAGES = ['tareas', 'reclamos', 'devoluciones', 'buscador', 'retiros', 'envios-dac', 'envios-sd', 'envios-deri', 'ml-analizar', 'usuarios'];
+const PAGES = ['tareas', 'reclamos', 'devoluciones', 'buscador', 'retiros', 'retira-local', 'envios-dac', 'envios-sd', 'envios-deri', 'ml-analizar', 'usuarios'];
 const ML_TAB_PAGES = { 'ml-preguntas': 'pendientes', 'ml-postventa': 'mensajes', 'ml-reglas': 'reglas' };
 
 let _previousPage = null;
@@ -822,6 +833,9 @@ function showPage(page) {
   }
   if (page === 'retiros') {
     loadRetiros();
+  }
+  if (page === 'retira-local') {
+    loadRetiraLocal();
   }
   if (page === 'ml-analizar') {
     initAnalizarPage('pendientes');
@@ -2528,6 +2542,39 @@ async function buscarEnviosDeri() {
       resultado.innerHTML = '<div class="card" style="text-align:center;color:#9ca3af;padding:24px;">No se encontr&oacute; el env&iacute;o</div>';
     }
   } catch(e) { resultado.innerHTML = `<div class="card" style="color:#dc2626;">Error: ${e.message}</div>`; }
+}
+
+// ── Retira en local ──
+async function loadRetiraLocal() {
+  const list = document.getElementById('retira-local-list');
+  list.innerHTML = '<p style="color:#9ca3af;font-size:13px;padding:16px;">Cargando...</p>';
+  try {
+    const r = await fetch('/api/retira-local', { headers: authHeaders() });
+    const d = await r.json();
+    if (!d.items?.length) {
+      list.innerHTML = '<div class="card" style="text-align:center;color:#9ca3af;padding:32px;">No hay pedidos para retirar en local</div>';
+      return;
+    }
+
+    list.innerHTML = `<div class="card" style="margin-bottom:12px;">
+      <div style="font-size:14px;font-weight:700;margin-bottom:10px;">${d.total} pedidos pendientes de retiro en local</div>
+      ${d.items.map(e => `
+        <div style="padding:10px 14px;margin-bottom:4px;background:white;border:1px solid #f3f4f6;border-radius:6px;cursor:pointer;font-size:12px;" onclick="document.getElementById('buscar-input').value='${e.order_id}';showPage('buscador');buscarVenta();">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:600;">${(e.item_title||'').slice(0,50)}</div>
+              <div style="color:#6b7280;margin-top:2px;">${e.buyer_name || e.buyer} · ${e.quantity} unid. · $${e.total_amount || ''}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0;">
+              <span style="font-size:10px;color:#9ca3af;">${new Date(e.date_created).toLocaleDateString('es-UY',{day:'2-digit',month:'2-digit'})}</span>
+              ${e.mensajes_no_leidos ? `<span style="font-size:10px;color:#dc2626;font-weight:700;">${e.mensajes_no_leidos} sin leer</span>` : ''}
+            </div>
+          </div>
+          ${e.ultimo_msg ? `<div style="margin-top:4px;padding:4px 8px;background:#f5f3ff;border-radius:4px;font-size:11px;color:#7c3aed;"><b>Comprador:</b> ${e.ultimo_msg}</div>` : ''}
+        </div>
+      `).join('')}
+    </div>`;
+  } catch(e) { list.innerHTML = `<div class="card" style="color:#dc2626;">Error: ${e.message}</div>`; }
 }
 
 // ── Buscador de ventas ──
