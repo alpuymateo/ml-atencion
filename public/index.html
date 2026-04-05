@@ -2314,8 +2314,11 @@ function renderEnvioItem(e, color) {
         ${e.sd_estado ? `<span style="font-size:10px;color:#f97316;">${e.sd_estado}</span>` : ''}
         ${e.retirado_por ? `<span style="font-size:10px;color:#7c3aed;">${e.retirado_por}</span>` : ''}
         ${e.tracking ? `<span style="font-size:10px;color:#9ca3af;">#${e.tracking}</span>` : ''}
+        ${e.mensajes_no_leidos ? `<span style="font-size:10px;color:#dc2626;font-weight:700;">${e.mensajes_no_leidos} sin leer</span>` : ''}
+        ${e.receiver_phone ? `<span style="font-size:10px;color:#6b7280;">Tel: ${e.receiver_phone}</span>` : (e.cadeteria==='DAC' ? `<span style="font-size:10px;color:#dc2626;font-weight:700;">⚠️ Sin tel</span>` : '')}
       </div>
     </div>
+    ${e.ultimo_msg_buyer ? `<div style="margin-top:4px;padding:4px 8px;background:#f5f3ff;border-radius:4px;font-size:11px;color:#7c3aed;"><b>Comprador:</b> ${e.ultimo_msg_buyer}</div>` : ''}
   </div>`;
 }
 
@@ -2350,6 +2353,7 @@ async function loadEnviosDac() {
     if (updated && d.updated_at) updated.textContent = 'Actualizado: ' + new Date(d.updated_at).toLocaleString('es-UY',{hour:'2-digit',minute:'2-digit'});
 
     const stages = [
+      { key: 'dac-acuerda', label: 'Acuerda comprador', data: d.acuerda||[], color: '#7c3aed', icon: '💬', bg: '#f5f3ff' },
       { key: 'dac-sincoord', label: 'Pendientes de coordinar', data: d.sin_coordinar||[], color: '#dc2626', icon: '⚠️', bg: '#fef2f2' },
       { key: 'dac-coord', label: 'Coordinados (sin retiro)', data: d.coordinados||[], color: '#d97706', icon: '📦', bg: '#fffbeb' },
       { key: 'dac-ret', label: 'Retirados por DAC', data: d.retirados||[], color: '#2563eb', icon: '🚚', bg: '#eff6ff' },
