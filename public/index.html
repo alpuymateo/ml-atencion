@@ -2105,102 +2105,76 @@ async function loadRetiros(forceRefresh) {
     }
 
     // Resumen cards
-    const pendientes = d.pendientes || [];
-    const retirados = d.retirados || [];
-    window._retirosData = { pendientes, retirados };
-
     const catColors = { SoyDelivery: '#f97316', Robert: '#2563eb', DAC: '#059669', 'Mercado Envíos': '#d97706' };
     const catIcons = { SoyDelivery: '🟠', Robert: '🔵', DAC: '🟢', 'Mercado Envíos': '🟡' };
-    const allItems = [...pendientes, ...retirados];
-    const byCat = {};
-    allItems.forEach(e => { if (!byCat[e.cadeteria]) byCat[e.cadeteria] = { pendientes: [], retirados: [] }; e.retirado ? byCat[e.cadeteria].retirados.push(e) : byCat[e.cadeteria].pendientes.push(e); });
 
-    resumen.innerHTML = '';
-    list.innerHTML = '';
+    // Pipeline stages
+    const stages = [
+      { key: 'pendientes', label: 'Pendientes de retiro', data: d.pendientes || [], color: '#dc2626', icon: '📦', bg: '#fef2f2' },
+      { key: 'sin_escaneo', label: 'En camino (sin escaneo)', data: d.en_camino_sin_escaneo || [], color: '#d97706', icon: '⚠️', bg: '#fffbeb' },
+      { key: 'en_camino', label: 'En camino', data: d.en_camino || [], color: '#2563eb', icon: '🚚', bg: '#eff6ff' },
+      { key: 'entregados', label: 'Entregados', data: d.entregados || [], color: '#059669', icon: '✅', bg: '#f0fdf4' },
+    ];
 
-    // Cards por cadetería (expandibles)
-    let html = `<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
-      <div class="card" style="flex:1;min-width:130px;margin:0;text-align:center;border-top:3px solid #dc2626;">
-        <div style="font-size:24px;font-weight:700;color:#dc2626;">${pendientes.length}</div>
-        <div style="font-size:11px;color:#6b7280;">Pendientes</div>
-      </div>
-      <div class="card" style="flex:1;min-width:130px;margin:0;text-align:center;border-top:3px solid #059669;">
-        <div style="font-size:24px;font-weight:700;color:#059669;">${retirados.length}</div>
-        <div style="font-size:11px;color:#6b7280;">Retirados</div>
-      </div>
-      <div class="card" style="flex:1;min-width:130px;margin:0;text-align:center;border-top:3px solid #374151;">
-        <div style="font-size:24px;font-weight:700;">${d.total}</div>
-        <div style="font-size:11px;color:#6b7280;">Total</div>
-      </div>
+    // Summary pipeline
+    resumen.innerHTML = `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+      ${stages.map(s => `
+        <div class="card" style="flex:1;min-width:120px;margin:0;text-align:center;border-top:3px solid ${s.color};">
+          <div style="font-size:22px;">${s.icon}</div>
+          <div style="font-size:24px;font-weight:700;color:${s.color};">${s.data.length}</div>
+          <div style="font-size:10px;color:#6b7280;">${s.label}</div>
+        </div>
+      `).join('')}
     </div>`;
 
-    for (const [cat, data] of Object.entries(byCat)) {
-      const color = catColors[cat] || '#6b7280';
-      const icon = catIcons[cat] || '';
-      const total = data.pendientes.length + data.retirados.length;
-      const id = 'retiro-cat-' + cat.replace(/\s/g, '_');
+    function renderItem(e) {
+      return `<div style="padding:8px 12px;margin-bottom:4px;background:white;border:1px solid #f3f4f6;border-radius:6px;cursor:pointer;font-size:12px;" onclick="document.getElementById('buscar-input').value='${e.order_id}';showPage('buscador');buscarVenta();">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
+          <div style="flex:1;min-width:0;">
+            <span style="font-weight:600;">${(e.item_title||'').slice(0,45)}</span>
+            <span style="color:#9ca3af;"> · ${e.buyer_name || e.buyer} · ${e.receiver_city || ''}</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0;">
+            <span style="padding:1px 6px;border-radius:8px;font-size:9px;font-weight:600;color:${catColors[e.cadeteria]||'#6b7280'};background:${catColors[e.cadeteria]||'#6b7280'}18;">${catIcons[e.cadeteria]||''} ${e.cadeteria}</span>
+            ${e.retirado_por ? `<span style="font-size:9px;color:#059669;">${e.retirado_por}</span>` : ''}
+            ${e.sd_estado ? `<span style="font-size:9px;color:#f97316;">${e.sd_estado}</span>` : ''}
+          </div>
+        </div>
+      </div>`;
+    }
 
-      html += `<div class="card" style="margin-bottom:12px;border-left:4px solid ${color};padding:0;overflow:hidden;">
-        <div style="padding:14px 18px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;" onclick="const el=document.getElementById('${id}');const arrow=this.querySelector('.arrow');if(el.style.display==='none'){el.style.display='';arrow.textContent='▼'}else{el.style.display='none';arrow.textContent='▶'}">
+    // Render each stage as expandable section
+    let html = '';
+    for (const s of stages) {
+      if (!s.data.length) continue;
+      const id = 'stage-' + s.key;
+
+      // Group by cadetería
+      const byCat = {};
+      s.data.forEach(e => { if (!byCat[e.cadeteria]) byCat[e.cadeteria] = []; byCat[e.cadeteria].push(e); });
+
+      html += `<div class="card" style="margin-bottom:12px;border-left:4px solid ${s.color};padding:0;overflow:hidden;">
+        <div style="padding:12px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:${s.bg};" onclick="const el=document.getElementById('${id}');const a=this.querySelector('.arrow');if(el.style.display==='none'){el.style.display='';a.textContent='▼'}else{el.style.display='none';a.textContent='▶'}">
           <div>
-            <span style="font-size:16px;font-weight:700;color:${color};">${icon} ${cat}</span>
-            <span style="font-size:13px;color:#9ca3af;margin-left:8px;">${total} env&iacute;os</span>
-            <span style="font-size:11px;color:#dc2626;margin-left:8px;">${data.pendientes.length} pendientes</span>
-            <span style="font-size:11px;color:#059669;margin-left:6px;">${data.retirados.length} retirados</span>
+            <span style="font-size:15px;font-weight:700;color:${s.color};">${s.icon} ${s.label}</span>
+            <span style="font-size:13px;color:#9ca3af;margin-left:8px;">(${s.data.length})</span>
+            <span style="font-size:11px;color:#6b7280;margin-left:8px;">${Object.entries(byCat).map(([c,items]) => catIcons[c]+' '+items.length).join('  ')}</span>
           </div>
           <span class="arrow" style="font-size:12px;color:#9ca3af;">▶</span>
         </div>
-        <div id="${id}" style="display:none;padding:0 18px 14px;">`;
+        <div id="${id}" style="display:none;padding:8px 16px 14px;">`;
 
-      // Pendientes
-      if (data.pendientes.length) {
-        html += `<div style="font-size:12px;font-weight:700;color:#dc2626;margin-bottom:6px;margin-top:4px;">Pendientes (${data.pendientes.length})</div>`;
-        data.pendientes.forEach(e => {
-          html += `<div style="padding:8px 12px;margin-bottom:4px;background:#fef2f2;border-radius:6px;cursor:pointer;font-size:12px;" onclick="document.getElementById('buscar-input').value='${e.order_id}';showPage('buscador');buscarVenta();">
-            <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
-              <div style="flex:1;min-width:0;">
-                <span style="font-weight:600;">${e.item_title.slice(0,50)}</span>
-                <span style="color:#9ca3af;"> · ${e.buyer_name || e.buyer} · ${e.receiver_city || ''}</span>
-              </div>
-              ${e.sd_estado ? `<span style="padding:1px 6px;border-radius:8px;font-size:9px;font-weight:600;background:#fff7ed;color:#f97316;">${e.sd_estado}</span>` : ''}
-            </div>
-          </div>`;
-        });
-      }
-
-      // Retirados agrupados por fecha
-      if (data.retirados.length) {
-        html += `<div style="font-size:12px;font-weight:700;color:#059669;margin-bottom:6px;margin-top:12px;">Retirados (${data.retirados.length})</div>`;
-        const byDate = {};
-        data.retirados.forEach(e => {
-          const dt = e.fecha_retiro ? new Date(e.fecha_retiro) : new Date(e.date_created);
-          const key = dt.toLocaleDateString('es-UY', { weekday: 'short', day: '2-digit', month: '2-digit' });
-          if (!byDate[key]) byDate[key] = [];
-          byDate[key].push(e);
-        });
-        for (const [date, items] of Object.entries(byDate)) {
-          html += `<div style="font-size:11px;font-weight:600;color:#6b7280;margin:8px 0 4px;text-transform:capitalize;">${date} (${items.length})</div>`;
-          items.forEach(e => {
-            html += `<div style="padding:8px 12px;margin-bottom:4px;background:#f0fdf4;border-radius:6px;cursor:pointer;font-size:12px;" onclick="document.getElementById('buscar-input').value='${e.order_id}';showPage('buscador');buscarVenta();">
-              <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
-                <div style="flex:1;min-width:0;">
-                  <span style="font-weight:600;">${e.item_title.slice(0,50)}</span>
-                  <span style="color:#9ca3af;"> · ${e.buyer_name || e.buyer} · ${e.receiver_city || ''}</span>
-                </div>
-                <div style="text-align:right;">
-                  ${e.retirado_por ? `<div style="font-size:10px;color:#059669;font-weight:600;">${e.retirado_por}</div>` : ''}
-                  ${e.fecha_retiro ? `<div style="font-size:10px;color:#9ca3af;">${new Date(e.fecha_retiro).toLocaleString('es-UY',{hour:'2-digit',minute:'2-digit'})}</div>` : ''}
-                </div>
-              </div>
-            </div>`;
-          });
-        }
+      for (const [cat, items] of Object.entries(byCat)) {
+        html += `<div style="margin-bottom:10px;">
+          <div style="font-size:12px;font-weight:700;color:${catColors[cat]||'#6b7280'};margin-bottom:4px;">${catIcons[cat]||''} ${cat} (${items.length})</div>
+          ${items.map(renderItem).join('')}
+        </div>`;
       }
 
       html += `</div></div>`;
     }
 
-    list.innerHTML = html;
+    list.innerHTML = html || '<div class="card" style="text-align:center;color:#9ca3af;padding:32px;">No hay env&iacute;os activos</div>';
   } catch(e) {
     list.innerHTML = `<div class="card" style="color:#dc2626;">Error: ${e.message}</div>`;
   }
