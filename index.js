@@ -1733,6 +1733,55 @@ app.get('/api/ml/retiros', requireToken, async (req, res) => {
 
 // ── Envíos por cadete ──
 
+// GET /api/retira-local — Pedidos que retiran en el local
+app.get('/api/retira-local', requireToken, async (req, res) => {
+  try {
+    const headers = { Authorization: `Bearer ${tokenData.access_token}` };
+    const sellerId = tokenData.user_id || 352172083;
+    let items = [];
+    let offset = 0;
+    while (offset < 200) {
+      const r = await axios.get(`${ML_API_URL}/orders/search`, {
+        params: { seller: sellerId, sort: 'date_desc', limit: 50, offset, 'order.status': 'paid' },
+        headers
+      });
+      for (const o of (r.data.results || [])) {
+        if (o.shipping?.id) continue; // tiene envío, no es retiro en local
+        const item = o.order_items?.[0]?.item;
+        // Buscar mensajes
+        let msgs = [];
+        const packId = o.pack_id || o.id;
+        try {
+          const m = await axios.get(`${ML_API_URL}/messages/packs/${packId}/sellers/${sellerId}`, { headers, params: { tag: 'post_sale' } });
+          msgs = m.data.messages || [];
+        } catch {}
+        const buyerMsgs = msgs.filter(m => m.from?.user_id === o.buyer?.id);
+        const unread = buyerMsgs.filter(m => !m.date_read);
+
+        items.push({
+          order_id: o.id,
+          pack_id: o.pack_id,
+          buyer: o.buyer?.nickname,
+          buyer_name: `${o.buyer?.first_name || ''} ${o.buyer?.last_name || ''}`.trim(),
+          item_title: item?.title || '',
+          item_id: item?.id,
+          quantity: o.order_items?.[0]?.quantity || 1,
+          total_amount: o.total_amount,
+          date_created: o.date_created,
+          mensajes_no_leidos: unread.length,
+          ultimo_msg: buyerMsgs.length ? (buyerMsgs[0].text || '').slice(0, 100) : null,
+        });
+      }
+      offset += 50;
+      if ((r.data.results || []).length < 50) break;
+    }
+    res.json({ items, total: items.length });
+  } catch(e) {
+    console.error('[retira-local]', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // GET /api/envios/dac — Lista envíos DAC + buscar por guía
 app.get('/api/envios/dac', requireToken, async (req, res) => {
   const q = (req.query.q || '').trim();
