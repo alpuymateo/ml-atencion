@@ -1624,10 +1624,26 @@ async function actualizarRetiros() {
           if (dacResult?.data) {
             entry.dac_estado = dacResult.data.Estado_de_la_Guia;
             entry.dac_destino = dacResult.data.Oficina_Destino;
+
+            // Auto-upload: si DAC ya retiró pero ML no tiene tracking, subirlo
+            const dacRetiro = entry.dac_estado && entry.dac_estado !== 'REGISTRADA' && entry.dac_estado !== 'DOCUMENTADA';
+            if (dacRetiro && ship.status === 'pending' && !ship.tracking_number) {
+              try {
+                await axios.put(`${ML_API_URL}/shipments/${o.shipping.id}`, {
+                  tracking_number: entry.dac_guia,
+                  tracking_method: 'DAC',
+                  service_id: 282604
+                }, { headers: { ...headers, 'Content-Type': 'application/json' } });
+                console.log(`[dac-sync] Shipment ${o.shipping.id} → shipped con guía ${entry.dac_guia}`);
+                entry.ship_status = 'shipped';
+              } catch(e) {
+                console.error(`[dac-sync] Error subiendo tracking ${o.shipping.id}:`, e.response?.data?.message || e.message);
+              }
+            }
+
             if (entry.dac_estado === 'ENTREGADA') entry.etapa = 'entregado';
-            else if (entry.dac_estado === 'EN REPARTO' || entry.dac_estado === 'DESEMBARCADO') entry.etapa = 'en_camino';
-            else if (entry.dac_estado === 'REGISTRADA' || entry.dac_estado === 'DOCUMENTADA') entry.etapa = 'pendiente';
-            else entry.etapa = 'en_camino';
+            else if (dacRetiro) entry.etapa = 'en_camino';
+            else entry.etapa = 'pendiente';
           } else {
             entry.etapa = 'pendiente';
           }
