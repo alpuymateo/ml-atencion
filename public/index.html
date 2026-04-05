@@ -66,6 +66,16 @@
       text-transform: uppercase; color: rgba(255,255,255,0.25);
       padding: 14px 20px 4px; margin-top: 4px;
     }
+    .nav-group-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 20px; color: rgba(255,255,255,0.7);
+      cursor: pointer; font-size: 13px; font-weight: 600;
+      border-left: 3px solid transparent; transition: all 0.15s;
+    }
+    .nav-group-header:hover { color: white; background: rgba(255,255,255,0.05); }
+    .nav-group-header .arrow { font-size: 10px; transition: transform 0.2s; }
+    .nav-group-items { overflow: hidden; }
+    .nav-group-items .nav-item { padding-left: 36px; font-size: 13px; }
 
     .sidebar-user {
       padding: 16px 20px;
@@ -281,52 +291,68 @@
     </div>
     <nav class="sidebar-nav" style="overflow-y:auto;flex:1;">
 
-      <div class="nav-section-label">Posventa</div>
       <div class="nav-item active" data-page="tareas" onclick="showPage('tareas')">
         <span class="nav-icon">✅</span> Tareas
       </div>
-      <div class="nav-item" data-page="reclamos" onclick="showPage('reclamos')">
-        <span class="nav-icon">⚠️</span> Reclamos
-      </div>
-      <div class="nav-item" data-page="devoluciones" onclick="showPage('devoluciones')">
-        <span class="nav-icon">↩️</span> Devoluciones
-      </div>
-
       <div class="nav-item" data-page="buscador" onclick="showPage('buscador')">
         <span class="nav-icon">🔍</span> Buscador
       </div>
-      <div class="nav-item" data-page="retiros" onclick="showPage('retiros')">
-        <span class="nav-icon">🚚</span> Retiros
+
+      <!-- Atención al cliente -->
+      <div class="nav-group-header" onclick="toggleNavGroup('nav-atencion')">
+        <span>💬 Atenci&oacute;n</span>
+        <span class="arrow" id="arrow-nav-atencion">▶</span>
       </div>
-      <div class="nav-item" data-page="retira-local" onclick="showPage('retira-local')">
-        <span class="nav-icon">🏪</span> Retira en local
+      <div class="nav-group-items" id="nav-atencion" style="display:none;">
+        <div class="nav-item" data-page="ml-preguntas" onclick="showPage('ml-preguntas')">
+          <span class="nav-icon">💬</span> Preguntas
+        </div>
+        <div class="nav-item" data-page="ml-postventa" onclick="showPage('ml-postventa')">
+          <span class="nav-icon">📨</span> Post-venta
+        </div>
+        <div class="nav-item" data-page="reclamos" onclick="showPage('reclamos')">
+          <span class="nav-icon">⚠️</span> Reclamos
+        </div>
+        <div class="nav-item" data-page="devoluciones" onclick="showPage('devoluciones')">
+          <span class="nav-icon">↩️</span> Devoluciones
+        </div>
       </div>
 
-      <div class="nav-section-label">Env&iacute;os</div>
-      <div class="nav-item" data-page="envios-dac" onclick="showPage('envios-dac')">
-        <span class="nav-icon">🟢</span> ME1 / DAC
+      <!-- Envíos y logística -->
+      <div class="nav-group-header" onclick="toggleNavGroup('nav-envios')">
+        <span>🚚 Env&iacute;os</span>
+        <span class="arrow" id="arrow-nav-envios">▶</span>
       </div>
-      <div class="nav-item" data-page="envios-sd" onclick="showPage('envios-sd')">
-        <span class="nav-icon">🟠</span> SoyDelivery
-      </div>
-      <div class="nav-item" data-page="envios-deri" onclick="showPage('envios-deri')">
-        <span class="nav-icon">🔵</span> Robert / Deri
+      <div class="nav-group-items" id="nav-envios" style="display:none;">
+        <div class="nav-item" data-page="retiros" onclick="showPage('retiros')">
+          <span class="nav-icon">📦</span> Retiros
+        </div>
+        <div class="nav-item" data-page="retira-local" onclick="showPage('retira-local')">
+          <span class="nav-icon">🏪</span> Retira en local
+        </div>
+        <div class="nav-item" data-page="envios-dac" onclick="showPage('envios-dac')">
+          <span class="nav-icon">🟢</span> ME1 / DAC
+        </div>
+        <div class="nav-item" data-page="envios-sd" onclick="showPage('envios-sd')">
+          <span class="nav-icon">🟠</span> SoyDelivery
+        </div>
+        <div class="nav-item" data-page="envios-deri" onclick="showPage('envios-deri')">
+          <span class="nav-icon">🔵</span> Robert
+        </div>
       </div>
 
-      <div class="nav-section-label">MercadoLibre</div>
-      <div class="nav-item" data-page="ml-preguntas" onclick="showPage('ml-preguntas')">
-        <span class="nav-icon">💬</span> Preguntas
+      <!-- Config -->
+      <div class="nav-group-header" onclick="toggleNavGroup('nav-config')">
+        <span>⚙️ Configuraci&oacute;n</span>
+        <span class="arrow" id="arrow-nav-config">▶</span>
       </div>
-      <div class="nav-item" data-page="ml-postventa" onclick="showPage('ml-postventa')">
-        <span class="nav-icon">📨</span> Post-venta
-      </div>
-      <div class="nav-item" data-page="ml-reglas" onclick="showPage('ml-reglas')">
-        <span class="nav-icon">⚙️</span> Reglas IA
-      </div>
-
-      <div class="nav-section-label admin-only" style="display:none;">Admin</div>
-      <div class="nav-item admin-only" data-page="usuarios" onclick="showPage('usuarios')" style="display:none;">
-        <span class="nav-icon">👥</span> Usuarios
+      <div class="nav-group-items" id="nav-config" style="display:none;">
+        <div class="nav-item" data-page="ml-reglas" onclick="showPage('ml-reglas')">
+          <span class="nav-icon">📋</span> Reglas IA
+        </div>
+        <div class="nav-item admin-only" data-page="usuarios" onclick="showPage('usuarios')" style="display:none;">
+          <span class="nav-icon">👥</span> Usuarios
+        </div>
       </div>
 
     </nav>
@@ -788,6 +814,26 @@ function fmtDateTime(d) {
 const PAGES = ['tareas', 'reclamos', 'devoluciones', 'buscador', 'retiros', 'retira-local', 'envios-dac', 'envios-sd', 'envios-deri', 'ml-analizar', 'usuarios'];
 const ML_TAB_PAGES = { 'ml-preguntas': 'pendientes', 'ml-postventa': 'mensajes', 'ml-reglas': 'reglas' };
 
+function toggleNavGroup(id) {
+  const el = document.getElementById(id);
+  const arrow = document.getElementById('arrow-' + id);
+  if (el.style.display === 'none') { el.style.display = ''; if (arrow) arrow.textContent = '▼'; }
+  else { el.style.display = 'none'; if (arrow) arrow.textContent = '▶'; }
+}
+
+function openNavGroupFor(page) {
+  const groups = {
+    'nav-atencion': ['ml-preguntas','ml-postventa','reclamos','devoluciones'],
+    'nav-envios': ['retiros','retira-local','envios-dac','envios-sd','envios-deri'],
+    'nav-config': ['ml-reglas','usuarios'],
+  };
+  for (const [gid, pages] of Object.entries(groups)) {
+    const el = document.getElementById(gid);
+    const arrow = document.getElementById('arrow-' + gid);
+    if (pages.includes(page)) { if (el) el.style.display = ''; if (arrow) arrow.textContent = '▼'; }
+  }
+}
+
 let _previousPage = null;
 function showPage(page) {
   const current = localStorage.getItem('currentPage');
@@ -817,6 +863,7 @@ function showPage(page) {
     el.classList.toggle('active', el.dataset.page === page);
   });
   localStorage.setItem('currentPage', page);
+  openNavGroupFor(page);
   const btnVolver = document.getElementById('btn-volver');
   if (btnVolver) btnVolver.style.display = (page === 'buscador' && _previousPage) ? '' : 'none';
 
