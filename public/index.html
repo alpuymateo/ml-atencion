@@ -2153,6 +2153,8 @@ async function loadRetiros(forceRefresh) {
             <span style="padding:1px 6px;border-radius:8px;font-size:9px;font-weight:600;color:${catColors[e.cadeteria]||'#6b7280'};background:${catColors[e.cadeteria]||'#6b7280'}18;">${catIcons[e.cadeteria]||''} ${e.cadeteria}</span>
             ${e.retirado_por ? `<span style="font-size:9px;color:#059669;">${e.retirado_por}</span>` : ''}
             ${e.sd_estado ? `<span style="font-size:9px;color:#f97316;">${e.sd_estado}</span>` : ''}
+            ${e.dac_guia ? `<span style="font-size:9px;color:#059669;">Guía: ${e.dac_guia}</span>` : ''}
+            ${e.dac_estado ? `<span style="font-size:9px;color:#059669;">${e.dac_estado}${e.dac_destino ? ' → ' + e.dac_destino : ''}</span>` : ''}
           </div>
         </div>
       </div>`;
