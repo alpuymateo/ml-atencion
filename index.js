@@ -1893,6 +1893,12 @@ app.get('/api/envios/deri', requireToken, async (req, res) => {
 });
 
 // ── Deri (Robert) Webhook ──
+// ── DAC Webhook ──
+app.post('/webhook/dac', (req, res) => {
+  console.log('[dac/webhook]:', JSON.stringify(req.body).slice(0, 500));
+  res.json({ ok: true });
+});
+
 app.post('/webhook/deri', (req, res) => {
   console.log('[deri/webhook]:', JSON.stringify(req.body).slice(0, 500));
   res.json({ ok: true });
