@@ -674,7 +674,10 @@
     </div>
 
     <div id="page-buscador" style="display:none">
-      <h2 style="font-size:20px;font-weight:700;margin-bottom:16px;">Buscador de ventas</h2>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+        <button id="btn-volver" style="display:none;padding:6px 12px;background:#f3f4f6;color:#374151;border:none;border-radius:6px;font-size:13px;cursor:pointer;" onclick="if(_previousPage){showPage(_previousPage);_previousPage=null;}">← Volver</button>
+        <h2 style="font-size:20px;font-weight:700;margin:0;">Buscador de ventas</h2>
+      </div>
       <div class="card" style="margin-bottom:16px;">
         <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
           <div style="flex:1;min-width:200px;">
@@ -774,7 +777,10 @@ function fmtDateTime(d) {
 const PAGES = ['tareas', 'reclamos', 'devoluciones', 'buscador', 'retiros', 'envios-dac', 'envios-sd', 'envios-deri', 'ml-analizar', 'usuarios'];
 const ML_TAB_PAGES = { 'ml-preguntas': 'pendientes', 'ml-postventa': 'mensajes', 'ml-reglas': 'reglas' };
 
+let _previousPage = null;
 function showPage(page) {
+  const current = localStorage.getItem('currentPage');
+  if (current && current !== page) _previousPage = current;
   document.getElementById('sidebar')?.classList.remove('open');
   document.getElementById('sidebar-overlay')?.classList.remove('show');
 
@@ -800,6 +806,8 @@ function showPage(page) {
     el.classList.toggle('active', el.dataset.page === page);
   });
   localStorage.setItem('currentPage', page);
+  const btnVolver = document.getElementById('btn-volver');
+  if (btnVolver) btnVolver.style.display = (page === 'buscador' && _previousPage) ? '' : 'none';
 
   if (page === 'reclamos' && !claimsLoaded) {
     loadClaims(0);
