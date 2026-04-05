@@ -1609,7 +1609,11 @@ async function actualizarRetiros() {
     const today = new Date().toISOString().slice(0, 10);
     const allEntries = [...soydelivery, ...robert, ...dac, ...mercadoenvios];
     const pendientes = allEntries.filter(e => !e.retirado);
-    const retiradosHoy = allEntries.filter(e => e.retirado && (!e.fecha_retiro || e.fecha_retiro.slice(0, 10) === today || new Date(e.fecha_retiro).toISOString().slice(0,10) === today));
+    const retiradosHoy = allEntries.filter(e => {
+      if (!e.retirado || !e.fecha_retiro) return false;
+      const retDate = e.fecha_retiro.slice(0, 10);
+      return retDate === today || new Date(e.fecha_retiro).toLocaleDateString('en-CA') === today;
+    });
 
     retirosCache = {
       total: allEntries.length,
