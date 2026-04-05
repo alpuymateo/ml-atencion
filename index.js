@@ -1738,6 +1738,10 @@ app.get('/api/retira-local', requireToken, async (req, res) => {
         const buyerMsgs = msgs.filter(m => m.from?.user_id === o.buyer?.id);
         const unread = buyerMsgs.filter(m => !m.date_read);
 
+        // Filtrar: si en mensajes pide envío, no es retiro en local
+        const pideEnvio = msgs.some(m => (m.text||'').toLowerCase().match(/env[ií]o|enviar|mandar|domicilio|despacho|manden|mand[ae]/));
+        if (pideEnvio) continue;
+
         items.push({
           order_id: o.id,
           pack_id: o.pack_id,
