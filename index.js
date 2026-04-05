@@ -1641,6 +1641,28 @@ async function actualizarRetiros() {
               }
             }
 
+            // Auto-deliver: si DAC dice ENTREGADA y ML no está delivered
+            if (entry.dac_estado === 'ENTREGADA' && ship.status !== 'delivered') {
+              try {
+                // Si todavía no tiene tracking, primero subirlo
+                if (!ship.tracking_number) {
+                  await axios.put(`${ML_API_URL}/shipments/${o.shipping.id}`, {
+                    tracking_number: entry.dac_guia,
+                    tracking_method: 'DAC',
+                    service_id: 282604
+                  }, { headers: { ...headers, 'Content-Type': 'application/json' } });
+                }
+                await axios.put(`${ML_API_URL}/shipments/${o.shipping.id}`, {
+                  status: 'delivered',
+                  service_id: 282604
+                }, { headers: { ...headers, 'Content-Type': 'application/json' } });
+                console.log(`[dac-sync] Shipment ${o.shipping.id} → delivered`);
+                entry.ship_status = 'delivered';
+              } catch(e) {
+                console.error(`[dac-sync] Error marcando delivered ${o.shipping.id}:`, e.response?.data?.message || e.message);
+              }
+            }
+
             if (entry.dac_estado === 'ENTREGADA') entry.etapa = 'entregado';
             else if (dacRetiro) entry.etapa = 'en_camino';
             else entry.etapa = 'pendiente';
