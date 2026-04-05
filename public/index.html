@@ -2571,24 +2571,39 @@ async function loadRetiraLocal() {
       return;
     }
 
-    list.innerHTML = `<div class="card" style="margin-bottom:12px;">
-      <div style="font-size:14px;font-weight:700;margin-bottom:10px;">${d.total} pedidos pendientes de retiro en local</div>
-      ${d.items.map(e => `
-        <div style="padding:10px 14px;margin-bottom:4px;background:white;border:1px solid #f3f4f6;border-radius:6px;cursor:pointer;font-size:12px;" onclick="document.getElementById('buscar-input').value='${e.order_id}';showPage('buscador');buscarVenta();">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-            <div style="flex:1;min-width:0;">
-              <div style="font-weight:600;">${(e.item_title||'').slice(0,50)}</div>
-              <div style="color:#6b7280;margin-top:2px;">${e.buyer_name || e.buyer} · ${e.quantity} unid. · $${e.total_amount || ''}</div>
+    list.innerHTML = `
+      <div class="card" style="margin-bottom:16px;border-left:4px solid #7c3aed;text-align:center;">
+        <div style="font-size:28px;font-weight:700;color:#7c3aed;">${d.total}</div>
+        <div style="font-size:12px;color:#6b7280;">Pedidos para retirar en local</div>
+      </div>
+      <div style="display:grid;gap:10px;">
+        ${d.items.map(e => `
+          <div class="card" style="margin:0;padding:0;overflow:hidden;border:1px solid #e5e7eb;">
+            <div style="padding:14px 18px;">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:14px;font-weight:700;margin-bottom:4px;">${(e.item_title||'').slice(0,60)}</div>
+                  <div style="font-size:12px;color:#6b7280;">
+                    ${e.buyer_name || e.buyer} · ${e.quantity} unid. · <b>$${(e.total_amount||0).toLocaleString('es-UY')}</b>
+                  </div>
+                  <div style="font-size:11px;color:#9ca3af;margin-top:2px;">
+                    Orden #${e.order_id} · ${new Date(e.date_created).toLocaleDateString('es-UY',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}
+                  </div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">
+                  ${e.mensajes_no_leidos ? `<span style="padding:3px 8px;border-radius:10px;font-size:10px;font-weight:700;color:white;background:#dc2626;">${e.mensajes_no_leidos} sin leer</span>` : '<span style="padding:3px 8px;border-radius:10px;font-size:10px;font-weight:600;color:#059669;background:#f0fdf4;">Leído</span>'}
+                </div>
+              </div>
+              ${e.ultimo_msg ? `<div style="margin-top:8px;padding:6px 10px;background:#f5f3ff;border-radius:6px;font-size:11px;color:#7c3aed;border-left:3px solid #7c3aed;"><b>Último mensaje:</b> ${e.ultimo_msg}</div>` : ''}
             </div>
-            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0;">
-              <span style="font-size:10px;color:#9ca3af;">${new Date(e.date_created).toLocaleDateString('es-UY',{day:'2-digit',month:'2-digit'})}</span>
-              ${e.mensajes_no_leidos ? `<span style="font-size:10px;color:#dc2626;font-weight:700;">${e.mensajes_no_leidos} sin leer</span>` : ''}
+            <div style="display:flex;border-top:1px solid #f3f4f6;">
+              <a href="https://www.mercadolibre.com.uy/ventas/${e.order_id}/detalle" target="_blank" style="flex:1;padding:8px;text-align:center;font-size:12px;font-weight:600;color:#1d4ed8;text-decoration:none;background:#f9fafb;">Ver en ML</a>
+              <div style="width:1px;background:#f3f4f6;"></div>
+              <div style="flex:1;padding:8px;text-align:center;font-size:12px;font-weight:600;color:#7c3aed;cursor:pointer;background:#f9fafb;" onclick="document.getElementById('buscar-input').value='${e.order_id}';showPage('buscador');buscarVenta();">Ver detalle</div>
             </div>
           </div>
-          ${e.ultimo_msg ? `<div style="margin-top:4px;padding:4px 8px;background:#f5f3ff;border-radius:4px;font-size:11px;color:#7c3aed;"><b>Comprador:</b> ${e.ultimo_msg}</div>` : ''}
-        </div>
-      `).join('')}
-    </div>`;
+        `).join('')}
+      </div>`;
   } catch(e) { list.innerHTML = `<div class="card" style="color:#dc2626;">Error: ${e.message}</div>`; }
 }
 
