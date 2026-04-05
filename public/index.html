@@ -301,7 +301,7 @@
 
       <div class="nav-section-label">Env&iacute;os</div>
       <div class="nav-item" data-page="envios-dac" onclick="showPage('envios-dac')">
-        <span class="nav-icon">🟢</span> DAC
+        <span class="nav-icon">🟢</span> ME1 / DAC
       </div>
       <div class="nav-item" data-page="envios-sd" onclick="showPage('envios-sd')">
         <span class="nav-icon">🟠</span> SoyDelivery
@@ -608,8 +608,8 @@
     <div id="page-envios-dac" style="display:none">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
         <div>
-          <h2 style="font-size:20px;font-weight:700;margin:0;">🟢 Env&iacute;os DAC</h2>
-          <p style="font-size:12px;color:#6b7280;margin-top:2px;">Seguimiento de env&iacute;os por DAC (Grupo Agencia)</p>
+          <h2 style="font-size:20px;font-weight:700;margin:0;">🟢 Coordinaci&oacute;n ME1 — DAC</h2>
+          <p style="font-size:12px;color:#6b7280;margin-top:2px;">Gesti&oacute;n de env&iacute;os al interior por DAC (Grupo Agencia)</p>
         </div>
         <span id="envios-dac-updated" style="font-size:11px;color:#9ca3af;"></span>
       </div>
@@ -2342,8 +2342,9 @@ async function loadEnviosDac() {
     if (updated && d.updated_at) updated.textContent = 'Actualizado: ' + new Date(d.updated_at).toLocaleString('es-UY',{hour:'2-digit',minute:'2-digit'});
 
     const stages = [
-      { key: 'dac-pend', label: 'Pendientes', data: d.pendientes||[], color: '#dc2626', icon: '📦', bg: '#fef2f2' },
-      { key: 'dac-cam', label: 'En camino', data: d.en_camino||[], color: '#2563eb', icon: '🚚', bg: '#eff6ff' },
+      { key: 'dac-sincoord', label: 'Pendientes de coordinar', data: d.sin_coordinar||[], color: '#dc2626', icon: '⚠️', bg: '#fef2f2' },
+      { key: 'dac-coord', label: 'Coordinados (sin retiro)', data: d.coordinados||[], color: '#d97706', icon: '📦', bg: '#fffbeb' },
+      { key: 'dac-ret', label: 'Retirados por DAC', data: d.retirados||[], color: '#2563eb', icon: '🚚', bg: '#eff6ff' },
       { key: 'dac-ent', label: 'Entregados', data: d.entregados||[], color: '#059669', icon: '✅', bg: '#f0fdf4' },
     ];
     resumen.innerHTML = `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">

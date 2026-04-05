@@ -1764,10 +1764,11 @@ app.get('/api/envios/dac', requireToken, async (req, res) => {
     return res.json({ found: filtered.length > 0, items: filtered, total: filtered.length });
   }
 
-  const pendientes = items.filter(e => e.etapa === 'pendiente');
-  const en_camino = items.filter(e => e.etapa === 'en_camino');
-  const entregados = items.filter(e => e.etapa === 'entregado');
-  res.json({ items, total: items.length, pendientes, en_camino, entregados, updated_at: retirosCache?.updated_at });
+  const sin_coordinar = items.filter(e => !e.dac_guia);
+  const coordinados = items.filter(e => e.dac_guia && (!e.dac_estado || e.dac_estado === 'REGISTRADA' || e.dac_estado === 'DOCUMENTADA'));
+  const retirados = items.filter(e => e.dac_guia && e.dac_estado && e.dac_estado !== 'REGISTRADA' && e.dac_estado !== 'DOCUMENTADA' && e.dac_estado !== 'ENTREGADA');
+  const entregados = items.filter(e => e.dac_estado === 'ENTREGADA');
+  res.json({ items, total: items.length, sin_coordinar, coordinados, retirados, entregados, updated_at: retirosCache?.updated_at });
 });
 
 // GET /api/envios/soydelivery — Lista envíos SoyDelivery + buscar por ID
