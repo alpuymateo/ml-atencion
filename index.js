@@ -1574,6 +1574,8 @@ async function actualizarRetiros() {
         date_created: o.date_created,
         receiver_city: ship.receiver_address?.city?.name || '',
         receiver_state: ship.receiver_address?.state?.name || '',
+        receiver_phone: ship.receiver_address?.receiver_phone || null,
+        receiver_name: ship.receiver_address?.receiver_name || '',
       };
 
       // Determinar cadetería y estado del pipeline
@@ -1718,6 +1720,132 @@ app.get('/api/ml/retiros', requireToken, async (req, res) => {
   } else {
     res.json({ total: 0, pendientes: [], retirados_hoy: [], soydelivery: [], robert: [], dac: [], mercadoenvios: [], updated_at: null, loading: retirosUpdating, progress: retirosProgress });
   }
+});
+
+// ── Envíos por cadete ──
+
+// GET /api/envios/dac — Lista envíos DAC + buscar por guía
+app.get('/api/envios/dac', requireToken, async (req, res) => {
+  const q = (req.query.q || '').trim();
+  const items = retirosCache?.dac || [];
+
+  if (q) {
+    // Buscar directamente en DAC por número de guía
+    const dacResult = await consultarDAC(q);
+    if (dacResult?.data) {
+      const d = dacResult.data;
+      return res.json({
+        found: true,
+        guia: q,
+        estado: d.Estado_de_la_Guia,
+        destinatario: (d.Destinatario || '').trim(),
+        remitente: (d.Remitente || '').trim(),
+        destino: `${(d.Calle_Destinatario || '').trim()} ${d.Nro_Puerta_Destinatario || ''}, ${d.Ciudad_Destinatario || ''}, ${d.Estado_Destinatario || ''}`,
+        oficina_destino: d.Oficina_Destino,
+        oficina_actual: d.D_Oficina_Actual,
+        persona_recibe: d.Persona_RecibeGuia || '',
+        ci_recibe: d.ID_RecibeGuia || '',
+        paquetes: (dacResult.dataPaquete || []).map(p => `${p.Cantidad} x ${p.D_Tipo_Empaque}`),
+        historial: (dacResult.dataHistoria || []).map(h => ({
+          estado: h.D_Estado_Guia,
+          oficina: h.D_Oficina,
+          fecha: h.F_Historia,
+          usuario: h.D_Usuario,
+        })),
+      });
+    }
+    // Buscar en cache por guía, order_id o buyer
+    const filtered = items.filter(e =>
+      (e.dac_guia && e.dac_guia.includes(q)) ||
+      String(e.order_id).includes(q) ||
+      (e.buyer || '').toLowerCase().includes(q.toLowerCase()) ||
+      (e.buyer_name || '').toLowerCase().includes(q.toLowerCase())
+    );
+    return res.json({ found: filtered.length > 0, items: filtered, total: filtered.length });
+  }
+
+  const pendientes = items.filter(e => e.etapa === 'pendiente');
+  const en_camino = items.filter(e => e.etapa === 'en_camino');
+  const entregados = items.filter(e => e.etapa === 'entregado');
+  res.json({ items, total: items.length, pendientes, en_camino, entregados, updated_at: retirosCache?.updated_at });
+});
+
+// GET /api/envios/soydelivery — Lista envíos SoyDelivery + buscar por ID
+app.get('/api/envios/soydelivery', requireToken, async (req, res) => {
+  const q = (req.query.q || '').trim();
+  const items = retirosCache?.soydelivery || [];
+
+  if (q) {
+    const histData = await consultarSoyDeliveryHistorial(q);
+    if (histData?.PedidoConsultaSDT) {
+      const sd = histData.PedidoConsultaSDT;
+      const sdId = parseInt(sd.PedidoId);
+      let detalle = null;
+      if (sdId) detalle = await consultarSoyDelivery(sdId);
+      return res.json({
+        found: true,
+        pedido_id: sd.PedidoId,
+        estado: sd.PedidoEstado,
+        estado_nombre: sd.PedidoNegocioEstadoIntNombre,
+        fecha_ingreso: sd.PedidoFechaIngreso,
+        fecha_entrega: sd.PedidoFechaEntrega,
+        fecha_entregado: sd.PedidoFechaEntregado,
+        explicacion: sd.PedidoEstadoExplanation,
+        delivery: detalle ? {
+          nombre: detalle.Delivery_nombre_apellido,
+          telefono: detalle.Delivery_telefono,
+          ubicacion: detalle.Delivery_location,
+          franja: detalle.Franja_horaria_desc,
+          fecha_estimada: detalle.Fecha_estimada_entrega,
+        } : null,
+        historial: (sd.PedidoHistorial || []).map(h => ({
+          fecha: h.PedidoHistorialFecha,
+          estado: h.PedidoHistorialEstado,
+          detalle: h.PedidoHistorialDetalle,
+          estado_nombre: h.DiccionarioEstadoNombre,
+        })),
+      });
+    }
+    const filtered = items.filter(e =>
+      String(e.order_id).includes(q) ||
+      String(e.tracking).includes(q) ||
+      (e.buyer || '').toLowerCase().includes(q.toLowerCase()) ||
+      (e.buyer_name || '').toLowerCase().includes(q.toLowerCase())
+    );
+    return res.json({ found: filtered.length > 0, items: filtered, total: filtered.length });
+  }
+
+  const pendientes = items.filter(e => e.etapa === 'pendiente');
+  const en_camino_sin_escaneo = items.filter(e => e.etapa === 'en_camino_sin_escaneo');
+  const en_camino = items.filter(e => e.etapa === 'en_camino');
+  const entregados = items.filter(e => e.etapa === 'entregado');
+  res.json({ items, total: items.length, pendientes, en_camino_sin_escaneo, en_camino, entregados, updated_at: retirosCache?.updated_at });
+});
+
+// GET /api/envios/deri — Lista envíos Robert/Deri + buscar por ID
+app.get('/api/envios/deri', requireToken, async (req, res) => {
+  const q = (req.query.q || '').trim();
+  const items = retirosCache?.robert || [];
+
+  if (q) {
+    const deriOrder = await consultarDeriOrder(q);
+    if (deriOrder) {
+      const statuses = await consultarDeriStatuses(q) || [];
+      return res.json({ found: true, order: deriOrder, historial: statuses });
+    }
+    const filtered = items.filter(e =>
+      String(e.order_id).includes(q) ||
+      String(e.tracking).includes(q) ||
+      (e.buyer || '').toLowerCase().includes(q.toLowerCase()) ||
+      (e.buyer_name || '').toLowerCase().includes(q.toLowerCase())
+    );
+    return res.json({ found: filtered.length > 0, items: filtered, total: filtered.length });
+  }
+
+  const pendientes = items.filter(e => e.etapa === 'pendiente');
+  const en_camino = items.filter(e => e.etapa === 'en_camino');
+  const entregados = items.filter(e => e.etapa === 'entregado');
+  res.json({ items, total: items.length, pendientes, en_camino, entregados, updated_at: retirosCache?.updated_at });
 });
 
 // ── Deri (Robert) Webhook ──
