@@ -2121,17 +2121,12 @@ async function loadRetiros(forceRefresh) {
 
     // Resumen cards
     const pendientes = d.pendientes || [];
-    const retiradosHoy = d.retirados_hoy || [];
-    const catColors = { SoyDelivery: '#f97316', Robert: '#2563eb', DAC: '#059669', 'Mercado Envíos': '#d97706' };
-    const catIcons = { SoyDelivery: '🟠', Robert: '🔵', DAC: '🟢', 'Mercado Envíos': '🟡' };
-
     const retirados = d.retirados || [];
     window._retirosData = { pendientes, retirados };
 
-    // Agrupar todo por cadetería
-    const allItems = [...pendientes, ...retirados];
     const catColors = { SoyDelivery: '#f97316', Robert: '#2563eb', DAC: '#059669', 'Mercado Envíos': '#d97706' };
     const catIcons = { SoyDelivery: '🟠', Robert: '🔵', DAC: '🟢', 'Mercado Envíos': '🟡' };
+    const allItems = [...pendientes, ...retirados];
     const byCat = {};
     allItems.forEach(e => { if (!byCat[e.cadeteria]) byCat[e.cadeteria] = { pendientes: [], retirados: [] }; e.retirado ? byCat[e.cadeteria].retirados.push(e) : byCat[e.cadeteria].pendientes.push(e); });
 
