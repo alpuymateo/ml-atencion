@@ -1590,16 +1590,25 @@ async function actualizarRetiros() {
         }
       } else if (ship.logistic_type === 'default') {
         entry.cadeteria = 'DAC';
-        // Buscar guía DAC en mensajes post-venta
+        // Buscar guía DAC y mensajes del comprador
         const packId = o.pack_id || o.id;
+        let allMsgs = [];
         try {
           const m = await axios.get(`${ML_API_URL}/messages/packs/${packId}/sellers/${sellerId}`, { headers, params: { tag: 'post_sale' } });
-          const msgs = m.data.messages || [];
-          for (const msg of msgs) {
+          allMsgs = m.data.messages || [];
+          for (const msg of allMsgs) {
             const match = (msg.text || '').match(/seguimiento\s*(?:es)?[:\.\s]*(\d{8,})/i);
             if (match) { entry.dac_guia = match[1]; break; }
           }
         } catch {}
+        // Detectar mensajes no leídos del comprador pidiendo envío
+        const buyerMsgs = allMsgs.filter(msg => msg.from?.user_id === o.buyer?.id);
+        const unreadBuyer = buyerMsgs.filter(msg => !msg.date_read);
+        const pideEnvio = buyerMsgs.some(msg => (msg.text||'').toLowerCase().match(/env[ií]o|enviar|mandar|domicilio|llegar|lleg[uo]|direcci[oó]n|mand[ae]|despacho/));
+        entry.tiene_mensajes = buyerMsgs.length > 0;
+        entry.mensajes_no_leidos = unreadBuyer.length;
+        entry.pide_envio = pideEnvio;
+        entry.ultimo_msg_buyer = buyerMsgs.length ? (buyerMsgs[0].text || '').slice(0, 100) : null;
         // Consultar estado en DAC si tenemos guía
         if (entry.dac_guia) {
           const dacResult = await consultarDAC(entry.dac_guia);
@@ -1744,11 +1753,12 @@ app.get('/api/envios/dac', requireToken, async (req, res) => {
     return res.json({ found: filtered.length > 0, items: filtered, total: filtered.length });
   }
 
-  const sin_coordinar = items.filter(e => !e.dac_guia);
+  const acuerda = items.filter(e => !e.dac_guia && e.pide_envio && e.mensajes_no_leidos > 0);
+  const sin_coordinar = items.filter(e => !e.dac_guia && !(e.pide_envio && e.mensajes_no_leidos > 0));
   const coordinados = items.filter(e => e.dac_guia && (!e.dac_estado || e.dac_estado === 'REGISTRADA' || e.dac_estado === 'DOCUMENTADA'));
   const retirados = items.filter(e => e.dac_guia && e.dac_estado && e.dac_estado !== 'REGISTRADA' && e.dac_estado !== 'DOCUMENTADA' && e.dac_estado !== 'ENTREGADA');
   const entregados = items.filter(e => e.dac_estado === 'ENTREGADA');
-  res.json({ items, total: items.length, sin_coordinar, coordinados, retirados, entregados, updated_at: retirosCache?.updated_at });
+  res.json({ items, total: items.length, acuerda, sin_coordinar, coordinados, retirados, entregados, updated_at: retirosCache?.updated_at });
 });
 
 // GET /api/envios/soydelivery — Lista envíos SoyDelivery + buscar por ID
