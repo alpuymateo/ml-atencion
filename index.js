@@ -1588,9 +1588,34 @@ async function actualizarRetiros() {
         }
       } else if (ship.logistic_type === 'default') {
         entry.cadeteria = 'DAC';
-        if (ship.status === 'delivered') entry.etapa = 'entregado';
-        else if (ship.status === 'shipped') entry.etapa = 'en_camino';
-        else entry.etapa = 'pendiente';
+        // Buscar guía DAC en mensajes post-venta
+        const packId = o.pack_id || o.id;
+        try {
+          const m = await axios.get(`${ML_API_URL}/messages/packs/${packId}/sellers/${sellerId}`, { headers, params: { tag: 'post_sale' } });
+          const msgs = m.data.messages || [];
+          for (const msg of msgs) {
+            const match = (msg.text || '').match(/seguimiento\s*(?:es)?[:\.\s]*(\d{8,})/i);
+            if (match) { entry.dac_guia = match[1]; break; }
+          }
+        } catch {}
+        // Consultar estado en DAC si tenemos guía
+        if (entry.dac_guia) {
+          const dacResult = await consultarDAC(entry.dac_guia);
+          if (dacResult?.data) {
+            entry.dac_estado = dacResult.data.Estado_de_la_Guia;
+            entry.dac_destino = dacResult.data.Oficina_Destino;
+            if (entry.dac_estado === 'ENTREGADA') entry.etapa = 'entregado';
+            else if (entry.dac_estado === 'EN REPARTO' || entry.dac_estado === 'DESEMBARCADO') entry.etapa = 'en_camino';
+            else if (entry.dac_estado === 'REGISTRADA' || entry.dac_estado === 'DOCUMENTADA') entry.etapa = 'pendiente';
+            else entry.etapa = 'en_camino';
+          } else {
+            entry.etapa = 'pendiente';
+          }
+        } else {
+          if (ship.status === 'delivered') entry.etapa = 'entregado';
+          else if (ship.status === 'shipped') entry.etapa = 'en_camino';
+          else entry.etapa = 'pendiente';
+        }
         dac.push(entry);
       } else {
         entry.cadeteria = 'Mercado Envíos';
