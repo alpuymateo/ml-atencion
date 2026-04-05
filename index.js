@@ -36,6 +36,133 @@ const ML_AUTH_URL = 'https://auth.mercadolibre.com.uy';
 let tokenData    = null;
 let cachedClaims = [];
 
+// ── SoyDelivery config ──
+const SD_API_ID = process.env.SD_API_ID;
+const SD_API_KEY = process.env.SD_API_KEY;
+const SD_NEGOCIO_ID = parseInt(process.env.SD_NEGOCIO_ID) || 0;
+const SD_NEGOCIO_CLAVE = parseInt(process.env.SD_NEGOCIO_CLAVE) || 0;
+const SD_API_URL = 'https://soydelivery.com.uy/rest';
+const SD_MAP_FILE = path.join(OWN_DATA_DIR, 'sd_mapping.json');
+
+// Mapeo shipment_id → soydelivery_id
+let sdMapping = {};
+try { if (fs.existsSync(SD_MAP_FILE)) sdMapping = JSON.parse(fs.readFileSync(SD_MAP_FILE, 'utf8')); } catch {}
+function saveSdMapping() {
+  try { fs.writeFileSync(SD_MAP_FILE, JSON.stringify(sdMapping, null, 2)); } catch {}
+}
+
+let sdToken = null;
+let sdTokenExpiry = 0;
+async function getSdToken() {
+  if (sdToken && Date.now() < sdTokenExpiry) return sdToken;
+  if (!SD_API_ID || !SD_API_KEY) return null;
+  try {
+    const r = await axios.post(`${SD_API_URL}/sdws_autenticar`, { ApiId: parseInt(SD_API_ID), ApiKey: SD_API_KEY });
+    if (r.data.AccessToken) {
+      sdToken = r.data.AccessToken;
+      sdTokenExpiry = Date.now() + 14 * 60 * 1000; // 14 min (expira en 15)
+      return sdToken;
+    }
+  } catch(e) { console.error('[soydelivery] auth error:', e.message); }
+  return null;
+}
+
+async function consultarSoyDelivery(pedidoId) {
+  const token = await getSdToken();
+  if (!token) return null;
+  try {
+    const r = await axios.post(`${SD_API_URL}/awsconsultarpedido1`, {
+      Negocio_id: SD_NEGOCIO_ID,
+      Negocio_clave: SD_NEGOCIO_CLAVE,
+      Pedido_id: pedidoId
+    }, { headers: { Authorization: `Bearer ${token}` } });
+    if (r.data.Error_code === 0) return r.data;
+  } catch {}
+  return null;
+}
+
+async function consultarSoyDeliveryHistorial(shipmentId) {
+  const token = await getSdToken();
+  if (!token) return null;
+  try {
+    const r = await axios.post(`${SD_API_URL}/awsconsultapedidohistorial`, {
+      Negocio_id: SD_NEGOCIO_ID,
+      Negocio_clave: SD_NEGOCIO_CLAVE,
+      PedidoExternalId: String(shipmentId)
+    }, { headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'SoyDelivery' } });
+    if (r.data.Error_code === 200) return r.data;
+  } catch {}
+  return null;
+}
+
+// ── DAC config ──
+const DAC_LOGIN = process.env.DAC_LOGIN;
+const DAC_PASS = process.env.DAC_PASS;
+const DAC_API_URL = 'https://altis-ws.grupoagencia.com:444/JAgencia/JAgencia.asmx';
+
+let dacSession = null;
+let dacSessionExpiry = 0;
+async function getDacSession() {
+  if (dacSession && Date.now() < dacSessionExpiry) return dacSession;
+  if (!DAC_LOGIN || !DAC_PASS) return null;
+  try {
+    const r = await axios.post(`${DAC_API_URL}/wsLogin`, { Login: DAC_LOGIN, Contrasenia: DAC_PASS });
+    if (r.data.result === 0 && r.data.data?.[0]) {
+      dacSession = r.data.data[0].ID_Session;
+      dacSessionExpiry = Date.now() + 55 * 60 * 1000;
+      return dacSession;
+    }
+  } catch(e) { console.error('[dac] login error:', e.message); }
+  return null;
+}
+
+async function consultarDAC(referencia) {
+  const session = await getDacSession();
+  if (!session) return null;
+  try {
+    const r = await axios.post(`${DAC_API_URL}/wsRastreoGuia`, {
+      K_Oficina_Origen: '',
+      K_Guia: '',
+      Referencia: referencia,
+      ID_Sesion: session
+    });
+    if (r.data.result === 0) return r.data;
+  } catch {}
+  return null;
+}
+
+// ── Deri (Robert) config ──
+const DERI_API_KEY = process.env.DERI_API_KEY;
+const DERI_API_URL = 'https://api.deriapp.com/hub/deri/v1';
+const deriHeaders = DERI_API_KEY ? { 'api-key': DERI_API_KEY } : {};
+
+async function consultarDeriOrder(orderId) {
+  if (!DERI_API_KEY) return null;
+  try {
+    const r = await axios.get(`${DERI_API_URL}/orders/${orderId}`, { headers: deriHeaders });
+    return r.data.data || r.data;
+  } catch {}
+  return null;
+}
+
+async function consultarDeriStatuses(orderId) {
+  if (!DERI_API_KEY) return null;
+  try {
+    const r = await axios.get(`${DERI_API_URL}/orders/${orderId}/statuses`, { headers: deriHeaders });
+    return r.data.data || r.data;
+  } catch {}
+  return null;
+}
+
+async function buscarDeriOrders(params) {
+  if (!DERI_API_KEY) return [];
+  try {
+    const r = await axios.get(`${DERI_API_URL}/orders`, { headers: deriHeaders, params });
+    return r.data.data?.items || [];
+  } catch {}
+  return [];
+}
+
 // ── Persistencia del token ML ──
 const OWN_TOKEN_FILE = path.join(OWN_DATA_DIR, 'ml_token.json');
 const SHARED_TOKEN_FILE = path.join(DATA_DIR, 'ml_token.json');
@@ -1233,9 +1360,75 @@ app.get('/api/ml/buscar', requireToken, async (req, res) => {
       } catch {}
     }
 
+    // 5b. Consultar SoyDelivery si es Flex
+    let soydelivery = null;
+    let sdHistorial = null;
+    if (shipment && shipment.logistic_type === 'self_service') {
+      const histData = await consultarSoyDeliveryHistorial(shipment.id);
+      if (histData?.PedidoConsultaSDT) {
+        const sd = histData.PedidoConsultaSDT;
+        sdHistorial = {
+          pedido_id: sd.PedidoId,
+          estado: sd.PedidoEstado,
+          estado_interno: sd.PedidoNegocioEstadoIntNombre,
+          fecha_ingreso: sd.PedidoFechaIngreso,
+          fecha_entrega: sd.PedidoFechaEntrega,
+          fecha_entregado: sd.PedidoFechaEntregado,
+          explicacion: sd.PedidoEstadoExplanation,
+          historial: (sd.PedidoHistorial || []).map(h => ({
+            fecha: h.PedidoHistorialFecha,
+            estado: h.PedidoHistorialEstado,
+            detalle: h.PedidoHistorialDetalle,
+            estado_nombre: h.DiccionarioEstadoNombre,
+          })),
+        };
+        // También consultar estado actual con repartidor
+        const sdId = parseInt(sd.PedidoId);
+        if (sdId) {
+          soydelivery = await consultarSoyDelivery(sdId);
+        }
+      }
+    }
+
+    // 5c. Consultar DAC si es ME1
+    let dacData = null;
+    if (shipment && shipment.logistic_type === 'default') {
+      // Buscar número de guía DAC en mensajes post-venta
+      let dacGuia = null;
+      for (const m of messages) {
+        const match = (m.text || '').match(/seguimiento\s*(?:es)?[:\.\s]*(\d{8,})/i);
+        if (match) { dacGuia = match[1]; break; }
+      }
+      if (dacGuia) {
+        const dacResult = await consultarDAC(dacGuia);
+        if (dacResult?.data) {
+          const d = dacResult.data;
+          dacData = {
+            guia: dacGuia,
+            estado: d.Estado_de_la_Guia,
+            destinatario: (d.Destinatario || '').trim(),
+            destino: `${(d.Calle_Destinatario || '').trim()}, ${d.Ciudad_Destinatario || ''}, ${d.Estado_Destinatario || ''}`,
+            oficina_destino: d.Oficina_Destino,
+            oficina_actual: d.D_Oficina_Actual,
+            remitente: (d.Remitente || '').trim(),
+            persona_recibe: d.Persona_RecibeGuia || '',
+            ci_recibe: d.ID_RecibeGuia || '',
+            historial: (dacResult.dataHistoria || []).map(h => ({
+              estado: h.D_Estado_Guia,
+              oficina: h.D_Oficina,
+              fecha: h.F_Historia,
+              usuario: h.D_Usuario,
+            })),
+            paquetes: (dacResult.dataPaquete || []).map(p => `${p.Cantidad} x ${p.D_Tipo_Empaque}`),
+          };
+        }
+      }
+    }
+
     // 6. Armar respuesta
     res.json({
       found: true,
+      dac: dacData,
       order: {
         id: order.id,
         status: order.status,
@@ -1300,11 +1493,470 @@ app.get('/api/ml/buscar', requireToken, async (req, res) => {
         date: m.date_created,
       })),
       item_detail: itemDetail,
+      soydelivery: soydelivery ? {
+        estado: soydelivery.Pedido_estado_desc,
+        estado_id: soydelivery.Pedido_estado_id,
+        delivery_nombre: soydelivery.Delivery_nombre_apellido,
+        delivery_telefono: soydelivery.Delivery_telefono,
+        delivery_ubicacion: soydelivery.Delivery_location,
+        fecha_entrega: soydelivery.Fecha_entrega,
+        franja_horaria: soydelivery.Franja_horaria_desc,
+        fecha_estimada: soydelivery.Fecha_estimada_entrega,
+      } : null,
+      sd_historial: sdHistorial,
     });
   } catch(e) {
     console.error('[buscar]', e.message);
     res.status(500).json({ error: e.message });
   }
+});
+
+// ── Retiros cache ──
+let retirosCache = null;
+let retirosUpdating = false;
+let retirosProgress = { current: 0, total: 0 };
+const RETIROS_CACHE_FILE = path.join(OWN_DATA_DIR, 'retiros_cache.json');
+
+// Cargar cache de disco al arrancar
+try { if (fs.existsSync(RETIROS_CACHE_FILE)) { retirosCache = JSON.parse(fs.readFileSync(RETIROS_CACHE_FILE, 'utf8')); console.log(`[retiros] cache cargado: ${retirosCache.total} envíos activos`); } } catch {}
+
+async function actualizarRetiros() {
+  if (retirosUpdating || !tokenData?.access_token) return;
+  retirosUpdating = true;
+  console.log('[retiros] actualizando...');
+  try {
+    const headers = { Authorization: `Bearer ${tokenData.access_token}` };
+    const sellerId = tokenData.user_id || 352172083;
+
+    let allOrders = [];
+    let offset = 0;
+    while (offset < 200) {
+      const r = await axios.get(`${ML_API_URL}/orders/search`, {
+        params: { seller: sellerId, sort: 'date_desc', limit: 50, offset, 'order.status': 'paid' },
+        headers
+      });
+      const batch = r.data.results || [];
+      allOrders = allOrders.concat(batch);
+      offset += 50;
+      if (batch.length < 50) break;
+    }
+
+    const soydelivery = [];
+    const robert = [];
+    const dac = [];
+    const mercadoenvios = [];
+
+    retirosProgress = { current: 0, total: allOrders.length };
+    for (const o of allOrders) {
+      retirosProgress.current++;
+      if (!o.shipping?.id) continue;
+      let ship;
+      try {
+        const s = await axios.get(`${ML_API_URL}/shipments/${o.shipping.id}`, { headers });
+        ship = s.data;
+      } catch { continue; }
+
+      if (ship.status === 'cancelled') continue;
+
+      const item = o.order_items?.[0]?.item;
+      const entry = {
+        order_id: o.id,
+        pack_id: o.pack_id,
+        buyer: o.buyer?.nickname,
+        buyer_name: `${o.buyer?.first_name || ''} ${o.buyer?.last_name || ''}`.trim(),
+        item_title: item?.title || '',
+        item_id: item?.id,
+        quantity: o.order_items?.[0]?.quantity || 1,
+        ship_status: ship.status,
+        ship_substatus: ship.substatus,
+        logistic_type: ship.logistic_type,
+        tracking: ship.tracking_number,
+        date_created: o.date_created,
+        receiver_city: ship.receiver_address?.city?.name || '',
+        receiver_state: ship.receiver_address?.state?.name || '',
+        receiver_phone: ship.receiver_address?.receiver_phone || null,
+        receiver_name: ship.receiver_address?.receiver_name || '',
+      };
+
+      // Determinar cadetería y estado del pipeline
+      if (ship.logistic_type === 'self_service') {
+        const sdHist = await consultarSoyDeliveryHistorial(ship.id);
+        if (sdHist?.PedidoConsultaSDT) {
+          const sd = sdHist.PedidoConsultaSDT;
+          entry.sd_estado = sd.PedidoNegocioEstadoIntNombre;
+          entry.sd_estado_id = sd.PedidoEstado;
+          const retiroEvento = (sd.PedidoHistorial || []).find(h => h.PedidoHistorialEstado === 'R');
+          entry.fecha_retiro = retiroEvento?.PedidoHistorialFecha || null;
+          entry.retirado_por = retiroEvento ? retiroEvento.PedidoHistorialDetalle.replace(/^Pedido retirado por\s*/i, '') : null;
+          entry.cadeteria = 'SoyDelivery';
+
+          // Pipeline: pendiente → en_camino_sin_escaneo → en_camino → entregado
+          if (ship.status === 'delivered' || sd.PedidoEstado === 'E') {
+            entry.etapa = 'entregado';
+          } else if (retiroEvento) {
+            entry.etapa = 'en_camino';
+          } else if (ship.status === 'shipped' && !retiroEvento) {
+            entry.etapa = 'en_camino_sin_escaneo';
+          } else {
+            entry.etapa = 'pendiente';
+          }
+          soydelivery.push(entry);
+        } else {
+          entry.cadeteria = 'Robert';
+          if (ship.status === 'delivered') entry.etapa = 'entregado';
+          else if (ship.status === 'shipped') entry.etapa = 'en_camino';
+          else entry.etapa = 'pendiente';
+          robert.push(entry);
+        }
+      } else if (ship.logistic_type === 'default') {
+        entry.cadeteria = 'DAC';
+        // Buscar guía DAC y mensajes del comprador
+        const packId = o.pack_id || o.id;
+        let allMsgs = [];
+        try {
+          const m = await axios.get(`${ML_API_URL}/messages/packs/${packId}/sellers/${sellerId}`, { headers, params: { tag: 'post_sale' } });
+          allMsgs = m.data.messages || [];
+          for (const msg of allMsgs) {
+            const match = (msg.text || '').match(/seguimiento\s*(?:es)?[:\.\s]*(\d{8,})/i);
+            if (match) { entry.dac_guia = match[1]; break; }
+          }
+        } catch {}
+        // Detectar mensajes no leídos del comprador pidiendo envío
+        const buyerMsgs = allMsgs.filter(msg => msg.from?.user_id === o.buyer?.id);
+        const unreadBuyer = buyerMsgs.filter(msg => !msg.date_read);
+        const pideEnvio = buyerMsgs.some(msg => (msg.text||'').toLowerCase().match(/env[ií]o|enviar|mandar|domicilio|llegar|lleg[uo]|direcci[oó]n|mand[ae]|despacho/));
+        entry.tiene_mensajes = buyerMsgs.length > 0;
+        entry.mensajes_no_leidos = unreadBuyer.length;
+        entry.pide_envio = pideEnvio;
+        entry.ultimo_msg_buyer = buyerMsgs.length ? (buyerMsgs[0].text || '').slice(0, 100) : null;
+        // Consultar estado en DAC si tenemos guía
+        if (entry.dac_guia) {
+          const dacResult = await consultarDAC(entry.dac_guia);
+          if (dacResult?.data) {
+            entry.dac_estado = dacResult.data.Estado_de_la_Guia;
+            entry.dac_destino = dacResult.data.Oficina_Destino;
+
+            // Auto-upload: si DAC ya retiró pero ML no tiene tracking, subirlo
+            const dacRetiro = entry.dac_estado && entry.dac_estado !== 'REGISTRADA' && entry.dac_estado !== 'DOCUMENTADA';
+            if (dacRetiro && ship.status === 'pending' && !ship.tracking_number) {
+              try {
+                await axios.put(`${ML_API_URL}/shipments/${o.shipping.id}`, {
+                  tracking_number: entry.dac_guia,
+                  tracking_method: 'DAC',
+                  service_id: 282604
+                }, { headers: { ...headers, 'Content-Type': 'application/json' } });
+                console.log(`[dac-sync] Shipment ${o.shipping.id} → shipped con guía ${entry.dac_guia}`);
+                entry.ship_status = 'shipped';
+              } catch(e) {
+                console.error(`[dac-sync] Error subiendo tracking ${o.shipping.id}:`, e.response?.data?.message || e.message);
+              }
+            }
+
+            // Auto-deliver: si DAC dice ENTREGADA y ML no está delivered
+            if (entry.dac_estado === 'ENTREGADA' && ship.status !== 'delivered') {
+              try {
+                // Si todavía no tiene tracking, primero subirlo
+                if (!ship.tracking_number) {
+                  await axios.put(`${ML_API_URL}/shipments/${o.shipping.id}`, {
+                    tracking_number: entry.dac_guia,
+                    tracking_method: 'DAC',
+                    service_id: 282604
+                  }, { headers: { ...headers, 'Content-Type': 'application/json' } });
+                }
+                await axios.put(`${ML_API_URL}/shipments/${o.shipping.id}`, {
+                  status: 'delivered',
+                  service_id: 282604
+                }, { headers: { ...headers, 'Content-Type': 'application/json' } });
+                console.log(`[dac-sync] Shipment ${o.shipping.id} → delivered`);
+                entry.ship_status = 'delivered';
+              } catch(e) {
+                console.error(`[dac-sync] Error marcando delivered ${o.shipping.id}:`, e.response?.data?.message || e.message);
+              }
+            }
+
+            if (entry.dac_estado === 'ENTREGADA') entry.etapa = 'entregado';
+            else if (dacRetiro) entry.etapa = 'en_camino';
+            else entry.etapa = 'pendiente';
+          } else {
+            entry.etapa = 'pendiente';
+          }
+        } else {
+          if (ship.status === 'delivered') entry.etapa = 'entregado';
+          else if (ship.status === 'shipped') entry.etapa = 'en_camino';
+          else entry.etapa = 'pendiente';
+        }
+        dac.push(entry);
+      } else {
+        entry.cadeteria = 'Mercado Envíos';
+        if (ship.status === 'delivered') entry.etapa = 'entregado';
+        else if (ship.status === 'shipped') entry.etapa = 'en_camino';
+        else entry.etapa = 'pendiente';
+        mercadoenvios.push(entry);
+      }
+    }
+
+    const allEntries = [...soydelivery, ...robert, ...dac, ...mercadoenvios];
+
+    retirosCache = {
+      total: allEntries.length,
+      pendientes: allEntries.filter(e => e.etapa === 'pendiente'),
+      en_camino_sin_escaneo: allEntries.filter(e => e.etapa === 'en_camino_sin_escaneo'),
+      en_camino: allEntries.filter(e => e.etapa === 'en_camino'),
+      entregados: allEntries.filter(e => e.etapa === 'entregado'),
+      soydelivery, robert, dac, mercadoenvios,
+      updated_at: new Date().toISOString(),
+    };
+    try { fs.writeFileSync(RETIROS_CACHE_FILE, JSON.stringify(retirosCache)); } catch {}
+    console.log(`[retiros] actualizado: ${retirosCache.total} envíos activos`);
+  } catch(e) {
+    console.error('[retiros] error:', e.message);
+  } finally {
+    retirosUpdating = false;
+  }
+}
+
+// Actualizar al arrancar (después de 10s para que el token esté listo) y cada 5 min
+setTimeout(() => actualizarRetiros(), 10000);
+setInterval(() => actualizarRetiros(), 5 * 60 * 1000);
+
+// GET /api/ml/retiros — Devuelve cache, opcionalmente fuerza refresh
+app.get('/api/ml/retiros', requireToken, async (req, res) => {
+  if (req.query.refresh === '1') {
+    await actualizarRetiros();
+  }
+  if (retirosCache) {
+    res.json({ ...retirosCache, loading: retirosUpdating, progress: retirosProgress });
+  } else {
+    res.json({ total: 0, pendientes: [], retirados_hoy: [], soydelivery: [], robert: [], dac: [], mercadoenvios: [], updated_at: null, loading: retirosUpdating, progress: retirosProgress });
+  }
+});
+
+// ── Envíos por cadete ──
+
+// GET /api/retira-local — Pedidos que retiran en el local
+app.get('/api/retira-local', requireToken, async (req, res) => {
+  try {
+    const headers = { Authorization: `Bearer ${tokenData.access_token}` };
+    const sellerId = tokenData.user_id || 352172083;
+    let items = [];
+    let offset = 0;
+    while (offset < 200) {
+      const r = await axios.get(`${ML_API_URL}/orders/search`, {
+        params: { seller: sellerId, sort: 'date_desc', limit: 50, offset, 'order.status': 'paid' },
+        headers
+      });
+      for (const o of (r.data.results || [])) {
+        if (o.shipping?.id) continue; // tiene envío, no es retiro en local
+        const item = o.order_items?.[0]?.item;
+        // Buscar mensajes
+        let msgs = [];
+        const packId = o.pack_id || o.id;
+        try {
+          const m = await axios.get(`${ML_API_URL}/messages/packs/${packId}/sellers/${sellerId}`, { headers, params: { tag: 'post_sale' } });
+          msgs = m.data.messages || [];
+        } catch {}
+        const buyerMsgs = msgs.filter(m => m.from?.user_id === o.buyer?.id);
+        const unread = buyerMsgs.filter(m => !m.date_read);
+
+        // Filtrar: si el COMPRADOR pide envío en sus mensajes, no es retiro en local
+        const pideEnvio = buyerMsgs.some(m => (m.text||'').toLowerCase().match(/env[ií]o|enviar|mandar|domicilio|despacho|manden|mand[ae]/));
+        if (pideEnvio) continue;
+
+        items.push({
+          order_id: o.id,
+          pack_id: o.pack_id,
+          buyer: o.buyer?.nickname,
+          buyer_name: `${o.buyer?.first_name || ''} ${o.buyer?.last_name || ''}`.trim(),
+          item_title: item?.title || '',
+          item_id: item?.id,
+          quantity: o.order_items?.[0]?.quantity || 1,
+          total_amount: o.total_amount,
+          date_created: o.date_created,
+          mensajes_no_leidos: unread.length,
+          ultimo_msg: buyerMsgs.length ? (buyerMsgs[0].text || '').slice(0, 100) : null,
+        });
+      }
+      offset += 50;
+      if ((r.data.results || []).length < 50) break;
+    }
+    res.json({ items, total: items.length });
+  } catch(e) {
+    console.error('[retira-local]', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// GET /api/envios/dac — Lista envíos DAC + buscar por guía
+app.get('/api/envios/dac', requireToken, async (req, res) => {
+  const q = (req.query.q || '').trim();
+  const items = retirosCache?.dac || [];
+
+  if (q) {
+    // Buscar directamente en DAC por número de guía
+    const dacResult = await consultarDAC(q);
+    if (dacResult?.data) {
+      const d = dacResult.data;
+      return res.json({
+        found: true,
+        guia: q,
+        estado: d.Estado_de_la_Guia,
+        destinatario: (d.Destinatario || '').trim(),
+        remitente: (d.Remitente || '').trim(),
+        destino: `${(d.Calle_Destinatario || '').trim()} ${d.Nro_Puerta_Destinatario || ''}, ${d.Ciudad_Destinatario || ''}, ${d.Estado_Destinatario || ''}`,
+        oficina_destino: d.Oficina_Destino,
+        oficina_actual: d.D_Oficina_Actual,
+        persona_recibe: d.Persona_RecibeGuia || '',
+        ci_recibe: d.ID_RecibeGuia || '',
+        paquetes: (dacResult.dataPaquete || []).map(p => `${p.Cantidad} x ${p.D_Tipo_Empaque}`),
+        historial: (dacResult.dataHistoria || []).map(h => ({
+          estado: h.D_Estado_Guia,
+          oficina: h.D_Oficina,
+          fecha: h.F_Historia,
+          usuario: h.D_Usuario,
+        })),
+      });
+    }
+    // Buscar en cache por guía, order_id o buyer
+    const filtered = items.filter(e =>
+      (e.dac_guia && e.dac_guia.includes(q)) ||
+      String(e.order_id).includes(q) ||
+      (e.buyer || '').toLowerCase().includes(q.toLowerCase()) ||
+      (e.buyer_name || '').toLowerCase().includes(q.toLowerCase())
+    );
+    return res.json({ found: filtered.length > 0, items: filtered, total: filtered.length });
+  }
+
+  const acuerda = items.filter(e => !e.dac_guia && e.pide_envio && e.mensajes_no_leidos > 0);
+  const sin_coordinar = items.filter(e => !e.dac_guia && !(e.pide_envio && e.mensajes_no_leidos > 0));
+  const coordinados = items.filter(e => e.dac_guia && (!e.dac_estado || e.dac_estado === 'REGISTRADA' || e.dac_estado === 'DOCUMENTADA'));
+  const retirados = items.filter(e => e.dac_guia && e.dac_estado && e.dac_estado !== 'REGISTRADA' && e.dac_estado !== 'DOCUMENTADA' && e.dac_estado !== 'ENTREGADA');
+  const entregados = items.filter(e => e.dac_estado === 'ENTREGADA');
+  res.json({ items, total: items.length, acuerda, sin_coordinar, coordinados, retirados, entregados, updated_at: retirosCache?.updated_at });
+});
+
+// GET /api/envios/soydelivery — Lista envíos SoyDelivery + buscar por ID
+app.get('/api/envios/soydelivery', requireToken, async (req, res) => {
+  const q = (req.query.q || '').trim();
+  const items = retirosCache?.soydelivery || [];
+
+  if (q) {
+    const histData = await consultarSoyDeliveryHistorial(q);
+    if (histData?.PedidoConsultaSDT) {
+      const sd = histData.PedidoConsultaSDT;
+      const sdId = parseInt(sd.PedidoId);
+      let detalle = null;
+      if (sdId) detalle = await consultarSoyDelivery(sdId);
+      return res.json({
+        found: true,
+        pedido_id: sd.PedidoId,
+        estado: sd.PedidoEstado,
+        estado_nombre: sd.PedidoNegocioEstadoIntNombre,
+        fecha_ingreso: sd.PedidoFechaIngreso,
+        fecha_entrega: sd.PedidoFechaEntrega,
+        fecha_entregado: sd.PedidoFechaEntregado,
+        explicacion: sd.PedidoEstadoExplanation,
+        delivery: detalle ? {
+          nombre: detalle.Delivery_nombre_apellido,
+          telefono: detalle.Delivery_telefono,
+          ubicacion: detalle.Delivery_location,
+          franja: detalle.Franja_horaria_desc,
+          fecha_estimada: detalle.Fecha_estimada_entrega,
+        } : null,
+        historial: (sd.PedidoHistorial || []).map(h => ({
+          fecha: h.PedidoHistorialFecha,
+          estado: h.PedidoHistorialEstado,
+          detalle: h.PedidoHistorialDetalle,
+          estado_nombre: h.DiccionarioEstadoNombre,
+        })),
+      });
+    }
+    const filtered = items.filter(e =>
+      String(e.order_id).includes(q) ||
+      String(e.tracking).includes(q) ||
+      (e.buyer || '').toLowerCase().includes(q.toLowerCase()) ||
+      (e.buyer_name || '').toLowerCase().includes(q.toLowerCase())
+    );
+    return res.json({ found: filtered.length > 0, items: filtered, total: filtered.length });
+  }
+
+  const pendientes = items.filter(e => e.etapa === 'pendiente');
+  const en_camino_sin_escaneo = items.filter(e => e.etapa === 'en_camino_sin_escaneo');
+  const en_camino = items.filter(e => e.etapa === 'en_camino');
+  const entregados = items.filter(e => e.etapa === 'entregado');
+  res.json({ items, total: items.length, pendientes, en_camino_sin_escaneo, en_camino, entregados, updated_at: retirosCache?.updated_at });
+});
+
+// GET /api/envios/deri — Lista envíos Robert/Deri + buscar por ID
+app.get('/api/envios/deri', requireToken, async (req, res) => {
+  const q = (req.query.q || '').trim();
+  const items = retirosCache?.robert || [];
+
+  if (q) {
+    const deriOrder = await consultarDeriOrder(q);
+    if (deriOrder) {
+      const statuses = await consultarDeriStatuses(q) || [];
+      return res.json({ found: true, order: deriOrder, historial: statuses });
+    }
+    const filtered = items.filter(e =>
+      String(e.order_id).includes(q) ||
+      String(e.tracking).includes(q) ||
+      (e.buyer || '').toLowerCase().includes(q.toLowerCase()) ||
+      (e.buyer_name || '').toLowerCase().includes(q.toLowerCase())
+    );
+    return res.json({ found: filtered.length > 0, items: filtered, total: filtered.length });
+  }
+
+  const pendientes = items.filter(e => e.etapa === 'pendiente');
+  const en_camino = items.filter(e => e.etapa === 'en_camino');
+  const entregados = items.filter(e => e.etapa === 'entregado');
+  res.json({ items, total: items.length, pendientes, en_camino, entregados, updated_at: retirosCache?.updated_at });
+});
+
+// ── Deri (Robert) Webhook ──
+// ── DAC Webhook ──
+app.post('/webhook/dac', (req, res) => {
+  console.log('[dac/webhook]:', JSON.stringify(req.body).slice(0, 500));
+  res.json({ ok: true });
+});
+
+app.post('/webhook/deri', (req, res) => {
+  console.log('[deri/webhook]:', JSON.stringify(req.body).slice(0, 500));
+  res.json({ ok: true });
+});
+
+// ── SoyDelivery Webhooks ──
+// Recibe notificaciones de SoyDelivery y guarda el mapeo shipment_id → sd_pedido_id
+app.post('/webhook/soydelivery/:event', (req, res) => {
+  const event = req.params.event;
+  const data = req.body;
+  console.log(`[soydelivery/webhook] ${event}:`, JSON.stringify(data).slice(0, 300));
+
+  const pedidoId = data.Pedido_id || data.pedido_id;
+  const externalId = data.Pedido_external_id || data.pedido_external_id;
+
+  if (pedidoId && externalId) {
+    sdMapping[externalId] = pedidoId;
+    saveSdMapping();
+    console.log(`[soydelivery] mapping: ${externalId} → ${pedidoId}`);
+  }
+
+  res.json({ ok: true });
+});
+
+// Endpoint genérico para cualquier webhook de SoyDelivery
+app.post('/webhook/soydelivery', (req, res) => {
+  const data = req.body;
+  console.log('[soydelivery/webhook]:', JSON.stringify(data).slice(0, 300));
+
+  const pedidoId = data.Pedido_id || data.pedido_id;
+  const externalId = data.Pedido_external_id || data.pedido_external_id;
+
+  if (pedidoId && externalId) {
+    sdMapping[externalId] = pedidoId;
+    saveSdMapping();
+  }
+
+  res.json({ ok: true });
 });
 
 // GET /api/ml/preguntas/pendientes

@@ -66,6 +66,16 @@
       text-transform: uppercase; color: rgba(255,255,255,0.25);
       padding: 14px 20px 4px; margin-top: 4px;
     }
+    .nav-group-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 20px; color: rgba(255,255,255,0.7);
+      cursor: pointer; font-size: 13px; font-weight: 600;
+      border-left: 3px solid transparent; transition: all 0.15s;
+    }
+    .nav-group-header:hover { color: white; background: rgba(255,255,255,0.05); }
+    .nav-group-header .arrow { font-size: 10px; transition: transform 0.2s; }
+    .nav-group-items { overflow: hidden; }
+    .nav-group-items .nav-item { padding-left: 36px; font-size: 13px; }
 
     .sidebar-user {
       padding: 16px 20px;
@@ -281,35 +291,68 @@
     </div>
     <nav class="sidebar-nav" style="overflow-y:auto;flex:1;">
 
-      <div class="nav-section-label">Posventa</div>
       <div class="nav-item active" data-page="tareas" onclick="showPage('tareas')">
         <span class="nav-icon">✅</span> Tareas
       </div>
-      <div class="nav-item" data-page="reclamos" onclick="showPage('reclamos')">
-        <span class="nav-icon">⚠️</span> Reclamos
-      </div>
-      <div class="nav-item" data-page="devoluciones" onclick="showPage('devoluciones')">
-        <span class="nav-icon">↩️</span> Devoluciones
-      </div>
-
       <div class="nav-item" data-page="buscador" onclick="showPage('buscador')">
         <span class="nav-icon">🔍</span> Buscador
       </div>
 
-      <div class="nav-section-label">MercadoLibre</div>
-      <div class="nav-item" data-page="ml-preguntas" onclick="showPage('ml-preguntas')">
-        <span class="nav-icon">💬</span> Preguntas
+      <!-- Atención al cliente -->
+      <div class="nav-group-header" onclick="toggleNavGroup('nav-atencion')">
+        <span>💬 Atenci&oacute;n</span>
+        <span class="arrow" id="arrow-nav-atencion">▶</span>
       </div>
-      <div class="nav-item" data-page="ml-postventa" onclick="showPage('ml-postventa')">
-        <span class="nav-icon">📨</span> Post-venta
-      </div>
-      <div class="nav-item" data-page="ml-reglas" onclick="showPage('ml-reglas')">
-        <span class="nav-icon">⚙️</span> Reglas IA
+      <div class="nav-group-items" id="nav-atencion" style="display:none;">
+        <div class="nav-item" data-page="ml-preguntas" onclick="showPage('ml-preguntas')">
+          <span class="nav-icon">💬</span> Preguntas
+        </div>
+        <div class="nav-item" data-page="ml-postventa" onclick="showPage('ml-postventa')">
+          <span class="nav-icon">📨</span> Post-venta
+        </div>
+        <div class="nav-item" data-page="reclamos" onclick="showPage('reclamos')">
+          <span class="nav-icon">⚠️</span> Reclamos
+        </div>
+        <div class="nav-item" data-page="devoluciones" onclick="showPage('devoluciones')">
+          <span class="nav-icon">↩️</span> Devoluciones
+        </div>
       </div>
 
-      <div class="nav-section-label admin-only" style="display:none;">Admin</div>
-      <div class="nav-item admin-only" data-page="usuarios" onclick="showPage('usuarios')" style="display:none;">
-        <span class="nav-icon">👥</span> Usuarios
+      <!-- Envíos y logística -->
+      <div class="nav-group-header" onclick="toggleNavGroup('nav-envios')">
+        <span>🚚 Env&iacute;os</span>
+        <span class="arrow" id="arrow-nav-envios">▶</span>
+      </div>
+      <div class="nav-group-items" id="nav-envios" style="display:none;">
+        <div class="nav-item" data-page="retiros" onclick="showPage('retiros')">
+          <span class="nav-icon">📦</span> Retiros
+        </div>
+        <div class="nav-item" data-page="retira-local" onclick="showPage('retira-local')">
+          <span class="nav-icon">🏪</span> Retira en local
+        </div>
+        <div class="nav-item" data-page="envios-dac" onclick="showPage('envios-dac')">
+          <span class="nav-icon">🟢</span> ME1 / DAC
+        </div>
+        <div class="nav-item" data-page="envios-sd" onclick="showPage('envios-sd')">
+          <span class="nav-icon">🟠</span> SoyDelivery
+        </div>
+        <div class="nav-item" data-page="envios-deri" onclick="showPage('envios-deri')">
+          <span class="nav-icon">🔵</span> Robert
+        </div>
+      </div>
+
+      <!-- Config -->
+      <div class="nav-group-header" onclick="toggleNavGroup('nav-config')">
+        <span>⚙️ Configuraci&oacute;n</span>
+        <span class="arrow" id="arrow-nav-config">▶</span>
+      </div>
+      <div class="nav-group-items" id="nav-config" style="display:none;">
+        <div class="nav-item" data-page="ml-reglas" onclick="showPage('ml-reglas')">
+          <span class="nav-icon">📋</span> Reglas IA
+        </div>
+        <div class="nav-item admin-only" data-page="usuarios" onclick="showPage('usuarios')" style="display:none;">
+          <span class="nav-icon">👥</span> Usuarios
+        </div>
       </div>
 
     </nav>
@@ -577,8 +620,101 @@
     </div>
 
     <!-- Usuarios -->
+    <div id="page-retiros" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h2 style="font-size:20px;font-weight:700;margin:0;">Retiros del d&iacute;a</h2>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span id="retiros-updated" style="font-size:11px;color:#9ca3af;"></span>
+          <button onclick="loadRetiros()" style="padding:8px 14px;background:#e5e7eb;color:#374151;border:none;border-radius:6px;font-size:13px;cursor:pointer;">Recargar</button>
+          <button onclick="loadRetiros(true)" style="padding:8px 14px;background:#7c3aed;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">Forzar refresh</button>
+        </div>
+      </div>
+      <div id="retiros-resumen"></div>
+      <div id="retiros-list"></div>
+    </div>
+
+    <!-- ── Envíos DAC ── -->
+    <div id="page-envios-dac" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div>
+          <h2 style="font-size:20px;font-weight:700;margin:0;">🟢 Coordinaci&oacute;n ME1 — DAC</h2>
+          <p style="font-size:12px;color:#6b7280;margin-top:2px;">Gesti&oacute;n de env&iacute;os al interior por DAC (Grupo Agencia)</p>
+        </div>
+        <span id="envios-dac-updated" style="font-size:11px;color:#9ca3af;"></span>
+      </div>
+      <div class="card" style="margin-bottom:16px;">
+        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+          <div style="flex:1;min-width:200px;">
+            <label style="font-size:12px;color:#6b7280;font-weight:600;display:block;margin-bottom:4px;">Buscar por n&uacute;mero de gu&iacute;a, orden o comprador</label>
+            <input type="text" id="envios-dac-input" class="search-input" style="width:100%;" placeholder="Ej: 12345678 (gu&iacute;a DAC)" onkeydown="if(event.key==='Enter')buscarEnviosDac()"/>
+          </div>
+          <button onclick="buscarEnviosDac()" style="padding:10px 20px;background:#059669;color:white;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;">Buscar</button>
+        </div>
+      </div>
+      <div id="envios-dac-resumen"></div>
+      <div id="envios-dac-resultado"></div>
+      <div id="envios-dac-list"></div>
+    </div>
+
+    <!-- ── Envíos SoyDelivery ── -->
+    <div id="page-envios-sd" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div>
+          <h2 style="font-size:20px;font-weight:700;margin:0;">🟠 Env&iacute;os SoyDelivery</h2>
+          <p style="font-size:12px;color:#6b7280;margin-top:2px;">Seguimiento de env&iacute;os Flex por SoyDelivery</p>
+        </div>
+        <span id="envios-sd-updated" style="font-size:11px;color:#9ca3af;"></span>
+      </div>
+      <div class="card" style="margin-bottom:16px;">
+        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+          <div style="flex:1;min-width:200px;">
+            <label style="font-size:12px;color:#6b7280;font-weight:600;display:block;margin-bottom:4px;">Buscar por shipment ID, orden o comprador</label>
+            <input type="text" id="envios-sd-input" class="search-input" style="width:100%;" placeholder="Ej: 46768933429 (shipment ID)" onkeydown="if(event.key==='Enter')buscarEnviosSd()"/>
+          </div>
+          <button onclick="buscarEnviosSd()" style="padding:10px 20px;background:#f97316;color:white;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;">Buscar</button>
+        </div>
+      </div>
+      <div id="envios-sd-resumen"></div>
+      <div id="envios-sd-resultado"></div>
+      <div id="envios-sd-list"></div>
+    </div>
+
+    <!-- ── Envíos Robert / Deri ── -->
+    <div id="page-envios-deri" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div>
+          <h2 style="font-size:20px;font-weight:700;margin:0;">🔵 Env&iacute;os Robert / Deri</h2>
+          <p style="font-size:12px;color:#6b7280;margin-top:2px;">Seguimiento de env&iacute;os Flex por Robert (Deri App)</p>
+        </div>
+        <span id="envios-deri-updated" style="font-size:11px;color:#9ca3af;"></span>
+      </div>
+      <div class="card" style="margin-bottom:16px;">
+        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+          <div style="flex:1;min-width:200px;">
+            <label style="font-size:12px;color:#6b7280;font-weight:600;display:block;margin-bottom:4px;">Buscar por order ID de Deri, orden ML o comprador</label>
+            <input type="text" id="envios-deri-input" class="search-input" style="width:100%;" placeholder="Ej: 12345 (Deri order ID)" onkeydown="if(event.key==='Enter')buscarEnviosDeri()"/>
+          </div>
+          <button onclick="buscarEnviosDeri()" style="padding:10px 20px;background:#2563eb;color:white;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;">Buscar</button>
+        </div>
+      </div>
+      <div id="envios-deri-resumen"></div>
+      <div id="envios-deri-resultado"></div>
+      <div id="envios-deri-list"></div>
+    </div>
+
+    <div id="page-retira-local" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h2 style="font-size:20px;font-weight:700;margin:0;">🏪 Retira en local</h2>
+        <button onclick="loadRetiraLocal()" style="padding:8px 14px;background:#7c3aed;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">Actualizar</button>
+      </div>
+      <div id="retira-local-list"></div>
+    </div>
+
     <div id="page-buscador" style="display:none">
-      <h2 style="font-size:20px;font-weight:700;margin-bottom:16px;">Buscador de ventas</h2>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+        <button id="btn-volver" style="display:none;padding:6px 12px;background:#f3f4f6;color:#374151;border:none;border-radius:6px;font-size:13px;cursor:pointer;" onclick="if(_previousPage){showPage(_previousPage);_previousPage=null;}">← Volver</button>
+        <h2 style="font-size:20px;font-weight:700;margin:0;">Buscador de ventas</h2>
+      </div>
       <div class="card" style="margin-bottom:16px;">
         <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
           <div style="flex:1;min-width:200px;">
@@ -675,10 +811,33 @@ function fmtDateTime(d) {
 }
 
 // ── Navigation ──
-const PAGES = ['tareas', 'reclamos', 'devoluciones', 'buscador', 'ml-analizar', 'usuarios'];
+const PAGES = ['tareas', 'reclamos', 'devoluciones', 'buscador', 'retiros', 'retira-local', 'envios-dac', 'envios-sd', 'envios-deri', 'ml-analizar', 'usuarios'];
 const ML_TAB_PAGES = { 'ml-preguntas': 'pendientes', 'ml-postventa': 'mensajes', 'ml-reglas': 'reglas' };
 
+function toggleNavGroup(id) {
+  const el = document.getElementById(id);
+  const arrow = document.getElementById('arrow-' + id);
+  if (el.style.display === 'none') { el.style.display = ''; if (arrow) arrow.textContent = '▼'; }
+  else { el.style.display = 'none'; if (arrow) arrow.textContent = '▶'; }
+}
+
+function openNavGroupFor(page) {
+  const groups = {
+    'nav-atencion': ['ml-preguntas','ml-postventa','reclamos','devoluciones'],
+    'nav-envios': ['retiros','retira-local','envios-dac','envios-sd','envios-deri'],
+    'nav-config': ['ml-reglas','usuarios'],
+  };
+  for (const [gid, pages] of Object.entries(groups)) {
+    const el = document.getElementById(gid);
+    const arrow = document.getElementById('arrow-' + gid);
+    if (pages.includes(page)) { if (el) el.style.display = ''; if (arrow) arrow.textContent = '▼'; }
+  }
+}
+
+let _previousPage = null;
 function showPage(page) {
+  const current = localStorage.getItem('currentPage');
+  if (current && current !== page) _previousPage = current;
   document.getElementById('sidebar')?.classList.remove('open');
   document.getElementById('sidebar-overlay')?.classList.remove('show');
 
@@ -704,6 +863,9 @@ function showPage(page) {
     el.classList.toggle('active', el.dataset.page === page);
   });
   localStorage.setItem('currentPage', page);
+  openNavGroupFor(page);
+  const btnVolver = document.getElementById('btn-volver');
+  if (btnVolver) btnVolver.style.display = (page === 'buscador' && _previousPage) ? '' : 'none';
 
   if (page === 'reclamos' && !claimsLoaded) {
     loadClaims(0);
@@ -716,11 +878,26 @@ function showPage(page) {
   if (page === 'tareas') {
     loadTareas();
   }
+  if (page === 'retiros') {
+    loadRetiros();
+  }
+  if (page === 'retira-local') {
+    loadRetiraLocal();
+  }
   if (page === 'ml-analizar') {
     initAnalizarPage('pendientes');
   }
   if (page === 'usuarios') {
     loadUsersPage();
+  }
+  if (page === 'envios-dac') {
+    loadEnviosDac();
+  }
+  if (page === 'envios-sd') {
+    loadEnviosSd();
+  }
+  if (page === 'envios-deri') {
+    loadEnviosDeri();
   }
 }
 
@@ -2063,6 +2240,420 @@ async function responderConIA(idx, itemId, pregunta, titulo) {
   } catch(e) { cont.textContent = 'Error: ' + e.message; }
 }
 
+// ── Retiros ──
+async function loadRetiros(forceRefresh) {
+  const list = document.getElementById('retiros-list');
+  const resumen = document.getElementById('retiros-resumen');
+  const updatedEl = document.getElementById('retiros-updated');
+  list.innerHTML = '<p style="color:#9ca3af;font-size:13px;padding:16px;">Cargando env&iacute;os activos...</p>';
+  resumen.innerHTML = '';
+
+  try {
+    const url = forceRefresh ? '/api/ml/retiros?refresh=1' : '/api/ml/retiros';
+    const r = await fetch(url, { headers: authHeaders() });
+    const d = await r.json();
+    if (d.error) { list.innerHTML = `<div class="card" style="color:#dc2626;">${d.error}</div>`; return; }
+
+    // Updated timestamp + loading
+    if (updatedEl) {
+      if (d.loading) {
+        const pct = d.progress?.total ? Math.round((d.progress.current / d.progress.total) * 100) : 0;
+        const progBar = `<div style="margin-top:6px;background:#e5e7eb;border-radius:6px;height:6px;overflow:hidden;">
+          <div style="background:#7c3aed;height:100%;width:${pct}%;transition:width 0.3s;border-radius:6px;"></div>
+        </div>`;
+        if (!d.updated_at) {
+          updatedEl.innerHTML = `<span style="color:#d97706;">Construyendo cache... ${d.progress?.current || 0}/${d.progress?.total || '?'}</span>`;
+          list.innerHTML = `<div class="card" style="text-align:center;padding:32px;">
+            <div style="font-size:24px;margin-bottom:8px;">⏳</div>
+            <div style="color:#6b7280;margin-bottom:12px;">Cargando env&iacute;os activos... ${d.progress?.current || 0} de ${d.progress?.total || '?'} procesados</div>
+            <div style="max-width:300px;margin:0 auto;">${progBar}</div>
+          </div>`;
+          setTimeout(() => loadRetiros(), 5000);
+          return;
+        }
+        updatedEl.innerHTML = `Actualizado: ${new Date(d.updated_at).toLocaleString('es-UY', {hour:'2-digit',minute:'2-digit'})} <span style="color:#d97706;">(actualizando... ${d.progress?.current || 0}/${d.progress?.total || '?'})</span>`;
+      } else {
+        updatedEl.textContent = d.updated_at ? 'Actualizado: ' + new Date(d.updated_at).toLocaleString('es-UY', {hour:'2-digit',minute:'2-digit'}) : '';
+      }
+    }
+
+    // Resumen cards
+    // Agrupar por cadetería (solo Flex: SD y Robert)
+    const carriers = [
+      { name: 'SoyDelivery', color: '#f97316', icon: '🟠', items: (d.soydelivery||[]).concat(d.robert||[]) },
+      { name: 'DAC', color: '#059669', icon: '🟢', items: d.dac||[] },
+      { name: 'Mercado Env\u00edos', color: '#d97706', icon: '🟡', items: d.mercadoenvios||[] },
+    ];
+
+    // Resumen por cadetería
+    resumen.innerHTML = `<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
+      ${carriers.map(c => {
+        const pendCount = c.items.filter(e => e.etapa === 'pendiente').length;
+        const retCount = c.items.filter(e => e.etapa !== 'pendiente' && e.etapa !== 'entregado').length;
+        return `<div class="card" style="flex:1;min-width:160px;margin:0;border-left:4px solid ${c.color};">
+          <div style="font-size:15px;font-weight:700;margin-bottom:6px;">${c.icon} ${c.name}</div>
+          <div style="display:flex;gap:16px;">
+            <div><span style="font-size:20px;font-weight:700;color:#dc2626;">${pendCount}</span><div style="font-size:10px;color:#6b7280;">Por retirar</div></div>
+            <div><span style="font-size:20px;font-weight:700;color:#2563eb;">${retCount}</span><div style="font-size:10px;color:#6b7280;">Retirados</div></div>
+            <div><span style="font-size:20px;font-weight:700;color:#374151;">${c.items.length}</span><div style="font-size:10px;color:#6b7280;">Total</div></div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+
+    // Lista por cadetería: qué falta retirar
+    let html = '';
+    for (const c of carriers) {
+      const porRetirar = c.items.filter(e => e.etapa === 'pendiente');
+      if (!porRetirar.length) continue;
+
+      html += `<div class="card" style="margin-bottom:12px;border-left:4px solid ${c.color};padding:0;overflow:hidden;">
+        <div style="padding:12px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:${c.color}08;" onclick="const el=document.getElementById('ret-${c.name.replace(/\s/g,'')}');const a=this.querySelector('.arrow');if(el.style.display==='none'){el.style.display='';a.textContent='▼'}else{el.style.display='none';a.textContent='▶'}">
+          <div>
+            <span style="font-size:15px;font-weight:700;color:${c.color};">${c.icon} ${c.name}</span>
+            <span style="font-size:13px;color:#dc2626;margin-left:8px;font-weight:600;">${porRetirar.length} por retirar</span>
+          </div>
+          <span class="arrow" style="font-size:12px;color:#9ca3af;">▶</span>
+        </div>
+        <div id="ret-${c.name.replace(/\s/g,'')}" style="display:none;padding:8px 16px 14px;">
+          ${porRetirar.map(e => `
+            <div style="padding:8px 12px;margin-bottom:4px;background:white;border:1px solid #f3f4f6;border-radius:6px;cursor:pointer;font-size:12px;" onclick="document.getElementById('buscar-input').value='${e.order_id}';showPage('buscador');buscarVenta();">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
+                <div style="flex:1;min-width:0;">
+                  <span style="font-weight:600;">${(e.item_title||'').slice(0,45)}</span>
+                  <span style="color:#9ca3af;"> · ${e.buyer_name || e.buyer} · ${e.receiver_city || ''}</span>
+                </div>
+                <span style="font-size:10px;color:#9ca3af;">${new Date(e.date_created).toLocaleDateString('es-UY',{day:'2-digit',month:'2-digit'})}</span>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
+    }
+
+    list.innerHTML = html || '<div class="card" style="text-align:center;color:#9ca3af;padding:32px;">Todo retirado</div>';
+  } catch(e) {
+    list.innerHTML = `<div class="card" style="color:#dc2626;">Error: ${e.message}</div>`;
+  }
+}
+
+// ── Envíos por cadete ──
+
+function renderEnvioItem(e, color) {
+  const etapaColors = { pendiente: '#dc2626', en_camino_sin_escaneo: '#d97706', en_camino: '#2563eb', entregado: '#059669' };
+  const etapaLabels = { pendiente: 'Pendiente', en_camino_sin_escaneo: 'Sin escaneo', en_camino: 'En camino', entregado: 'Entregado' };
+  return `<div style="padding:10px 14px;margin-bottom:4px;background:white;border:1px solid #f3f4f6;border-radius:6px;cursor:pointer;font-size:12px;" onclick="document.getElementById('buscar-input').value='${e.order_id}';showPage('buscador');buscarVenta();">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:600;margin-bottom:2px;">${(e.item_title||'').slice(0,50)}</div>
+        <div style="color:#6b7280;">${e.buyer_name || e.buyer} · ${e.receiver_city || ''}, ${e.receiver_state || ''}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;">
+        <span style="padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;color:white;background:${etapaColors[e.etapa]||'#6b7280'};">${etapaLabels[e.etapa]||e.etapa}</span>
+        ${e.dac_guia ? `<span style="font-size:10px;color:#059669;">Guía: ${e.dac_guia}</span>` : ''}
+        ${e.dac_estado ? `<span style="font-size:10px;color:#059669;">${e.dac_estado}</span>` : ''}
+        ${e.sd_estado ? `<span style="font-size:10px;color:#f97316;">${e.sd_estado}</span>` : ''}
+        ${e.retirado_por ? `<span style="font-size:10px;color:#7c3aed;">${e.retirado_por}</span>` : ''}
+        ${e.tracking ? `<span style="font-size:10px;color:#9ca3af;">#${e.tracking}</span>` : ''}
+        ${e.mensajes_no_leidos ? `<span style="font-size:10px;color:#dc2626;font-weight:700;">${e.mensajes_no_leidos} sin leer</span>` : ''}
+        ${e.receiver_phone ? `<span style="font-size:10px;color:#6b7280;">Tel: ${e.receiver_phone}</span>` : (e.cadeteria==='DAC' ? `<span style="font-size:10px;color:#dc2626;font-weight:700;">⚠️ Sin tel</span>` : '')}
+      </div>
+    </div>
+    ${e.ultimo_msg_buyer ? `<div style="margin-top:4px;padding:4px 8px;background:#f5f3ff;border-radius:4px;font-size:11px;color:#7c3aed;"><b>Comprador:</b> ${e.ultimo_msg_buyer}</div>` : ''}
+  </div>`;
+}
+
+function renderEnviosStages(stages, items, renderFn) {
+  let html = '';
+  for (const s of stages) {
+    if (!s.data.length) continue;
+    const id = 'envios-stage-' + s.key + '-' + Math.random().toString(36).slice(2,6);
+    html += `<div class="card" style="margin-bottom:12px;border-left:4px solid ${s.color};padding:0;overflow:hidden;">
+      <div style="padding:12px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:${s.bg};" onclick="const el=document.getElementById('${id}');const a=this.querySelector('.arrow');if(el.style.display==='none'){el.style.display='';a.textContent='▼'}else{el.style.display='none';a.textContent='▶'}">
+        <span style="font-size:15px;font-weight:700;color:${s.color};">${s.icon} ${s.label} <span style="font-weight:400;color:#9ca3af;font-size:13px;">(${s.data.length})</span></span>
+        <span class="arrow" style="font-size:12px;color:#9ca3af;">▶</span>
+      </div>
+      <div id="${id}" style="display:none;padding:8px 16px 14px;">
+        ${s.data.map(e => renderFn(e)).join('')}
+      </div>
+    </div>`;
+  }
+  return html || '<div class="card" style="text-align:center;color:#9ca3af;padding:32px;">No hay env&iacute;os activos</div>';
+}
+
+// ── DAC ──
+async function loadEnviosDac() {
+  const list = document.getElementById('envios-dac-list');
+  const resumen = document.getElementById('envios-dac-resumen');
+  const updated = document.getElementById('envios-dac-updated');
+  list.innerHTML = '<p style="color:#9ca3af;font-size:13px;padding:16px;">Cargando...</p>';
+  resumen.innerHTML = '';
+  try {
+    const r = await fetch('/api/envios/dac', { headers: authHeaders() });
+    const d = await r.json();
+    if (updated && d.updated_at) updated.textContent = 'Actualizado: ' + new Date(d.updated_at).toLocaleString('es-UY',{hour:'2-digit',minute:'2-digit'});
+
+    const stages = [
+      { key: 'dac-acuerda', label: 'Acuerda comprador', data: d.acuerda||[], color: '#7c3aed', icon: '💬', bg: '#f5f3ff' },
+      { key: 'dac-sincoord', label: 'Pendientes de coordinar', data: d.sin_coordinar||[], color: '#dc2626', icon: '⚠️', bg: '#fef2f2' },
+      { key: 'dac-coord', label: 'Coordinados (sin retiro)', data: d.coordinados||[], color: '#d97706', icon: '📦', bg: '#fffbeb' },
+      { key: 'dac-ret', label: 'Retirados por DAC', data: d.retirados||[], color: '#2563eb', icon: '🚚', bg: '#eff6ff' },
+      { key: 'dac-ent', label: 'Entregados', data: d.entregados||[], color: '#059669', icon: '✅', bg: '#f0fdf4' },
+    ];
+    resumen.innerHTML = `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+      ${stages.map(s => `<div class="card" style="flex:1;min-width:100px;margin:0;text-align:center;border-top:3px solid ${s.color};">
+        <div style="font-size:22px;">${s.icon}</div>
+        <div style="font-size:24px;font-weight:700;color:${s.color};">${s.data.length}</div>
+        <div style="font-size:10px;color:#6b7280;">${s.label}</div>
+      </div>`).join('')}
+      <div class="card" style="flex:1;min-width:100px;margin:0;text-align:center;border-top:3px solid #059669;">
+        <div style="font-size:22px;">📊</div>
+        <div style="font-size:24px;font-weight:700;color:#059669;">${d.total||0}</div>
+        <div style="font-size:10px;color:#6b7280;">Total</div>
+      </div>
+    </div>`;
+    list.innerHTML = renderEnviosStages(stages, d.items, e => renderEnvioItem(e, '#059669'));
+  } catch(e) { list.innerHTML = `<div class="card" style="color:#dc2626;">Error: ${e.message}</div>`; }
+}
+
+async function buscarEnviosDac() {
+  const q = document.getElementById('envios-dac-input').value.trim();
+  if (!q) return;
+  const resultado = document.getElementById('envios-dac-resultado');
+  resultado.innerHTML = '<p style="color:#9ca3af;font-size:13px;padding:16px;">Buscando...</p>';
+  try {
+    const r = await fetch(`/api/envios/dac?q=${encodeURIComponent(q)}`, { headers: authHeaders() });
+    const d = await r.json();
+    if (d.guia) {
+      // Resultado directo de DAC API
+      const estadoColor = d.estado === 'ENTREGADA' ? '#059669' : d.estado === 'EN TRANSITO' ? '#2563eb' : '#d97706';
+      resultado.innerHTML = `<div class="card" style="margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <div>
+            <div style="font-size:16px;font-weight:700;">Gu&iacute;a DAC: ${d.guia}</div>
+            <div style="font-size:13px;color:#6b7280;">${d.destinatario} → ${d.destino}</div>
+          </div>
+          <span style="padding:4px 12px;border-radius:12px;font-size:12px;font-weight:700;color:white;background:${estadoColor};">${d.estado}</span>
+        </div>
+        ${d.oficina_actual ? `<div style="font-size:12px;margin-bottom:4px;"><b>Oficina actual:</b> ${d.oficina_actual}</div>` : ''}
+        ${d.oficina_destino ? `<div style="font-size:12px;margin-bottom:4px;"><b>Oficina destino:</b> ${d.oficina_destino}</div>` : ''}
+        ${d.persona_recibe ? `<div style="font-size:12px;margin-bottom:4px;"><b>Recibido por:</b> ${d.persona_recibe} ${d.ci_recibe ? '(CI: '+d.ci_recibe+')' : ''}</div>` : ''}
+        ${d.paquetes?.length ? `<div style="font-size:12px;margin-bottom:8px;"><b>Paquetes:</b> ${d.paquetes.join(', ')}</div>` : ''}
+        ${d.historial?.length ? `<div style="border-top:1px solid #e5e7eb;padding-top:8px;margin-top:8px;">
+          <div style="font-size:12px;font-weight:700;margin-bottom:6px;">Historial</div>
+          ${d.historial.map(h => `<div style="display:flex;gap:8px;padding:3px 0;font-size:11px;">
+            <span style="color:#6b7280;min-width:120px;">${h.fecha || ''}</span>
+            <span style="font-weight:600;">${h.estado}</span>
+            <span style="color:#9ca3af;">${h.oficina || ''}</span>
+          </div>`).join('')}
+        </div>` : ''}
+      </div>`;
+    } else if (d.items?.length) {
+      resultado.innerHTML = `<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:8px;">${d.total} resultados</div>${d.items.map(e => renderEnvioItem(e, '#059669')).join('')}</div>`;
+    } else {
+      resultado.innerHTML = '<div class="card" style="text-align:center;color:#9ca3af;padding:24px;">No se encontr&oacute; la gu&iacute;a</div>';
+    }
+  } catch(e) { resultado.innerHTML = `<div class="card" style="color:#dc2626;">Error: ${e.message}</div>`; }
+}
+
+// ── SoyDelivery ──
+async function loadEnviosSd() {
+  const list = document.getElementById('envios-sd-list');
+  const resumen = document.getElementById('envios-sd-resumen');
+  const updated = document.getElementById('envios-sd-updated');
+  list.innerHTML = '<p style="color:#9ca3af;font-size:13px;padding:16px;">Cargando...</p>';
+  resumen.innerHTML = '';
+  try {
+    const r = await fetch('/api/envios/soydelivery', { headers: authHeaders() });
+    const d = await r.json();
+    if (updated && d.updated_at) updated.textContent = 'Actualizado: ' + new Date(d.updated_at).toLocaleString('es-UY',{hour:'2-digit',minute:'2-digit'});
+
+    const stages = [
+      { key: 'sd-pend', label: 'Pendientes', data: d.pendientes||[], color: '#dc2626', icon: '📦', bg: '#fef2f2' },
+      { key: 'sd-sin', label: 'Sin escaneo', data: d.en_camino_sin_escaneo||[], color: '#d97706', icon: '⚠️', bg: '#fffbeb' },
+      { key: 'sd-cam', label: 'En camino', data: d.en_camino||[], color: '#2563eb', icon: '🚚', bg: '#eff6ff' },
+      { key: 'sd-ent', label: 'Entregados', data: d.entregados||[], color: '#059669', icon: '✅', bg: '#f0fdf4' },
+    ];
+    resumen.innerHTML = `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+      ${stages.map(s => `<div class="card" style="flex:1;min-width:100px;margin:0;text-align:center;border-top:3px solid ${s.color};">
+        <div style="font-size:22px;">${s.icon}</div>
+        <div style="font-size:24px;font-weight:700;color:${s.color};">${s.data.length}</div>
+        <div style="font-size:10px;color:#6b7280;">${s.label}</div>
+      </div>`).join('')}
+      <div class="card" style="flex:1;min-width:100px;margin:0;text-align:center;border-top:3px solid #f97316;">
+        <div style="font-size:22px;">📊</div>
+        <div style="font-size:24px;font-weight:700;color:#f97316;">${d.total||0}</div>
+        <div style="font-size:10px;color:#6b7280;">Total</div>
+      </div>
+    </div>`;
+    list.innerHTML = renderEnviosStages(stages, d.items, e => renderEnvioItem(e, '#f97316'));
+  } catch(e) { list.innerHTML = `<div class="card" style="color:#dc2626;">Error: ${e.message}</div>`; }
+}
+
+async function buscarEnviosSd() {
+  const q = document.getElementById('envios-sd-input').value.trim();
+  if (!q) return;
+  const resultado = document.getElementById('envios-sd-resultado');
+  resultado.innerHTML = '<p style="color:#9ca3af;font-size:13px;padding:16px;">Buscando...</p>';
+  try {
+    const r = await fetch(`/api/envios/soydelivery?q=${encodeURIComponent(q)}`, { headers: authHeaders() });
+    const d = await r.json();
+    if (d.pedido_id) {
+      const sdColors = { P: '#d97706', S: '#2563eb', A: '#2563eb', R: '#7c3aed', E: '#059669', N: '#dc2626' };
+      const sdLabels = { P: 'Pendiente', S: 'Solicitado', A: 'Aceptado', R: 'Retirado', E: 'Entregado', N: 'No entregado' };
+      resultado.innerHTML = `<div class="card" style="margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <div>
+            <div style="font-size:16px;font-weight:700;">Pedido SD #${d.pedido_id}</div>
+            <div style="font-size:13px;color:#6b7280;">${d.estado_nombre || ''}</div>
+          </div>
+          <span style="padding:4px 12px;border-radius:12px;font-size:12px;font-weight:700;color:white;background:${sdColors[d.estado]||'#6b7280'};">${sdLabels[d.estado]||d.estado}</span>
+        </div>
+        ${d.explicacion ? `<div style="font-size:12px;margin-bottom:6px;padding:6px 10px;background:#fff7ed;border-radius:6px;color:#92400e;">${d.explicacion}</div>` : ''}
+        ${d.fecha_ingreso ? `<div style="font-size:12px;margin-bottom:2px;"><b>Ingreso:</b> ${d.fecha_ingreso}</div>` : ''}
+        ${d.fecha_entrega ? `<div style="font-size:12px;margin-bottom:2px;"><b>Entrega programada:</b> ${d.fecha_entrega}</div>` : ''}
+        ${d.fecha_entregado ? `<div style="font-size:12px;margin-bottom:2px;"><b>Entregado:</b> ${d.fecha_entregado}</div>` : ''}
+        ${d.delivery ? `<div style="margin-top:8px;padding:8px 10px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;font-size:12px;">
+          <b>Repartidor:</b> ${d.delivery.nombre || 'Sin asignar'}
+          ${d.delivery.telefono ? ` · <a href="tel:${d.delivery.telefono}" style="color:#2563eb;">${d.delivery.telefono}</a>` : ''}
+          ${d.delivery.franja ? ` · ${d.delivery.franja}` : ''}
+          ${d.delivery.fecha_estimada ? `<br><b>Estimada:</b> ${d.delivery.fecha_estimada}` : ''}
+        </div>` : ''}
+        ${d.historial?.length ? `<div style="border-top:1px solid #e5e7eb;padding-top:8px;margin-top:8px;">
+          <div style="font-size:12px;font-weight:700;margin-bottom:6px;">Historial</div>
+          ${d.historial.map(h => `<div style="display:flex;gap:8px;padding:3px 0;font-size:11px;">
+            <span style="color:#6b7280;min-width:130px;">${h.fecha || ''}</span>
+            <span style="padding:1px 6px;border-radius:8px;font-size:10px;font-weight:600;color:white;background:${sdColors[h.estado]||'#6b7280'};">${h.estado_nombre||h.estado}</span>
+            <span style="color:#374151;">${h.detalle || ''}</span>
+          </div>`).join('')}
+        </div>` : ''}
+      </div>`;
+    } else if (d.items?.length) {
+      resultado.innerHTML = `<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:8px;">${d.total} resultados</div>${d.items.map(e => renderEnvioItem(e, '#f97316')).join('')}</div>`;
+    } else {
+      resultado.innerHTML = '<div class="card" style="text-align:center;color:#9ca3af;padding:24px;">No se encontr&oacute; el env&iacute;o</div>';
+    }
+  } catch(e) { resultado.innerHTML = `<div class="card" style="color:#dc2626;">Error: ${e.message}</div>`; }
+}
+
+// ── Robert / Deri ──
+async function loadEnviosDeri() {
+  const list = document.getElementById('envios-deri-list');
+  const resumen = document.getElementById('envios-deri-resumen');
+  const updated = document.getElementById('envios-deri-updated');
+  list.innerHTML = '<p style="color:#9ca3af;font-size:13px;padding:16px;">Cargando...</p>';
+  resumen.innerHTML = '';
+  try {
+    const r = await fetch('/api/envios/deri', { headers: authHeaders() });
+    const d = await r.json();
+    if (updated && d.updated_at) updated.textContent = 'Actualizado: ' + new Date(d.updated_at).toLocaleString('es-UY',{hour:'2-digit',minute:'2-digit'});
+
+    const stages = [
+      { key: 'deri-pend', label: 'Pendientes', data: d.pendientes||[], color: '#dc2626', icon: '📦', bg: '#fef2f2' },
+      { key: 'deri-cam', label: 'En camino', data: d.en_camino||[], color: '#2563eb', icon: '🚚', bg: '#eff6ff' },
+      { key: 'deri-ent', label: 'Entregados', data: d.entregados||[], color: '#059669', icon: '✅', bg: '#f0fdf4' },
+    ];
+    resumen.innerHTML = `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+      ${stages.map(s => `<div class="card" style="flex:1;min-width:100px;margin:0;text-align:center;border-top:3px solid ${s.color};">
+        <div style="font-size:22px;">${s.icon}</div>
+        <div style="font-size:24px;font-weight:700;color:${s.color};">${s.data.length}</div>
+        <div style="font-size:10px;color:#6b7280;">${s.label}</div>
+      </div>`).join('')}
+      <div class="card" style="flex:1;min-width:100px;margin:0;text-align:center;border-top:3px solid #2563eb;">
+        <div style="font-size:22px;">📊</div>
+        <div style="font-size:24px;font-weight:700;color:#2563eb;">${d.total||0}</div>
+        <div style="font-size:10px;color:#6b7280;">Total</div>
+      </div>
+    </div>`;
+    list.innerHTML = renderEnviosStages(stages, d.items, e => renderEnvioItem(e, '#2563eb'));
+  } catch(e) { list.innerHTML = `<div class="card" style="color:#dc2626;">Error: ${e.message}</div>`; }
+}
+
+async function buscarEnviosDeri() {
+  const q = document.getElementById('envios-deri-input').value.trim();
+  if (!q) return;
+  const resultado = document.getElementById('envios-deri-resultado');
+  resultado.innerHTML = '<p style="color:#9ca3af;font-size:13px;padding:16px;">Buscando...</p>';
+  try {
+    const r = await fetch(`/api/envios/deri?q=${encodeURIComponent(q)}`, { headers: authHeaders() });
+    const d = await r.json();
+    if (d.order) {
+      const o = d.order;
+      const statusColor = o.status === 'delivered' ? '#059669' : o.status === 'in_transit' ? '#2563eb' : o.status === 'pending' ? '#d97706' : '#6b7280';
+      resultado.innerHTML = `<div class="card" style="margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <div>
+            <div style="font-size:16px;font-weight:700;">Pedido Deri #${o.id || q}</div>
+            <div style="font-size:13px;color:#6b7280;">${o.recipient_name || o.recipient?.name || ''} · ${o.recipient_address || o.recipient?.address || ''}</div>
+          </div>
+          <span style="padding:4px 12px;border-radius:12px;font-size:12px;font-weight:700;color:white;background:${statusColor};">${o.status || 'desconocido'}</span>
+        </div>
+        ${o.tracking_url ? `<div style="font-size:12px;margin-bottom:4px;"><a href="${o.tracking_url}" target="_blank" style="color:#2563eb;">Ver tracking</a></div>` : ''}
+        ${d.historial?.length ? `<div style="border-top:1px solid #e5e7eb;padding-top:8px;margin-top:8px;">
+          <div style="font-size:12px;font-weight:700;margin-bottom:6px;">Historial</div>
+          ${d.historial.map(h => `<div style="display:flex;gap:8px;padding:3px 0;font-size:11px;">
+            <span style="color:#6b7280;min-width:130px;">${h.created_at || h.date || ''}</span>
+            <span style="font-weight:600;">${h.status || h.name || ''}</span>
+            <span style="color:#374151;">${h.description || ''}</span>
+          </div>`).join('')}
+        </div>` : ''}
+      </div>`;
+    } else if (d.items?.length) {
+      resultado.innerHTML = `<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:8px;">${d.total} resultados</div>${d.items.map(e => renderEnvioItem(e, '#2563eb')).join('')}</div>`;
+    } else {
+      resultado.innerHTML = '<div class="card" style="text-align:center;color:#9ca3af;padding:24px;">No se encontr&oacute; el env&iacute;o</div>';
+    }
+  } catch(e) { resultado.innerHTML = `<div class="card" style="color:#dc2626;">Error: ${e.message}</div>`; }
+}
+
+// ── Retira en local ──
+async function loadRetiraLocal() {
+  const list = document.getElementById('retira-local-list');
+  list.innerHTML = '<p style="color:#9ca3af;font-size:13px;padding:16px;">Cargando...</p>';
+  try {
+    const r = await fetch('/api/retira-local', { headers: authHeaders() });
+    const d = await r.json();
+    if (!d.items?.length) {
+      list.innerHTML = '<div class="card" style="text-align:center;color:#9ca3af;padding:32px;">No hay pedidos para retirar en local</div>';
+      return;
+    }
+
+    list.innerHTML = `
+      <div class="card" style="margin-bottom:16px;border-left:4px solid #7c3aed;text-align:center;">
+        <div style="font-size:28px;font-weight:700;color:#7c3aed;">${d.total}</div>
+        <div style="font-size:12px;color:#6b7280;">Pedidos para retirar en local</div>
+      </div>
+      <div style="display:grid;gap:10px;">
+        ${d.items.map(e => `
+          <div class="card" style="margin:0;padding:0;overflow:hidden;border:1px solid #e5e7eb;">
+            <div style="padding:14px 18px;">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:14px;font-weight:700;margin-bottom:4px;">${(e.item_title||'').slice(0,60)}</div>
+                  <div style="font-size:12px;color:#6b7280;">
+                    ${e.buyer_name || e.buyer} · ${e.quantity} unid. · <b>$${(e.total_amount||0).toLocaleString('es-UY')}</b>
+                  </div>
+                  <div style="font-size:11px;color:#9ca3af;margin-top:2px;">
+                    Orden #${e.order_id} · ${new Date(e.date_created).toLocaleDateString('es-UY',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}
+                  </div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">
+                  ${e.mensajes_no_leidos ? `<span style="padding:3px 8px;border-radius:10px;font-size:10px;font-weight:700;color:white;background:#dc2626;">${e.mensajes_no_leidos} sin leer</span>` : '<span style="padding:3px 8px;border-radius:10px;font-size:10px;font-weight:600;color:#059669;background:#f0fdf4;">Leído</span>'}
+                </div>
+              </div>
+              ${e.ultimo_msg ? `<div style="margin-top:8px;padding:6px 10px;background:#f5f3ff;border-radius:6px;font-size:11px;color:#7c3aed;border-left:3px solid #7c3aed;"><b>Último mensaje:</b> ${e.ultimo_msg}</div>` : ''}
+            </div>
+            <div style="display:flex;border-top:1px solid #f3f4f6;">
+              <a href="https://www.mercadolibre.com.uy/ventas/${e.order_id}/detalle" target="_blank" style="flex:1;padding:8px;text-align:center;font-size:12px;font-weight:600;color:#1d4ed8;text-decoration:none;background:#f9fafb;">Ver en ML</a>
+              <div style="width:1px;background:#f3f4f6;"></div>
+              <div style="flex:1;padding:8px;text-align:center;font-size:12px;font-weight:600;color:#7c3aed;cursor:pointer;background:#f9fafb;" onclick="document.getElementById('buscar-input').value='${e.order_id}';showPage('buscador');buscarVenta();">Ver detalle</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>`;
+  } catch(e) { list.innerHTML = `<div class="card" style="color:#dc2626;">Error: ${e.message}</div>`; }
+}
+
 // ── Buscador de ventas ──
 async function buscarVenta() {
   const input = document.getElementById('buscar-input');
@@ -2083,155 +2674,209 @@ async function buscarVenta() {
     const o = d.order;
     const s = d.shipping;
     const statusColors = { paid: '#059669', cancelled: '#dc2626', confirmed: '#2563eb' };
+    const statusLabels = { paid: 'Pagada', cancelled: 'Cancelada', confirmed: 'Confirmada' };
     const shipColors = { delivered: '#059669', shipped: '#2563eb', pending: '#d97706', not_delivered: '#dc2626' };
-    const logisticLabels = { fulfillment: 'Mercado Env\u00edos Full', self_service: 'Flex', drop_off: 'Mercado Env\u00edos', xd_drop_off: 'Mercado Env\u00edos', cross_docking: 'Mercado Env\u00edos 1' };
+    const shipLabels = { delivered: 'Entregado', shipped: 'En camino', pending: 'Pendiente', not_delivered: 'No entregado' };
+    const logisticLabels = { fulfillment: 'ME Full', self_service: 'Flex', drop_off: 'Mercado Env\u00edos', xd_drop_off: 'Mercado Env\u00edos', cross_docking: 'ME1' };
+    const sdStatusColors = { P: '#d97706', S: '#2563eb', A: '#2563eb', R: '#7c3aed', E: '#059669', N: '#dc2626', T: '#dc2626', Z: '#6b7280', X: '#6b7280' };
 
     let html = '';
 
-    // Producto con foto
-    if (d.item_detail?.thumbnail) {
-      html += `<div class="card" style="margin-bottom:12px;display:flex;gap:16px;align-items:center;">
-        <img src="${d.item_detail.thumbnail}" style="width:80px;height:80px;object-fit:contain;border-radius:8px;background:#f9fafb;border:1px solid #e5e7eb;">
-        <div>
-          <div style="font-size:15px;font-weight:700;">${d.item_detail.permalink ? `<a href="${d.item_detail.permalink}" target="_blank" style="color:#1d4ed8;text-decoration:none;">${d.item_detail.title}</a>` : d.item_detail.title}</div>
-          ${d.item_detail.price ? `<div style="font-size:13px;color:#6b7280;margin-top:4px;">Precio actual: $${d.item_detail.price}</div>` : ''}
+    // ── RESUMEN RÁPIDO ──
+    const hasClaim = d.claims.length > 0;
+    const claimOpen = d.claims.some(c => c.status === 'opened');
+    html += `<div class="card" style="margin-bottom:16px;padding:16px 20px;">
+      <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+        ${d.item_detail?.thumbnail ? `<img src="${d.item_detail.thumbnail}" style="width:56px;height:56px;object-fit:contain;border-radius:8px;background:#f9fafb;border:1px solid #e5e7eb;">` : ''}
+        <div style="flex:1;min-width:200px;">
+          <div style="font-size:16px;font-weight:700;">${d.item_detail?.permalink ? `<a href="${d.item_detail.permalink}" target="_blank" style="color:#111;text-decoration:none;">${o.items[0]?.title || ''}</a>` : (o.items[0]?.title || '')}</div>
+          <div style="font-size:13px;color:#6b7280;margin-top:2px;">${o.buyer.first_name || ''} ${o.buyer.last_name || ''} <span style="color:#9ca3af;">(${o.buyer.nickname})</span> · ${o.items[0]?.quantity || 1} unid. · $${o.total_amount}</div>
         </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <span style="padding:4px 10px;border-radius:12px;font-size:11px;font-weight:700;color:white;background:${statusColors[o.status] || '#6b7280'};">${statusLabels[o.status] || o.status}</span>
+          ${s ? `<span style="padding:4px 10px;border-radius:12px;font-size:11px;font-weight:700;color:white;background:${shipColors[s.status] || '#6b7280'};">${shipLabels[s.status] || s.status}</span>` : ''}
+          <span style="padding:4px 10px;border-radius:12px;font-size:11px;font-weight:700;color:#4c1d95;background:#ede9fe;">${s ? (logisticLabels[s.logistic_type] || s.logistic_type) : 'Sin env\u00edo'}</span>
+          ${claimOpen ? `<span style="padding:4px 10px;border-radius:12px;font-size:11px;font-weight:700;color:white;background:#dc2626;">Reclamo abierto</span>` : ''}
+          ${d.soydelivery ? `<span style="padding:4px 10px;border-radius:12px;font-size:11px;font-weight:700;color:white;background:${sdStatusColors[d.soydelivery.estado_id] || '#6b7280'};">SD: ${d.soydelivery.estado}</span>` : ''}
+        </div>
+      </div>
+
+      <!-- Acciones rápidas -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;">
+        <a href="https://www.mercadolibre.com.uy/ventas/${o.id}/detalle" target="_blank" style="padding:6px 14px;background:#FFE600;color:#111;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;">Ver en ML</a>
+        ${d.item_detail?.permalink ? `<a href="${d.item_detail.permalink}" target="_blank" style="padding:6px 14px;background:#eff6ff;color:#1d4ed8;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;">Ver publicaci&oacute;n</a>` : ''}
+        ${hasClaim ? `<a href="https://www.mercadolibre.com.uy/ventas/${o.id}/reclamo" target="_blank" style="padding:6px 14px;background:#fef2f2;color:#dc2626;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;">Ir al reclamo</a>` : ''}
+        ${s?.receiver_address ? `<a href="https://www.google.com/maps/search/${encodeURIComponent((s.receiver_address.street||'')+' '+(s.receiver_address.number||'')+' '+(s.receiver_address.city||''))}" target="_blank" style="padding:6px 14px;background:#f0fdf4;color:#059669;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;">Ver direcci&oacute;n</a>` : ''}
+        ${d.soydelivery?.delivery_telefono ? `<a href="tel:${d.soydelivery.delivery_telefono}" style="padding:6px 14px;background:#fff7ed;color:#f97316;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;">Llamar repartidor</a>` : ''}
+      </div>
+    </div>`;
+
+    // ── GRID: Envío + Cadetería lado a lado ──
+    html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">`;
+
+    // Envío
+    if (s) {
+      html += `<div class="card" style="margin:0;">
+        <div style="font-size:14px;font-weight:700;margin-bottom:10px;">Env&iacute;o ML</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+          <span style="padding:3px 8px;border-radius:10px;font-size:11px;font-weight:600;color:white;background:${shipColors[s.status] || '#6b7280'};">${shipLabels[s.status] || s.status}${s.substatus ? ' - ' + s.substatus : ''}</span>
+        </div>
+        ${s.tracking_number ? `<div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">Tracking:</span> <b>${s.tracking_number}</b></div>` : ''}
+        ${s.tracking_method ? `<div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">Transporte:</span> <b>${s.tracking_method}</b></div>` : ''}
+        ${s.receiver_address ? `<div style="font-size:12px;margin-bottom:8px;"><span style="color:#6b7280;">Destino:</span> ${s.receiver_address.street || ''} ${s.receiver_address.number || ''}, ${s.receiver_address.city || ''}, ${s.receiver_address.state || ''}</div>` : ''}
+        ${s.history ? `<div style="border-top:1px solid #f3f4f6;padding-top:8px;margin-top:4px;">
+          ${[
+            { label: 'Creado', date: s.history.date_created, icon: '#9ca3af' },
+            { label: 'Listo', date: s.history.date_ready_to_ship, icon: '#d97706' },
+            { label: 'Despachado', date: s.history.date_shipped, icon: '#2563eb' },
+            { label: '1er intento', date: s.history.date_first_visit, icon: '#7c3aed' },
+            { label: 'Entregado', date: s.history.date_delivered, icon: '#059669' },
+            { label: 'No entregado', date: s.history.date_not_delivered, icon: '#dc2626' },
+            { label: 'Devuelto', date: s.history.date_returned, icon: '#dc2626' },
+          ].filter(e => e.date).map(e => `
+            <div style="display:flex;gap:6px;align-items:center;padding:2px 0;font-size:11px;">
+              <span style="width:6px;height:6px;border-radius:50%;background:${e.icon};flex-shrink:0;"></span>
+              <span style="color:#6b7280;min-width:80px;">${e.label}</span>
+              <span style="font-weight:600;">${new Date(e.date).toLocaleString('es-UY',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span>
+            </div>
+          `).join('')}
+        </div>` : ''}
       </div>`;
     }
 
-    // Orden
+    // Cadetería (SoyDelivery o placeholder)
+    const sdh = d.sd_historial;
+    const sd = d.soydelivery;
+    if (sdh || sd) {
+      const sdEstadoLabels = { P: 'Pendiente', S: 'Solicitando', A: 'Aceptado', R: 'Retirado', T: 'No retirado', E: 'Entregado', N: 'No entregado', Z: 'Devuelto', X: 'Cancelado' };
+      const estado = sd?.estado || (sdh ? sdEstadoLabels[sdh.estado] || sdh.estado : '');
+      const estadoId = sd?.estado_id || sdh?.estado;
+      html += `<div class="card" style="margin:0;border-left:3px solid #f97316;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+          <span style="font-size:14px;font-weight:700;color:#f97316;">Cadeter&iacute;a — SoyDelivery</span>
+          <span style="padding:3px 8px;border-radius:10px;font-size:11px;font-weight:600;color:white;background:${sdStatusColors[estadoId] || '#6b7280'};">${estado}</span>
+        </div>
+        ${sdh?.estado_interno ? `<div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">Estado interno:</span> <b>${sdh.estado_interno}</b></div>` : ''}
+        ${sd?.delivery_nombre ? `<div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">Repartidor:</span> <b>${sd.delivery_nombre}</b></div>` : ''}
+        ${sd?.delivery_telefono ? `<div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">Tel:</span> <a href="tel:${sd.delivery_telefono}" style="color:#1d4ed8;font-weight:600;">${sd.delivery_telefono}</a></div>` : ''}
+        ${sdh?.fecha_entrega && sdh.fecha_entrega !== '0000-00-00' ? `<div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">Fecha entrega:</span> <b>${sdh.fecha_entrega}</b></div>` : ''}
+        ${sd?.fecha_estimada && !sd.fecha_estimada.startsWith('0000') ? `<div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">ETA:</span> <b>${new Date(sd.fecha_estimada).toLocaleString('es-UY',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</b></div>` : ''}
+        ${sd?.delivery_ubicacion ? `<div style="font-size:12px;margin-bottom:6px;"><a href="https://www.google.com/maps?q=${sd.delivery_ubicacion}" target="_blank" style="color:#1d4ed8;">Ver ubicaci&oacute;n en mapa</a></div>` : ''}
+        ${sdh?.historial?.length ? `
+          <div style="border-top:1px solid #f3f4f6;padding-top:8px;margin-top:6px;">
+            <div style="font-size:11px;color:#6b7280;font-weight:600;margin-bottom:6px;">Historial cadeter&iacute;a</div>
+            ${sdh.historial.map(h => `
+              <div style="display:flex;gap:8px;padding:4px 0;font-size:11px;border-bottom:1px solid #f9fafb;">
+                <span style="width:6px;height:6px;border-radius:50%;background:${sdStatusColors[h.estado] || '#6b7280'};flex-shrink:0;margin-top:4px;"></span>
+                <div style="flex:1;">
+                  <div style="font-weight:600;color:#374151;">${h.detalle.replace(/\s*\(.*?\)\s*$/,'')}</div>
+                </div>
+                <span style="color:#9ca3af;white-space:nowrap;">${new Date(h.fecha).toLocaleString('es-UY',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+      </div>`;
+    } else if (s?.logistic_type === 'self_service') {
+      html += `<div class="card" style="margin:0;border-left:3px solid #2563eb;">
+        <div style="font-size:14px;font-weight:700;color:#2563eb;margin-bottom:10px;">Cadeter&iacute;a — Robert</div>
+        <div style="font-size:12px;color:#9ca3af;">Integraci&oacute;n pendiente</div>
+      </div>`;
+    } else if (d.dac) {
+      const dac = d.dac;
+      const dacColors = { REGISTRADA: '#d97706', DOCUMENTADA: '#d97706', DESEMBARCADO: '#2563eb', 'PROXIMO A SALIR A REPARTO': '#7c3aed', 'EN REPARTO': '#7c3aed', ENTREGADA: '#059669', CANCELADA: '#dc2626' };
+      html += `<div class="card" style="margin:0;border-left:3px solid #059669;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+          <span style="font-size:14px;font-weight:700;color:#059669;">Cadeter&iacute;a — DAC</span>
+          <span style="padding:3px 8px;border-radius:10px;font-size:11px;font-weight:600;color:white;background:${dacColors[dac.estado] || '#6b7280'};">${dac.estado}</span>
+        </div>
+        <div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">Gu&iacute;a:</span> <b>${dac.guia}</b></div>
+        <div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">Destinatario:</span> <b>${dac.destinatario}</b></div>
+        <div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">Destino:</span> ${dac.destino}</div>
+        ${dac.oficina_destino ? `<div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">Oficina destino:</span> ${dac.oficina_destino}</div>` : ''}
+        ${dac.persona_recibe ? `<div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">Recibi&oacute;:</span> <b>${dac.persona_recibe}</b> ${dac.ci_recibe ? '(CI: ' + dac.ci_recibe + ')' : ''}</div>` : ''}
+        ${dac.paquetes?.length ? `<div style="font-size:12px;margin-bottom:6px;"><span style="color:#6b7280;">Bultos:</span> ${dac.paquetes.join(', ')}</div>` : ''}
+        ${dac.historial?.length ? `
+          <div style="border-top:1px solid #f3f4f6;padding-top:8px;margin-top:6px;">
+            <div style="font-size:11px;color:#6b7280;font-weight:600;margin-bottom:6px;">Historial DAC</div>
+            ${dac.historial.map(h => `
+              <div style="display:flex;gap:8px;padding:3px 0;font-size:11px;border-bottom:1px solid #f9fafb;">
+                <span style="width:6px;height:6px;border-radius:50%;background:${dacColors[h.estado] || '#6b7280'};flex-shrink:0;margin-top:4px;"></span>
+                <div style="flex:1;font-weight:600;color:#374151;">${h.estado} — ${h.oficina}</div>
+                <span style="color:#9ca3af;white-space:nowrap;">${h.fecha}</span>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+      </div>`;
+    } else if (s) {
+      html += `<div class="card" style="margin:0;">
+        <div style="font-size:14px;font-weight:700;margin-bottom:10px;">Transporte</div>
+        <div style="font-size:12px;color:#6b7280;">Env&iacute;o gestionado por Mercado Libre</div>
+      </div>`;
+    }
+
+    html += `</div>`; // cierra grid
+
+    // ── DETALLE: Productos ──
     html += `<div class="card" style="margin-bottom:12px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
-        <div>
-          <span style="font-size:18px;font-weight:700;">Orden #${o.id}</span>
-          <span style="margin-left:10px;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;color:white;background:${statusColors[o.status] || '#6b7280'};">${o.status}</span>
-        </div>
-        <span style="font-size:12px;color:#9ca3af;">${new Date(o.date_created).toLocaleString('es-UY')}</span>
+      <div style="font-size:14px;font-weight:700;margin-bottom:8px;">Detalle de la orden</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px;">
+        <div style="font-size:12px;"><span style="color:#6b7280;">Orden:</span> <b>#${o.id}</b></div>
+        <div style="font-size:12px;"><span style="color:#6b7280;">Fecha:</span> ${new Date(o.date_created).toLocaleString('es-UY')}</div>
+        <div style="font-size:12px;"><span style="color:#6b7280;">Total:</span> <b>$${o.total_amount} ${o.currency_id}</b></div>
       </div>
-      <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:12px;">
-        <div>
-          <span style="font-size:11px;color:#6b7280;font-weight:600;">Comprador</span><br>
-          <span style="font-size:14px;font-weight:600;">${o.buyer.first_name || ''} ${o.buyer.last_name || ''}</span>
-          <span style="font-size:12px;color:#9ca3af;margin-left:6px;">${o.buyer.nickname}</span>
-        </div>
-        <div>
-          <span style="font-size:11px;color:#6b7280;font-weight:600;">Total</span><br>
-          <span style="font-size:14px;font-weight:600;">$${o.total_amount} ${o.currency_id}</span>
-        </div>
-      </div>
-      <div style="font-size:11px;color:#6b7280;font-weight:600;margin-bottom:6px;">Productos</div>
       ${o.items.map(i => `
         <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#f9fafb;border-radius:6px;margin-bottom:4px;">
           <div>
             <span style="font-size:13px;font-weight:600;">${i.title}</span>
             ${i.sku ? `<span style="font-size:11px;color:#9ca3af;margin-left:6px;">SKU: ${i.sku}</span>` : ''}
           </div>
-          <div style="text-align:right;">
-            <span style="font-size:13px;">${i.quantity} x $${i.unit_price}</span>
-          </div>
+          <span style="font-size:13px;white-space:nowrap;">${i.quantity} x $${i.unit_price}</span>
         </div>
       `).join('')}
     </div>`;
 
-    // Envío
-    if (s) {
-      html += `<div class="card" style="margin-bottom:12px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
-          <div>
-            <span style="font-size:16px;font-weight:700;">Env&iacute;o</span>
-            <span style="margin-left:10px;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;color:white;background:${shipColors[s.status] || '#6b7280'};">${s.status}${s.substatus ? ' - ' + s.substatus : ''}</span>
-            <span style="margin-left:6px;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;color:#4c1d95;background:#ede9fe;">${logisticLabels[s.logistic_type] || s.logistic_type || 'N/A'}</span>
-          </div>
-        </div>
-        <div style="display:flex;gap:20px;flex-wrap:wrap;">
-          ${s.tracking_number ? `<div>
-            <span style="font-size:11px;color:#6b7280;font-weight:600;">Tracking</span><br>
-            <span style="font-size:14px;font-weight:600;">${s.tracking_number}</span>
-          </div>` : ''}
-          ${s.receiver_address ? `<div>
-            <span style="font-size:11px;color:#6b7280;font-weight:600;">Destino</span><br>
-            <span style="font-size:13px;">${s.receiver_address.street || ''} ${s.receiver_address.number || ''}, ${s.receiver_address.city || ''}, ${s.receiver_address.state || ''} ${s.receiver_address.zip_code || ''}</span>
-          </div>` : ''}
-        </div>
-        ${s.tracking_method ? `<div style="margin-top:8px;font-size:12px;"><b>Repartidor:</b> ${s.tracking_method}</div>` : ''}
-        ${s.history ? `<div style="margin-top:10px;">
-          <div style="font-size:11px;color:#6b7280;font-weight:600;margin-bottom:6px;">Historial de env&iacute;o</div>
-          ${[
-            { label: 'Creado', date: s.history.date_created },
-            { label: 'Listo para enviar', date: s.history.date_ready_to_ship },
-            { label: 'Primera etiqueta', date: s.history.date_first_printed },
-            { label: 'Despachado', date: s.history.date_shipped },
-            { label: 'Primer intento de entrega', date: s.history.date_first_visit },
-            { label: 'Entregado', date: s.history.date_delivered },
-            { label: 'No entregado', date: s.history.date_not_delivered },
-            { label: 'Devuelto', date: s.history.date_returned },
-            { label: 'Cancelado', date: s.history.date_cancelled },
-          ].filter(e => e.date).map(e => `
-            <div style="display:flex;gap:8px;align-items:center;padding:4px 0;font-size:12px;">
-              <span style="width:8px;height:8px;border-radius:50%;background:#7c3aed;flex-shrink:0;"></span>
-              <span style="color:#6b7280;min-width:130px;">${e.label}</span>
-              <span style="font-weight:600;">${new Date(e.date).toLocaleString('es-UY')}</span>
-            </div>
-          `).join('')}
-        </div>` : `<div style="margin-top:8px;font-size:11px;color:#9ca3af;">
-          Creado: ${new Date(s.date_created).toLocaleString('es-UY')} · Actualizado: ${new Date(s.last_updated).toLocaleString('es-UY')}
-        </div>`}
-      </div>`;
-    }
-
-    // Reclamos
+    // ── RECLAMOS ──
     if (d.claims.length) {
-      html += d.claims.map(c => {
-        const actionLabels = { send_message_to_complainant: 'Enviar mensaje', refund: 'Reembolsar', open_dispute: 'Abrir disputa' };
-        return `
+      const actionLabels = { send_message_to_complainant: 'Enviar mensaje', refund: 'Reembolsar', open_dispute: 'Abrir disputa' };
+      html += d.claims.map(c => `
         <div class="card" style="margin-bottom:12px;border-left:3px solid #dc2626;">
-          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
-            <div>
-              <span style="font-size:16px;font-weight:700;color:#dc2626;">Reclamo #${c.id}</span>
-              <span style="margin-left:10px;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;color:white;background:${c.status === 'opened' ? '#dc2626' : '#059669'};">${c.status}</span>
-              <span style="margin-left:6px;font-size:12px;color:#6b7280;">${c.type} · ${c.stage} · ${c.reason_id}</span>
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+              <span style="font-size:14px;font-weight:700;color:#dc2626;">Reclamo</span>
+              <span style="padding:3px 8px;border-radius:10px;font-size:11px;font-weight:600;color:white;background:${c.status === 'opened' ? '#dc2626' : '#059669'};">${c.status === 'opened' ? 'Abierto' : c.status}</span>
+              <span style="font-size:11px;color:#9ca3af;">${c.reason_id}</span>
             </div>
-            <span style="font-size:12px;color:#9ca3af;">${new Date(c.date_created).toLocaleString('es-UY')}</span>
+            <span style="font-size:11px;color:#9ca3af;">${new Date(c.date_created).toLocaleString('es-UY')}</span>
           </div>
           ${c.available_actions.length ? `
-            <div style="margin-bottom:12px;padding:10px 14px;background:#fef3c7;border-radius:6px;">
-              <div style="font-size:11px;color:#92400e;font-weight:600;margin-bottom:4px;">Acciones disponibles</div>
+            <div style="margin-bottom:10px;padding:8px 12px;background:#fef3c7;border-radius:6px;">
               ${c.available_actions.map(a => `
-                <div style="font-size:13px;color:#92400e;">
+                <div style="font-size:12px;color:#92400e;">
                   ${actionLabels[a.action] || a.action}${a.due_date ? ` · <b>Vence: ${new Date(a.due_date).toLocaleString('es-UY')}</b>` : ''}
                 </div>
               `).join('')}
             </div>
           ` : ''}
-          ${c.messages.length ? `
-            <div style="font-size:11px;color:#6b7280;font-weight:600;margin-bottom:6px;">Mensajes del reclamo</div>
-            ${c.messages.sort((a,b) => new Date(a.date) - new Date(b.date)).map(m => `
-              <div style="padding:8px 12px;margin-bottom:4px;border-radius:6px;background:${m.from === 'complainant' ? '#fef2f2' : '#f0fdf4'};border-left:3px solid ${m.from === 'complainant' ? '#fca5a5' : '#86efac'};">
-                <div style="font-size:11px;color:#6b7280;margin-bottom:2px;">
-                  <b>${m.from === 'complainant' ? 'Comprador' : 'Vendedor'}</b> · ${new Date(m.date).toLocaleString('es-UY')}
-                </div>
-                <div style="font-size:13px;">${m.text}</div>
-              </div>
-            `).join('')}
-          ` : ''}
-        </div>`;
-      }).join('');
-    } else {
-      html += `<div class="card" style="margin-bottom:12px;border-left:3px solid #059669;">
-        <span style="font-size:14px;font-weight:600;color:#059669;">Sin reclamos</span>
-      </div>`;
+          ${c.messages.length ? c.messages.sort((a,b) => new Date(a.date) - new Date(b.date)).map(m => `
+            <div style="padding:6px 10px;margin-bottom:3px;border-radius:6px;background:${m.from === 'complainant' ? '#fef2f2' : '#f0fdf4'};border-left:3px solid ${m.from === 'complainant' ? '#fca5a5' : '#86efac'};font-size:12px;">
+              <span style="color:#6b7280;"><b>${m.from === 'complainant' ? 'Comprador' : 'Vendedor'}</b> · ${new Date(m.date).toLocaleString('es-UY',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span><br>
+              ${m.text}
+            </div>
+          `).join('') : ''}
+        </div>
+      `).join('');
     }
 
-    // Mensajes post-venta
+    // ── MENSAJES POST-VENTA ──
     if (d.messages.length) {
       html += `<div class="card" style="margin-bottom:12px;">
-        <div style="font-size:16px;font-weight:700;margin-bottom:12px;">Mensajes post-venta</div>
+        <div style="font-size:14px;font-weight:700;margin-bottom:8px;">Mensajes post-venta</div>
         ${d.messages.sort((a,b) => new Date(a.date) - new Date(b.date)).map(m => `
-          <div style="padding:8px 12px;margin-bottom:4px;border-radius:6px;background:${m.from === 'comprador' ? '#eff6ff' : '#f9fafb'};border-left:3px solid ${m.from === 'comprador' ? '#93c5fd' : '#d1d5db'};">
-            <div style="font-size:11px;color:#6b7280;margin-bottom:2px;">
-              <b>${m.from === 'comprador' ? 'Comprador' : 'Vendedor'}</b> · ${new Date(m.date).toLocaleString('es-UY')}
-            </div>
-            <div style="font-size:13px;">${m.text}</div>
+          <div style="padding:6px 10px;margin-bottom:3px;border-radius:6px;background:${m.from === 'comprador' ? '#eff6ff' : '#f9fafb'};border-left:3px solid ${m.from === 'comprador' ? '#93c5fd' : '#d1d5db'};font-size:12px;">
+            <span style="color:#6b7280;"><b>${m.from === 'comprador' ? 'Comprador' : 'Vendedor'}</b> · ${new Date(m.date).toLocaleString('es-UY',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span><br>
+            ${m.text}
           </div>
         `).join('')}
       </div>`;
