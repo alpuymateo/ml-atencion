@@ -2125,42 +2125,23 @@ async function loadRetiros(forceRefresh) {
     const catColors = { SoyDelivery: '#f97316', Robert: '#2563eb', DAC: '#059669', 'Mercado Envíos': '#d97706' };
     const catIcons = { SoyDelivery: '🟠', Robert: '🔵', DAC: '🟢', 'Mercado Envíos': '🟡' };
 
-    // Contar por cadetería
-    const pendByCat = {};
-    pendientes.forEach(e => { pendByCat[e.cadeteria] = (pendByCat[e.cadeteria]||0) + 1; });
-    const retByCat = {};
-    retiradosHoy.forEach(e => { retByCat[e.cadeteria] = (retByCat[e.cadeteria]||0) + 1; });
+    const retirados = d.retirados || [];
+    window._retirosData = { pendientes, retirados };
 
-    // Variable para filtro activo
-    window._retirosFilter = window._retirosFilter || null;
-    window._retirosData = { pendientes, retiradosHoy, d };
-
-    function isActive(f) { return window._retirosFilter === f ? 'outline:3px solid #7c3aed;outline-offset:2px;' : ''; }
-
-    resumen.innerHTML = `<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px;">
-      <div class="card" style="flex:1;min-width:130px;margin:0;text-align:center;border-top:3px solid #dc2626;cursor:pointer;${isActive('pendientes')}" onclick="window._retirosFilter=window._retirosFilter==='pendientes'?null:'pendientes';renderRetirosList();">
+    resumen.innerHTML = `<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
+      <div class="card" style="flex:1;min-width:160px;margin:0;text-align:center;border-top:3px solid #dc2626;">
         <div style="font-size:28px;font-weight:700;color:#dc2626;">${pendientes.length}</div>
-        <div style="font-size:12px;color:#6b7280;">Pendientes</div>
+        <div style="font-size:12px;color:#6b7280;">Pendientes de retiro</div>
       </div>
-      <div class="card" style="flex:1;min-width:130px;margin:0;text-align:center;border-top:3px solid #059669;cursor:pointer;${isActive('retirados')}" onclick="window._retirosFilter=window._retirosFilter==='retirados'?null:'retirados';renderRetirosList();">
-        <div style="font-size:28px;font-weight:700;color:#059669;">${retiradosHoy.length}</div>
-        <div style="font-size:12px;color:#6b7280;">Retirados hoy</div>
+      <div class="card" style="flex:1;min-width:160px;margin:0;text-align:center;border-top:3px solid #059669;">
+        <div style="font-size:28px;font-weight:700;color:#059669;">${retirados.length}</div>
+        <div style="font-size:12px;color:#6b7280;">Retirados</div>
       </div>
-      ${Object.entries(catColors).map(([cat, color]) => {
-        const cnt = (pendByCat[cat]||0) + (retByCat[cat]||0);
-        if (!cnt) return '';
-        return `<div class="card" style="flex:1;min-width:110px;margin:0;text-align:center;border-top:3px solid ${color};cursor:pointer;${isActive('cat_'+cat)}" onclick="window._retirosFilter=window._retirosFilter==='cat_${cat}'?null:'cat_${cat}';renderRetirosList();">
-          <div style="font-size:28px;font-weight:700;color:${color};">${cnt}</div>
-          <div style="font-size:12px;color:#6b7280;">${catIcons[cat]||''} ${cat}</div>
-        </div>`;
-      }).join('')}
-      <div class="card" style="flex:1;min-width:110px;margin:0;text-align:center;border-top:3px solid #374151;cursor:pointer;${isActive(null)}" onclick="window._retirosFilter=null;renderRetirosList();">
+      <div class="card" style="flex:1;min-width:160px;margin:0;text-align:center;border-top:3px solid #374151;">
         <div style="font-size:28px;font-weight:700;">${d.total}</div>
-        <div style="font-size:12px;color:#6b7280;">Total</div>
+        <div style="font-size:12px;color:#6b7280;">Total activos</div>
       </div>
     </div>`;
-
-    renderRetirosList();
 
     renderRetirosList();
   } catch(e) {
@@ -2170,75 +2151,80 @@ async function loadRetiros(forceRefresh) {
 
 function renderRetirosList() {
   const list = document.getElementById('retiros-list');
-  const resumen = document.getElementById('retiros-resumen');
   if (!window._retirosData) return;
-  const { pendientes, retiradosHoy, d } = window._retirosData;
-  const f = window._retirosFilter;
+  const { pendientes, retirados } = window._retirosData;
   const catColors = { SoyDelivery: '#f97316', Robert: '#2563eb', DAC: '#059669', 'Mercado Envíos': '#d97706' };
   const catIcons = { SoyDelivery: '🟠', Robert: '🔵', DAC: '🟢', 'Mercado Envíos': '🟡' };
 
-  // Actualizar highlight de cards
-  resumen.querySelectorAll('.card').forEach(c => c.style.outline = '');
-  if (f) {
-    const cards = resumen.querySelectorAll('.card');
-    cards.forEach(c => {
-      if (c.onclick?.toString().includes("'" + f + "'")) c.style.outline = '3px solid #7c3aed';
-    });
-  }
-
-  // Filtrar según selección
-  let showPendientes = pendientes;
-  let showRetirados = retiradosHoy;
-
-  if (f === 'pendientes') {
-    showRetirados = [];
-  } else if (f === 'retirados') {
-    showPendientes = [];
-  } else if (f && f.startsWith('cat_')) {
-    const cat = f.replace('cat_', '');
-    showPendientes = pendientes.filter(e => e.cadeteria === cat);
-    showRetirados = retiradosHoy.filter(e => e.cadeteria === cat);
-  }
-
-  function renderSection(title, items, borderColor, emptyMsg) {
-    if (!items.length) return `<div class="card" style="margin-bottom:16px;text-align:center;color:#9ca3af;padding:16px;">${emptyMsg}</div>`;
-    const byCat = {};
-    items.forEach(e => { if (!byCat[e.cadeteria]) byCat[e.cadeteria] = []; byCat[e.cadeteria].push(e); });
-    let html = `<div style="margin-bottom:20px;">
-      <div style="font-size:16px;font-weight:700;margin-bottom:12px;padding-bottom:6px;border-bottom:3px solid ${borderColor};">
-        ${title} <span style="font-size:13px;font-weight:400;color:#9ca3af;">(${items.length})</span>
-      </div>`;
-    for (const [cat, entries] of Object.entries(byCat)) {
-      html += `<div style="margin-bottom:16px;">
-        <div style="font-size:13px;font-weight:700;color:${catColors[cat]||'#6b7280'};margin-bottom:8px;">
-          ${catIcons[cat]||''} ${cat} <span style="font-weight:400;color:#9ca3af;">(${entries.length})</span>
-        </div>`;
-      entries.forEach(e => {
-        html += `<div class="card" style="margin:0 0 6px 0;padding:10px 14px;cursor:pointer;" onclick="document.getElementById('buscar-input').value='${e.order_id}';showPage('buscador');buscarVenta();">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-            <div style="flex:1;min-width:0;">
-              <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${e.item_title}</div>
-              <div style="font-size:11px;color:#9ca3af;margin-top:2px;">${e.buyer_name || e.buyer} · ${e.quantity} unid. · ${e.receiver_city}${e.receiver_state ? ', ' + e.receiver_state : ''}</div>
-            </div>
-            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;">
-              ${e.retirado_por ? `<span style="font-size:10px;color:#059669;font-weight:600;">${e.retirado_por}</span>` : ''}
-              ${e.fecha_retiro ? `<span style="font-size:10px;color:#9ca3af;">${new Date(e.fecha_retiro).toLocaleString('es-UY',{hour:'2-digit',minute:'2-digit'})}</span>` : ''}
-              ${e.sd_estado ? `<span style="padding:1px 6px;border-radius:8px;font-size:9px;font-weight:600;background:#fff7ed;color:#f97316;">${e.sd_estado}</span>` : ''}
-            </div>
-          </div>
-        </div>`;
-      });
-      html += `</div>`;
-    }
-    html += `</div>`;
-    return html;
+  function renderItem(e) {
+    return `<div class="card" style="margin:0 0 6px 0;padding:10px 14px;cursor:pointer;" onclick="document.getElementById('buscar-input').value='${e.order_id}';showPage('buscador');buscarVenta();">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${e.item_title}</div>
+          <div style="font-size:11px;color:#9ca3af;margin-top:2px;">${e.buyer_name || e.buyer} · ${e.quantity} unid. · ${e.receiver_city}${e.receiver_state ? ', ' + e.receiver_state : ''}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;">
+          ${e.retirado_por ? `<span style="font-size:10px;color:#059669;font-weight:600;">${e.retirado_por}</span>` : ''}
+          ${e.fecha_retiro ? `<span style="font-size:10px;color:#9ca3af;">${new Date(e.fecha_retiro).toLocaleString('es-UY',{hour:'2-digit',minute:'2-digit'})}</span>` : ''}
+          <span style="padding:1px 6px;border-radius:8px;font-size:9px;font-weight:600;color:${catColors[e.cadeteria]||'#6b7280'};background:${catColors[e.cadeteria]||'#6b7280'}15;">${catIcons[e.cadeteria]||''} ${e.cadeteria}</span>
+        </div>
+      </div>
+    </div>`;
   }
 
   let html = '';
-  if (showPendientes.length || !f || f === 'pendientes' || f?.startsWith('cat_'))
-    html += renderSection('Pendientes de retiro', showPendientes, '#dc2626', 'No hay paquetes pendientes');
-  if (showRetirados.length || !f || f === 'retirados' || f?.startsWith('cat_'))
-    html += renderSection('Retirados hoy', showRetirados, '#059669', 'Ningún paquete retirado hoy');
+
+  // ── Pendientes de retiro ──
+  html += `<div style="margin-bottom:24px;">
+    <div style="font-size:16px;font-weight:700;margin-bottom:12px;padding-bottom:6px;border-bottom:3px solid #dc2626;">
+      Pendientes de retiro <span style="font-size:13px;font-weight:400;color:#9ca3af;">(${pendientes.length})</span>
+    </div>`;
+  if (pendientes.length) {
+    const pendByCat = {};
+    pendientes.forEach(e => { if (!pendByCat[e.cadeteria]) pendByCat[e.cadeteria] = []; pendByCat[e.cadeteria].push(e); });
+    for (const [cat, entries] of Object.entries(pendByCat)) {
+      html += `<div style="margin-bottom:12px;">
+        <div style="font-size:13px;font-weight:700;color:${catColors[cat]||'#6b7280'};margin-bottom:6px;">${catIcons[cat]||''} ${cat} (${entries.length})</div>
+        ${entries.map(renderItem).join('')}
+      </div>`;
+    }
+  } else {
+    html += `<div style="text-align:center;color:#9ca3af;padding:16px;">No hay paquetes pendientes de retiro</div>`;
+  }
+  html += `</div>`;
+
+  // ── Retirados agrupados por fecha ──
+  html += `<div style="margin-bottom:24px;">
+    <div style="font-size:16px;font-weight:700;margin-bottom:12px;padding-bottom:6px;border-bottom:3px solid #059669;">
+      Retirados <span style="font-size:13px;font-weight:400;color:#9ca3af;">(${retirados.length})</span>
+    </div>`;
+  if (retirados.length) {
+    // Agrupar por fecha de retiro
+    const byDate = {};
+    retirados.forEach(e => {
+      const d = e.fecha_retiro ? new Date(e.fecha_retiro) : new Date(e.date_created);
+      const dateKey = d.toLocaleDateString('es-UY', { weekday: 'long', day: '2-digit', month: '2-digit' });
+      if (!byDate[dateKey]) byDate[dateKey] = [];
+      byDate[dateKey].push(e);
+    });
+    for (const [date, items] of Object.entries(byDate)) {
+      html += `<div style="margin-bottom:16px;">
+        <div style="font-size:14px;font-weight:700;margin-bottom:8px;text-transform:capitalize;color:#374151;">${date} <span style="font-weight:400;color:#9ca3af;">(${items.length})</span></div>`;
+      // Dentro de cada fecha, agrupar por cadetería
+      const byCat = {};
+      items.forEach(e => { if (!byCat[e.cadeteria]) byCat[e.cadeteria] = []; byCat[e.cadeteria].push(e); });
+      for (const [cat, entries] of Object.entries(byCat)) {
+        html += `<div style="margin-bottom:8px;margin-left:8px;padding-left:10px;border-left:3px solid ${catColors[cat]||'#6b7280'};">
+          <div style="font-size:12px;font-weight:700;color:${catColors[cat]||'#6b7280'};margin-bottom:4px;">${catIcons[cat]||''} ${cat} (${entries.length})</div>
+          ${entries.map(renderItem).join('')}
+        </div>`;
+      }
+      html += `</div>`;
+    }
+  } else {
+    html += `<div style="text-align:center;color:#9ca3af;padding:16px;">No hay paquetes retirados</div>`;
+  }
+  html += `</div>`;
 
   list.innerHTML = html;
 }

@@ -1605,20 +1605,15 @@ async function actualizarRetiros() {
       }
     }
 
-    // Clasificar en pendientes y retirados hoy
-    const today = new Date().toISOString().slice(0, 10);
+    // Clasificar en pendientes y retirados
     const allEntries = [...soydelivery, ...robert, ...dac, ...mercadoenvios];
     const pendientes = allEntries.filter(e => !e.retirado);
-    const retiradosHoy = allEntries.filter(e => {
-      if (!e.retirado || !e.fecha_retiro) return false;
-      const retDate = e.fecha_retiro.slice(0, 10);
-      return retDate === today || new Date(e.fecha_retiro).toLocaleDateString('en-CA') === today;
-    });
+    const retirados = allEntries.filter(e => e.retirado);
 
     retirosCache = {
       total: allEntries.length,
       pendientes,
-      retirados_hoy: retiradosHoy,
+      retirados,
       soydelivery, robert, dac, mercadoenvios,
       updated_at: new Date().toISOString(),
     };
