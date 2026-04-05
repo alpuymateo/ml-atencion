@@ -1556,7 +1556,7 @@ async function actualizarRetiros() {
         ship = s.data;
       } catch { continue; }
 
-      if (ship.status === 'delivered' || ship.status === 'cancelled') continue;
+      if (ship.status === 'cancelled') continue;
 
       const item = o.order_items?.[0]?.item;
       const entry = {
@@ -1576,44 +1576,59 @@ async function actualizarRetiros() {
         receiver_state: ship.receiver_address?.state?.name || '',
       };
 
+      // Determinar cadetería y estado del pipeline
       if (ship.logistic_type === 'self_service') {
         const sdHist = await consultarSoyDeliveryHistorial(ship.id);
         if (sdHist?.PedidoConsultaSDT) {
           const sd = sdHist.PedidoConsultaSDT;
           entry.sd_estado = sd.PedidoNegocioEstadoIntNombre;
           entry.sd_estado_id = sd.PedidoEstado;
-          // Buscar fecha de retiro en historial
           const retiroEvento = (sd.PedidoHistorial || []).find(h => h.PedidoHistorialEstado === 'R');
           entry.fecha_retiro = retiroEvento?.PedidoHistorialFecha || null;
           entry.retirado_por = retiroEvento ? retiroEvento.PedidoHistorialDetalle.replace(/^Pedido retirado por\s*/i, '') : null;
-          entry.retirado = !!retiroEvento;
           entry.cadeteria = 'SoyDelivery';
+
+          // Pipeline: pendiente → en_camino_sin_escaneo → en_camino → entregado
+          if (ship.status === 'delivered' || sd.PedidoEstado === 'E') {
+            entry.etapa = 'entregado';
+          } else if (retiroEvento) {
+            entry.etapa = 'en_camino';
+          } else if (ship.status === 'shipped' && !retiroEvento) {
+            entry.etapa = 'en_camino_sin_escaneo';
+          } else {
+            entry.etapa = 'pendiente';
+          }
           soydelivery.push(entry);
         } else {
-          entry.retirado = ship.status === 'shipped';
           entry.cadeteria = 'Robert';
+          if (ship.status === 'delivered') entry.etapa = 'entregado';
+          else if (ship.status === 'shipped') entry.etapa = 'en_camino';
+          else entry.etapa = 'pendiente';
           robert.push(entry);
         }
       } else if (ship.logistic_type === 'default') {
-        entry.retirado = false; // DAC no tiene retiro via API por ahora
         entry.cadeteria = 'DAC';
+        if (ship.status === 'delivered') entry.etapa = 'entregado';
+        else if (ship.status === 'shipped') entry.etapa = 'en_camino';
+        else entry.etapa = 'pendiente';
         dac.push(entry);
       } else {
-        entry.retirado = ship.status === 'shipped';
         entry.cadeteria = 'Mercado Envíos';
+        if (ship.status === 'delivered') entry.etapa = 'entregado';
+        else if (ship.status === 'shipped') entry.etapa = 'en_camino';
+        else entry.etapa = 'pendiente';
         mercadoenvios.push(entry);
       }
     }
 
-    // Clasificar en pendientes y retirados
     const allEntries = [...soydelivery, ...robert, ...dac, ...mercadoenvios];
-    const pendientes = allEntries.filter(e => !e.retirado);
-    const retirados = allEntries.filter(e => e.retirado);
 
     retirosCache = {
       total: allEntries.length,
-      pendientes,
-      retirados,
+      pendientes: allEntries.filter(e => e.etapa === 'pendiente'),
+      en_camino_sin_escaneo: allEntries.filter(e => e.etapa === 'en_camino_sin_escaneo'),
+      en_camino: allEntries.filter(e => e.etapa === 'en_camino'),
+      entregados: allEntries.filter(e => e.etapa === 'entregado'),
       soydelivery, robert, dac, mercadoenvios,
       updated_at: new Date().toISOString(),
     };
