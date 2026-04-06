@@ -1847,7 +1847,7 @@ async function generarRespuestaMensaje(idx) {
   const r = await fetch('/api/ml/mensajes/simular', {
     method: 'POST',
     headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-    body: JSON.stringify({ pack_id: t.pack_id, item_id: t.item_id, item_title: t.item_title, order_status: t.order_status, messages: t.messages })
+    body: JSON.stringify({ pack_id: t.pack_id, item_id: t.item_id, item_title: t.item_title, order_status: t.order_status, messages: t.messages, buyer_name: t.buyer_name })
   });
   const d = await r.json();
 

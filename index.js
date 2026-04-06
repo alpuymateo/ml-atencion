@@ -1005,8 +1005,16 @@ app.get('/api/ml/mensajes/pendientes', requireToken, async (req, res) => {
 // POST /api/ml/mensajes/simular
 app.post('/api/ml/mensajes/simular', requireToken, async (req, res) => {
   if (!anthropic) return res.status(400).json({ error: 'ANTHROPIC_API_KEY no configurada' });
-  const { pack_id, item_id, item_title, order_status, messages } = req.body;
+  const { pack_id, item_id, item_title, order_status, messages, buyer_name } = req.body;
   if (!messages?.length) return res.status(400).json({ error: 'messages requerido' });
+
+  // Detectar si la conversación ya cerró (última palabra del comprador es un cierre)
+  const lastBuyerText = [...messages].reverse().find(m => m.from_buyer)?.text?.trim().toLowerCase() || '';
+  const cierres = ['gracias', 'gracias!', 'gracias!!', 'muchas gracias', 'ok', 'okey', 'dale', 'listo', 'perfecto', 'buenísimo', 'buenisimo', 'de acuerdo', 'entendido', 'ya', 'genial', 'excelente', '👍', '🙏', '✅', 'confirmado', 'recibido'];
+  const conversacionCerrada = cierres.some(c => lastBuyerText === c || lastBuyerText === c + '.' || lastBuyerText === c + '!');
+  if (conversacionCerrada) {
+    return res.json({ respuesta: '¡Con gusto! Quedamos a las órdenes para lo que necesites 😊 MUNDO SHOP', accion: null, cierre: true });
+  }
 
   try {
     let kb = null;
@@ -1039,34 +1047,48 @@ ${kb.reglas_generales.slice(0, 8).map(r => '- ' + r).join('\n')}` : '';
     const vendedorYaHabló = messages.slice(0, -1).some(m => !m.from_buyer);
     const lastBuyerMsg = [...messages].reverse().find(m => m.from_buyer);
 
+    // Detectar contexto emocional del último mensaje
+    const lastText = lastBuyerMsg?.text?.toLowerCase() || '';
+    const esReclamo = /problema|roto|rota|no funciona|no llegó|no llego|reclamo|devolución|devolucion|mal estado|defecto|falla|faltó|falto|incompleto/.test(lastText);
+    const esAgradecimiento = /gracias|genial|perfecto|excelente|buenísimo|buenisimo|re bien|muy bien/.test(lastText);
+
+    // Nombre para el saludo
+    const nombreComprador = buyer_name ? buyer_name.split(' ')[0] : null;
+    const saludoPersonalizado = nombreComprador ? `¡Hola ${nombreComprador}!` : '¡Hola!';
+
     const r = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 400,
       messages: [{
         role: 'user',
-        content: `Sos el asistente post-venta de MUNDO SHOP en Mercado Libre Uruguay.
+        content: `Sos el equipo de atención al cliente de MUNDO SHOP en Mercado Libre Uruguay.
+Tu objetivo es sonar como una persona real: cercana, amigable y profesional al mismo tiempo.
+Usá lenguaje natural del Río de la Plata (vos, te, etc). Evitá frases corporativas o robóticas.
 ${kbText}
-${reglasText ? 'REGLAS DEL NEGOCIO (usá estos datos exactos cuando apliquen, tienen prioridad):' + reglasText : ''}
+${reglasText ? 'REGLAS DEL NEGOCIO (tienen prioridad, usá estos datos exactos):' + reglasText : ''}
 ${malasText}
 
 ${itemText}
 Estado de la orden: ${order_status || 'desconocido'}
 
---- HISTORIAL COMPLETO ---
+--- HISTORIAL ---
 ${historial}
---- FIN HISTORIAL ---
+--- FIN ---
 
-ÚLTIMO MENSAJE DEL COMPRADOR (esto es lo que necesita respuesta ahora):
-"${lastBuyerMsg?.text || ''}"
+ÚLTIMO MENSAJE DEL COMPRADOR: "${lastBuyerMsg?.text || ''}"
 
+INSTRUCCIONES:
 ${vendedorYaHabló
-  ? 'Esta es una conversación en curso. NO uses saludo ni despedida. Respondé directamente y brevemente (1-2 oraciones máximo), como si siguieras la charla.'
-  : 'Primera interacción. Usá el saludo y la despedida estándar de MUNDO SHOP.'
+  ? '- Conversación en curso: NO uses saludo ni despedida. Respondé directo, breve (1-2 oraciones), como si fuera un chat.'
+  : `- Primera interacción: Saludá con "${saludoPersonalizado}" y cerrá con "¡Cualquier cosa nos avisás! MUNDO SHOP"`
 }
-Si hay un problema o reclamo, sugerí también una acción concreta (ej: "Coordinar retiro", "Emitir reembolso", "Reenviar producto", etc.).
-Respondé en JSON con este formato exacto:
-{"respuesta":"texto de la respuesta","accion":null}
-Si hay acción recomendada pon la acción en el campo accion, si no null.`
+${esReclamo ? '- El cliente tiene un problema: empezá reconociendo el inconveniente con empatía antes de dar la solución.' : ''}
+${esAgradecimiento ? '- El cliente está conforme: respondé breve y cálido, no hagas un párrafo largo.' : ''}
+- NUNCA uses "Agradecemos te hayas comunicado" ni frases similares
+- NUNCA menciones "MUNDO SHOP" más de una vez (solo al cerrar)
+- Si no tenés la info exacta, no la inventes
+${esReclamo ? '- Sugerí una acción concreta (coordinar retiro, reenviar producto, emitir reembolso, etc)' : ''}
+Respondé en JSON: {"respuesta":"...","accion":null}`
       }]
     });
 
@@ -2131,22 +2153,35 @@ ${kb.reglas_generales.slice(0, 10).map(r => '- ' + r).join('\n')}` : '';
         ejemplos += '\nRespuestas validadas similares:\n' +
           similares.map(e => `P: ${e.pregunta}\nR: ${e.respuesta}`).join('\n---\n');
       }
+      // Detectar si la pregunta es un cierre o agradecimiento
+      const qTextLower = q.text?.trim().toLowerCase() || '';
+      const cierresPre = ['gracias', 'ok', 'dale', 'listo', 'perfecto', 'buenísimo', 'buenisimo', 'entendido', 'de acuerdo'];
+      const esCierrePre = cierresPre.some(c => qTextLower === c || qTextLower === c + '.' || qTextLower === c + '!');
+
+      if (esCierrePre) {
+        results.push({ id: q.id, respuesta: '¡Con gusto! Quedamos a las órdenes 😊 MUNDO SHOP' });
+        continue;
+      }
+
       const r = await anthropic.messages.create({
         model: 'claude-sonnet-4-6',
         max_tokens: 250,
         messages: [{
           role: 'user',
-          content: `Sos el asistente de MUNDO SHOP en Mercado Libre Uruguay.
+          content: `Sos el equipo de atención al cliente de MUNDO SHOP en Mercado Libre Uruguay.
+Soná como una persona real: cercana, amigable y profesional. Usá lenguaje rioplatense natural (vos, te, etc).
 ${kbText}
-${reglasText ? 'REGLAS DEL NEGOCIO (usá estos datos exactos cuando apliquen, tienen prioridad):' + reglasText : ''}
+${reglasText ? 'REGLAS DEL NEGOCIO (tienen prioridad, usá estos datos exactos):' + reglasText : ''}
 ${ejemplos}
 ${itemText}
 Pregunta: "${q.text}"
 
 Instrucciones:
-- Responde SOLO con el texto final a enviar, sin explicaciones
-- Las direcciones de retiro mencionarlas SOLO si preguntan explícitamente cómo retirar un producto ya comprado, no para "verlo" o visitarlo
-- MUNDO SHOP debe aparecer UNA SOLA VEZ, al final de la despedida
+- Respondé SOLO con el texto final, sin explicaciones ni comillas
+- Saludá con "¡Hola!" al inicio y cerrá con "¡Cualquier otra consulta nos avisás! MUNDO SHOP"
+- MUNDO SHOP aparece UNA SOLA VEZ, al cerrar
+- NUNCA uses "Agradecemos te hayas comunicado" ni frases corporativas
+- Mencioná la dirección de retiro SOLO si preguntan cómo retirar algo ya comprado
 - Si la info no está en las reglas, no la inventes`
         }]
       });
