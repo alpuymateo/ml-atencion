@@ -2178,11 +2178,17 @@ Pregunta: "${q.text}"
 
 Instrucciones:
 - Respondé SOLO con el texto final, sin explicaciones ni comillas
-- Saludá con "¡Hola!" al inicio y cerrá con "¡Cualquier otra consulta nos avisás! MUNDO SHOP"
+- Saludá con "¡Hola!" y respondé directo — sin frases de relleno como "Buena pregunta", "Claro que sí", "Por supuesto"
+- Usá emojis SOLO si el contexto es informal o positivo. En preguntas técnicas, de medidas o reclamos NO uses emojis
+- Cerrá con "¡Cualquier otra consulta nos avisás! MUNDO SHOP"
 - MUNDO SHOP aparece UNA SOLA VEZ, al cerrar
 - NUNCA uses "Agradecemos te hayas comunicado" ni frases corporativas
 - Mencioná la dirección de retiro SOLO si preguntan cómo retirar algo ya comprado
-- Si la info no está en las reglas, no la inventes`
+- Respondé ÚNICAMENTE lo que preguntó el comprador, sin agregar info extra que no pidió
+- Para referirte al producto usá el tipo genérico ("este sillón", "esta mesa", "este mueble"), NUNCA el nombre comercial completo
+- Sé breve y directo, máximo 2-3 oraciones
+- Si no tenés el dato exacto que pide el comprador, usá tu conocimiento general para dar una medida o referencia estándar del rubro, aclarando que es aproximada. NUNCA derives al cliente a otro lado ni prometas gestiones internas
+- No inventes datos específicos del producto, pero sí podés dar referencias estándar cuando aplica`
         }]
       });
       results.push({ id: q.id, respuesta: r.content[0].text.trim() });
@@ -2197,7 +2203,7 @@ const LEARNED_FILE  = path.join(OWN_DATA_DIR, 'respuestas_aprendidas.json');
 const BAD_RESP_FILE = path.join(OWN_DATA_DIR, 'respuestas_malas.json');
 
 // POST /api/ml/mensajes/feedback-malo
-app.post('/api/ml/mensajes/feedback-malo', requireToken, (req, res) => {
+app.post('/api/ml/mensajes/feedback-malo', requireToken, async (req, res) => {
   const { historial, respuesta_mala, motivo } = req.body;
   if (!respuesta_mala) return res.status(400).json({ error: 'respuesta_mala requerida' });
   try {
@@ -2205,6 +2211,44 @@ app.post('/api/ml/mensajes/feedback-malo', requireToken, (req, res) => {
     malas.push({ historial: historial || '', respuesta_mala, motivo: motivo || '', fecha: new Date().toISOString() });
     if (malas.length > 500) malas = malas.slice(-500);
     fs.writeFileSync(BAD_RESP_FILE, JSON.stringify(malas, null, 2));
+
+    // Generar regla automática a partir del feedback si hay motivo y anthropic disponible
+    if (motivo && anthropic) {
+      (async () => {
+        try {
+          const r = await anthropic.messages.create({
+            model: 'claude-haiku-4-5',
+            max_tokens: 150,
+            messages: [{
+              role: 'user',
+              content: `Sos un asistente que genera reglas de comportamiento para un chatbot de atención al cliente.
+Se marcó esta respuesta como mala:
+"${respuesta_mala.slice(0, 300)}"
+
+Motivo: "${motivo}"
+
+Generá UNA regla corta y concreta (máx 20 palabras) para que el chatbot no cometa este error en el futuro.
+Empezá con un verbo en infinitivo (ej: "No mencionar...", "Evitar...", "Responder solo...").
+Respondé ÚNICAMENTE con el texto de la regla, sin explicaciones.`
+            }]
+          });
+          const reglaTexto = r.content[0].text.trim();
+          if (reglaTexto) {
+            const reglas = loadReglasNegocio();
+            // Evitar duplicados similares
+            const yaExiste = reglas.some(reg => reg.texto.toLowerCase().includes(reglaTexto.slice(0, 30).toLowerCase()));
+            if (!yaExiste) {
+              reglas.push({ id: Date.now(), categoria: 'respuestas', texto: reglaTexto, auto: true });
+              fs.writeFileSync(REGLAS_NEGOCIO_FILE, JSON.stringify(reglas, null, 2));
+              console.log(`[feedback] regla auto-generada: "${reglaTexto}"`);
+            }
+          }
+        } catch(e) {
+          console.error('[feedback] error generando regla:', e.message);
+        }
+      })();
+    }
+
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
