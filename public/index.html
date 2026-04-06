@@ -294,6 +294,9 @@
       <div class="nav-item active" data-page="tareas" onclick="showPage('tareas')">
         <span class="nav-icon">✅</span> Tareas
       </div>
+      <div class="nav-item" data-page="alertas" onclick="showPage('alertas')">
+        <span class="nav-icon">🚨</span> Alertas <span id="alertas-badge" style="display:none;background:#ef4444;color:white;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700;margin-left:4px;"></span>
+      </div>
       <div class="nav-item" data-page="buscador" onclick="showPage('buscador')">
         <span class="nav-icon">🔍</span> Buscador
       </div>
@@ -383,6 +386,20 @@
       </div>
       <div id="tareas-content">
         <div class="loading"><span class="spinner"></span>Cargando tareas...</div>
+      </div>
+    </div>
+
+    <!-- Alertas -->
+    <div id="page-alertas" style="display:none">
+      <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;">
+        <div>
+          <h1>Alertas</h1>
+          <p>Preguntas sin responder ordenadas por tiempo de espera</p>
+        </div>
+        <button class="btn-refresh" onclick="loadAlertas()">Actualizar</button>
+      </div>
+      <div id="alertas-content">
+        <div class="loading"><span class="spinner"></span>Cargando alertas...</div>
       </div>
     </div>
 
@@ -811,7 +828,7 @@ function fmtDateTime(d) {
 }
 
 // ── Navigation ──
-const PAGES = ['tareas', 'reclamos', 'devoluciones', 'buscador', 'retiros', 'retira-local', 'envios-dac', 'envios-sd', 'envios-deri', 'ml-analizar', 'usuarios'];
+const PAGES = ['tareas', 'alertas', 'reclamos', 'devoluciones', 'buscador', 'retiros', 'retira-local', 'envios-dac', 'envios-sd', 'envios-deri', 'ml-analizar', 'usuarios'];
 const ML_TAB_PAGES = { 'ml-preguntas': 'pendientes', 'ml-postventa': 'mensajes', 'ml-reglas': 'reglas' };
 
 function toggleNavGroup(id) {
@@ -877,6 +894,9 @@ function showPage(page) {
   }
   if (page === 'tareas') {
     loadTareas();
+  }
+  if (page === 'alertas') {
+    loadAlertas();
   }
   if (page === 'retiros') {
     loadRetiros();
@@ -1013,6 +1033,69 @@ function changeClaimsPage(dir) {
 }
 
 // ── Tareas ──
+// ── Alertas de preguntas demoradas ──────────────────────────────
+function getAlertaColor(minutos) {
+  if (minutos >= 120) return { bg: '#7f1d1d', border: '#991b1b', text: '#fee2e2', label: 'Crítico', labelBg: '#991b1b' };
+  if (minutos >= 60)  return { bg: '#fef2f2', border: '#f87171', text: '#111827', label: '+1 hora',  labelBg: '#ef4444' };
+  if (minutos >= 30)  return { bg: '#fff7ed', border: '#fb923c', text: '#111827', label: '+30 min',  labelBg: '#f97316' };
+  return                     { bg: '#fefce8', border: '#fbbf24', text: '#111827', label: '+15 min',  labelBg: '#eab308' };
+}
+
+async function loadAlertas() {
+  const content = document.getElementById('alertas-content');
+  content.innerHTML = '<div class="loading"><span class="spinner"></span>Cargando...</div>';
+  try {
+    const r = await fetch('/api/ml/preguntas/pendientes?limit=100', { headers: authHeaders() });
+    const d = await r.json();
+    const preguntas = (d.questions || d.results || []).filter(q => !q.answer);
+    const ahora = Date.now();
+    const conAlerta = preguntas
+      .map(q => ({ ...q, minutos: Math.floor((ahora - new Date(q.date_created).getTime()) / 60000) }))
+      .filter(q => q.minutos >= 15)
+      .sort((a, b) => b.minutos - a.minutos);
+
+    // Actualizar badge en sidebar
+    const badge = document.getElementById('alertas-badge');
+    if (badge) { badge.textContent = conAlerta.length; badge.style.display = conAlerta.length ? '' : 'none'; }
+
+    if (!conAlerta.length) {
+      content.innerHTML = '<div class="card" style="text-align:center;color:#9ca3af;padding:32px;">No hay preguntas demoradas 🎉</div>';
+      return;
+    }
+
+    content.innerHTML = conAlerta.map(q => {
+      const c = getAlertaColor(q.minutos);
+      const horas = q.minutos >= 60 ? `${Math.floor(q.minutos/60)}h ${q.minutos%60}m` : `${q.minutos}m`;
+      return `<div class="card" style="margin-bottom:10px;border-left:4px solid ${c.border};background:${c.bg};">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <span style="background:${c.labelBg};color:white;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700;">${c.label}</span>
+          <span style="font-size:12px;color:#6b7280;">Hace ${horas}</span>
+          <span style="flex:1;font-size:11px;color:#9ca3af;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${q.item_title?.slice(0,60) || ''}</span>
+        </div>
+        <div style="font-size:14px;font-weight:600;color:${c.bg === '#7f1d1d' ? '#fee2e2' : '#111827'};">${q.text}</div>
+        <div style="margin-top:8px;">
+          <button onclick="showPage('ml-preguntas')" style="padding:4px 12px;background:#7c3aed;color:white;border:none;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer;">Ir a responder →</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    content.innerHTML = `<div class="card" style="color:#991b1b;">Error: ${e.message}</div>`;
+  }
+}
+
+// Actualizar badge de alertas en background cada 3 minutos
+async function refreshAlertasBadge() {
+  try {
+    const r = await fetch('/api/ml/preguntas/pendientes?limit=100', { headers: authHeaders() });
+    const d = await r.json();
+    const preguntas = (d.questions || d.results || []).filter(q => !q.answer);
+    const ahora = Date.now();
+    const count = preguntas.filter(q => Math.floor((ahora - new Date(q.date_created).getTime()) / 60000) >= 15).length;
+    const badge = document.getElementById('alertas-badge');
+    if (badge) { badge.textContent = count; badge.style.display = count ? '' : 'none'; }
+  } catch(_) {}
+}
+
 async function loadTareas() {
   const btn = document.getElementById('btn-refresh-tareas');
   if (btn) btn.disabled = true;
@@ -1338,6 +1421,9 @@ function showApp() {
   document.getElementById('app').style.display = 'block';
   const savedPage = localStorage.getItem('currentPage') || 'tareas';
   showPage(savedPage);
+  // Actualizar badge de alertas al iniciar y cada 3 minutos
+  refreshAlertasBadge();
+  setInterval(refreshAlertasBadge, 3 * 60 * 1000);
 }
 
 async function init() {
@@ -1501,12 +1587,17 @@ function renderPendientes() {
 
   list.innerHTML = paginationBar + pageData.map((q, i) => {
     const idx = start + i;
+    const minutos = q.date_created ? Math.floor((Date.now() - new Date(q.date_created).getTime()) / 60000) : 0;
+    const alerta = !q.answer && minutos >= 15 ? getAlertaColor(minutos) : null;
     return `
-    <div class="card" style="margin-bottom:12px;" id="pend-card-${q.id}">
+    <div class="card" style="margin-bottom:12px;${alerta ? `border-left:4px solid ${alerta.border};` : ''}" id="pend-card-${q.id}">
       <div style="display:flex;gap:12px;align-items:flex-start;">
         ${q.item_thumbnail ? `<img src="${q.item_thumbnail}" style="width:48px;height:48px;object-fit:contain;border-radius:6px;background:#f9fafb;flex-shrink:0;" onerror="this.style.display='none'">` : ''}
         <div style="flex:1;min-width:0;">
-          <div style="font-size:11px;color:#9ca3af;margin-bottom:2px;">${q.item_permalink ? `<a href="${q.item_permalink}" target="_blank" style="color:#1d4ed8;text-decoration:none;font-weight:600;">${q.item_title?.slice(0,70) || q.item_id}</a>` : (q.item_title?.slice(0,70) || q.item_id)} · ${new Date(q.date_created).toLocaleDateString('es-UY')}</div>
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:2px;display:flex;align-items:center;gap:6px;">
+            <span>${q.item_permalink ? `<a href="${q.item_permalink}" target="_blank" style="color:#1d4ed8;text-decoration:none;font-weight:600;">${q.item_title?.slice(0,70) || q.item_id}</a>` : (q.item_title?.slice(0,70) || q.item_id)} · ${new Date(q.date_created).toLocaleDateString('es-UY')}</span>
+            ${alerta ? `<span style="background:${alerta.labelBg};color:white;border-radius:4px;padding:1px 7px;font-size:10px;font-weight:700;">${minutos >= 60 ? Math.floor(minutos/60)+'h '+minutos%60+'m' : minutos+'m'}</span>` : ''}
+          </div>
           <div style="font-size:14px;font-weight:600;color:#111827;margin-bottom:10px;">${q.text}</div>
 
           ${q.answer ? `
