@@ -327,6 +327,9 @@
         <span class="arrow" id="arrow-nav-envios">▶</span>
       </div>
       <div class="nav-group-items" id="nav-envios" style="display:none;">
+        <div class="nav-item" data-page="cola-envios" onclick="showPage('cola-envios')">
+          <span class="nav-icon">📋</span> Cola de Env&iacute;os
+        </div>
         <div class="nav-item" data-page="retiros" onclick="showPage('retiros')">
           <span class="nav-icon">📦</span> Retiros
         </div>
@@ -727,6 +730,22 @@
       <div id="retira-local-list"></div>
     </div>
 
+    <!-- Cola de Envíos -->
+    <div id="page-cola-envios" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div>
+          <h2 style="font-size:20px;font-weight:700;margin:0;">📋 Cola de Env&iacute;os</h2>
+          <p style="font-size:12px;color:#6b7280;margin:2px 0 0;">Ventas con env&iacute;o pendiente &mdash; ordenadas por antig&uuml;edad</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span id="cola-envios-updated" style="font-size:11px;color:#9ca3af;"></span>
+          <button onclick="loadColaEnvios()" style="padding:8px 14px;background:#7c3aed;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">Actualizar</button>
+        </div>
+      </div>
+      <div id="cola-envios-resumen" style="margin-bottom:16px;"></div>
+      <div id="cola-envios-content"></div>
+    </div>
+
     <div id="page-buscador" style="display:none">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
         <button id="btn-volver" style="display:none;padding:6px 12px;background:#f3f4f6;color:#374151;border:none;border-radius:6px;font-size:13px;cursor:pointer;" onclick="if(_previousPage){showPage(_previousPage);_previousPage=null;}">← Volver</button>
@@ -828,7 +847,7 @@ function fmtDateTime(d) {
 }
 
 // ── Navigation ──
-const PAGES = ['tareas', 'alertas', 'reclamos', 'devoluciones', 'buscador', 'retiros', 'retira-local', 'envios-dac', 'envios-sd', 'envios-deri', 'ml-analizar', 'usuarios'];
+const PAGES = ['tareas', 'alertas', 'reclamos', 'devoluciones', 'buscador', 'retiros', 'retira-local', 'cola-envios', 'envios-dac', 'envios-sd', 'envios-deri', 'ml-analizar', 'usuarios'];
 const ML_TAB_PAGES = { 'ml-preguntas': 'pendientes', 'ml-postventa': 'mensajes', 'ml-reglas': 'reglas' };
 
 function toggleNavGroup(id) {
@@ -841,7 +860,7 @@ function toggleNavGroup(id) {
 function openNavGroupFor(page) {
   const groups = {
     'nav-atencion': ['ml-preguntas','ml-postventa','reclamos','devoluciones'],
-    'nav-envios': ['retiros','retira-local','envios-dac','envios-sd','envios-deri'],
+    'nav-envios': ['retiros','retira-local','cola-envios','envios-dac','envios-sd','envios-deri'],
     'nav-config': ['ml-reglas','usuarios'],
   };
   for (const [gid, pages] of Object.entries(groups)) {
@@ -909,6 +928,9 @@ function showPage(page) {
   }
   if (page === 'usuarios') {
     loadUsersPage();
+  }
+  if (page === 'cola-envios') {
+    loadColaEnvios();
   }
   if (page === 'envios-dac') {
     loadEnviosDac();
@@ -2470,6 +2492,95 @@ function renderEnviosStages(stages, items, renderFn) {
     </div>`;
   }
   return html || '<div class="card" style="text-align:center;color:#9ca3af;padding:32px;">No hay env&iacute;os activos</div>';
+}
+
+// ── Cola de Envíos ──
+function getColaEnviosColor(minutos) {
+  if (minutos >= 240) return { border: '#dc2626', bg: '#fef2f2', label: '+4hs', labelBg: '#dc2626', dot: '🔴' };
+  if (minutos >= 120) return { border: '#d97706', bg: '#fffbeb', label: '2-4hs', labelBg: '#d97706', dot: '🟡' };
+  return                    { border: '#16a34a', bg: '#f0fdf4', label: '<2hs', labelBg: '#16a34a', dot: '🟢' };
+}
+
+async function loadColaEnvios() {
+  const content = document.getElementById('cola-envios-content');
+  const resumen = document.getElementById('cola-envios-resumen');
+  const updated = document.getElementById('cola-envios-updated');
+  content.innerHTML = '<div class="loading"><span class="spinner"></span>Cargando...</div>';
+  resumen.innerHTML = '';
+  try {
+    const r = await fetch('/api/ml/retiros', { headers: authHeaders() });
+    if (r.status === 401) { showLogin(); return; }
+    const data = await r.json();
+
+    if (updated && data.updated_at) {
+      updated.textContent = 'Cache: ' + new Date(data.updated_at).toLocaleString('es-UY', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    const ahora = Date.now();
+    const pendientes = (data.pendientes || [])
+      .map(e => ({ ...e, minutos: Math.floor((ahora - new Date(e.date_created).getTime()) / 60000) }))
+      .sort((a, b) => b.minutos - a.minutos);
+
+    if (!pendientes.length) {
+      content.innerHTML = '<div class="card" style="text-align:center;color:#9ca3af;padding:32px;">No hay env&iacute;os pendientes 🎉</div>';
+      return;
+    }
+
+    const rojos    = pendientes.filter(e => e.minutos >= 240);
+    const amarillos = pendientes.filter(e => e.minutos >= 120 && e.minutos < 240);
+    const verdes   = pendientes.filter(e => e.minutos < 120);
+
+    resumen.innerHTML = `
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <div class="card" style="flex:1;min-width:90px;margin:0;text-align:center;border-top:3px solid #dc2626;padding:12px 8px;">
+          <div style="font-size:22px;line-height:1;">🔴</div>
+          <div style="font-size:26px;font-weight:700;color:#dc2626;">${rojos.length}</div>
+          <div style="font-size:11px;color:#6b7280;">+4hs sin enviar</div>
+        </div>
+        <div class="card" style="flex:1;min-width:90px;margin:0;text-align:center;border-top:3px solid #d97706;padding:12px 8px;">
+          <div style="font-size:22px;line-height:1;">🟡</div>
+          <div style="font-size:26px;font-weight:700;color:#d97706;">${amarillos.length}</div>
+          <div style="font-size:11px;color:#6b7280;">2 a 4hs</div>
+        </div>
+        <div class="card" style="flex:1;min-width:90px;margin:0;text-align:center;border-top:3px solid #16a34a;padding:12px 8px;">
+          <div style="font-size:22px;line-height:1;">🟢</div>
+          <div style="font-size:26px;font-weight:700;color:#16a34a;">${verdes.length}</div>
+          <div style="font-size:11px;color:#6b7280;">menos de 2hs</div>
+        </div>
+        <div class="card" style="flex:1;min-width:90px;margin:0;text-align:center;border-top:3px solid #7c3aed;padding:12px 8px;">
+          <div style="font-size:22px;line-height:1;">📦</div>
+          <div style="font-size:26px;font-weight:700;color:#7c3aed;">${pendientes.length}</div>
+          <div style="font-size:11px;color:#6b7280;">total pendientes</div>
+        </div>
+      </div>`;
+
+    content.innerHTML = pendientes.map(e => {
+      const c = getColaEnviosColor(e.minutos);
+      const horas = e.minutos >= 60 ? `${Math.floor(e.minutos / 60)}h ${e.minutos % 60}m` : `${e.minutos}m`;
+      const ciudad = [e.receiver_city, e.receiver_state].filter(Boolean).join(', ') || '—';
+      const esMvd = /montevideo|mdeo/i.test(ciudad);
+      const ciudadHtml = esMvd
+        ? `<span style="background:#ede9fe;color:#5b21b6;border-radius:4px;padding:1px 6px;font-size:11px;font-weight:600;">${ciudad}</span>`
+        : `<span style="font-size:12px;color:#6b7280;">${ciudad}</span>`;
+      const pideHtml = e.pide_envio
+        ? `<span style="background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 6px;font-size:11px;font-weight:600;">⚡ pide env&iacute;o</span>`
+        : '';
+      return `<div class="card" style="margin-bottom:10px;border-left:4px solid ${c.border};background:${c.bg};padding:12px 16px;">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+          <span style="background:${c.labelBg};color:white;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700;">${c.dot} ${c.label}</span>
+          <span style="font-size:12px;color:#6b7280;">Hace ${horas}</span>
+          ${ciudadHtml}
+          ${pideHtml}
+          <span style="margin-left:auto;font-size:12px;color:#9ca3af;font-weight:600;">${e.cadeteria}</span>
+        </div>
+        <div style="font-size:13px;font-weight:700;color:#111827;margin-bottom:2px;">#${e.order_id} &mdash; ${e.buyer_name || e.buyer || '—'}</div>
+        <div style="font-size:12px;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${e.item_title}</div>
+        ${e.ultimo_msg_buyer ? `<div style="margin-top:6px;font-size:11px;color:#6b7280;font-style:italic;">"${e.ultimo_msg_buyer}"</div>` : ''}
+      </div>`;
+    }).join('');
+  } catch(e) {
+    content.innerHTML = `<div class="card" style="color:#991b1b;">Error: ${e.message}</div>`;
+  }
 }
 
 // ── DAC ──
