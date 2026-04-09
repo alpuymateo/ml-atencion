@@ -1739,7 +1739,7 @@ async function actualizarRetiros() {
 
 // Actualizar al arrancar (después de 10s para que el token esté listo) y cada 5 min
 setTimeout(() => actualizarRetiros(), 10000);
-setInterval(() => actualizarRetiros(), 5 * 60 * 1000);
+setInterval(() => actualizarRetiros(), 2 * 60 * 1000);
 
 // GET /api/ml/retiros — Devuelve cache, opcionalmente fuerza refresh
 app.get('/api/ml/retiros', requireToken, async (req, res) => {

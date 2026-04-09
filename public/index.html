@@ -742,7 +742,8 @@
           <button onclick="loadColaEnvios()" style="padding:8px 14px;background:#7c3aed;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">Actualizar</button>
         </div>
       </div>
-      <div id="cola-envios-resumen" style="margin-bottom:16px;"></div>
+      <div id="cola-envios-resumen" style="margin-bottom:12px;"></div>
+      <div id="cola-envios-filtros" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;"></div>
       <div id="cola-envios-content"></div>
     </div>
 
@@ -2501,12 +2502,17 @@ function getColaEnviosColor(minutos) {
   return                    { border: '#16a34a', bg: '#f0fdf4', label: '<2hs', labelBg: '#16a34a', dot: '🟢' };
 }
 
+let _colaEnviosTodos = [];
+let _colaEnviosFiltro = 'todos';
+
 async function loadColaEnvios() {
   const content = document.getElementById('cola-envios-content');
   const resumen = document.getElementById('cola-envios-resumen');
+  const filtros = document.getElementById('cola-envios-filtros');
   const updated = document.getElementById('cola-envios-updated');
   content.innerHTML = '<div class="loading"><span class="spinner"></span>Cargando...</div>';
   resumen.innerHTML = '';
+  filtros.innerHTML = '';
   try {
     const r = await fetch('/api/ml/retiros', { headers: authHeaders() });
     if (r.status === 401) { showLogin(); return; }
@@ -2517,18 +2523,18 @@ async function loadColaEnvios() {
     }
 
     const ahora = Date.now();
-    const pendientes = (data.pendientes || [])
+    _colaEnviosTodos = (data.pendientes || [])
       .map(e => ({ ...e, minutos: Math.floor((ahora - new Date(e.date_created).getTime()) / 60000) }))
       .sort((a, b) => b.minutos - a.minutos);
 
-    if (!pendientes.length) {
+    if (!_colaEnviosTodos.length) {
       content.innerHTML = '<div class="card" style="text-align:center;color:#9ca3af;padding:32px;">No hay env&iacute;os pendientes 🎉</div>';
       return;
     }
 
-    const rojos    = pendientes.filter(e => e.minutos >= 240);
-    const amarillos = pendientes.filter(e => e.minutos >= 120 && e.minutos < 240);
-    const verdes   = pendientes.filter(e => e.minutos < 120);
+    const rojos     = _colaEnviosTodos.filter(e => e.minutos >= 240);
+    const amarillos = _colaEnviosTodos.filter(e => e.minutos >= 120 && e.minutos < 240);
+    const verdes    = _colaEnviosTodos.filter(e => e.minutos < 120);
 
     resumen.innerHTML = `
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
@@ -2549,38 +2555,103 @@ async function loadColaEnvios() {
         </div>
         <div class="card" style="flex:1;min-width:90px;margin:0;text-align:center;border-top:3px solid #7c3aed;padding:12px 8px;">
           <div style="font-size:22px;line-height:1;">📦</div>
-          <div style="font-size:26px;font-weight:700;color:#7c3aed;">${pendientes.length}</div>
+          <div style="font-size:26px;font-weight:700;color:#7c3aed;">${_colaEnviosTodos.length}</div>
           <div style="font-size:11px;color:#6b7280;">total pendientes</div>
         </div>
       </div>`;
 
-    content.innerHTML = pendientes.map(e => {
-      const c = getColaEnviosColor(e.minutos);
-      const horas = e.minutos >= 60 ? `${Math.floor(e.minutos / 60)}h ${e.minutos % 60}m` : `${e.minutos}m`;
-      const ciudad = [e.receiver_city, e.receiver_state].filter(Boolean).join(', ') || '—';
-      const esMvd = /montevideo|mdeo/i.test(ciudad);
-      const ciudadHtml = esMvd
-        ? `<span style="background:#ede9fe;color:#5b21b6;border-radius:4px;padding:1px 6px;font-size:11px;font-weight:600;">${ciudad}</span>`
-        : `<span style="font-size:12px;color:#6b7280;">${ciudad}</span>`;
-      const pideHtml = e.pide_envio
-        ? `<span style="background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 6px;font-size:11px;font-weight:600;">⚡ pide env&iacute;o</span>`
-        : '';
-      return `<div class="card" style="margin-bottom:10px;border-left:4px solid ${c.border};background:${c.bg};padding:12px 16px;">
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
-          <span style="background:${c.labelBg};color:white;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700;">${c.dot} ${c.label}</span>
-          <span style="font-size:12px;color:#6b7280;">Hace ${horas}</span>
-          ${ciudadHtml}
-          ${pideHtml}
-          <span style="margin-left:auto;font-size:12px;color:#9ca3af;font-weight:600;">${e.cadeteria}</span>
-        </div>
-        <div style="font-size:13px;font-weight:700;color:#111827;margin-bottom:2px;">#${e.order_id} &mdash; ${e.buyer_name || e.buyer || '—'}</div>
-        <div style="font-size:12px;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${e.item_title}</div>
-        ${e.ultimo_msg_buyer ? `<div style="margin-top:6px;font-size:11px;color:#6b7280;font-style:italic;">"${e.ultimo_msg_buyer}"</div>` : ''}
-      </div>`;
+    // Filtros por cadetería
+    const cadeterias = ['todos', ...new Set(_colaEnviosTodos.map(e => e.cadeteria).filter(Boolean))];
+    filtros.innerHTML = cadeterias.map(c => {
+      const label = c === 'todos' ? `Todos (${_colaEnviosTodos.length})` : `${c} (${_colaEnviosTodos.filter(e => e.cadeteria === c).length})`;
+      return `<button onclick="filtrarColaEnvios('${c}')" id="filtro-cola-${c}" style="padding:6px 14px;border-radius:20px;border:2px solid #e5e7eb;background:white;font-size:12px;font-weight:600;cursor:pointer;color:#374151;">${label}</button>`;
     }).join('');
+
+    _colaEnviosFiltro = 'todos';
+    renderColaEnvios();
   } catch(e) {
-    content.innerHTML = `<div class="card" style="color:#991b1b;">Error: ${e.message}</div>`;
+    document.getElementById('cola-envios-content').innerHTML = `<div class="card" style="color:#991b1b;">Error: ${e.message}</div>`;
   }
+}
+
+function filtrarColaEnvios(cadeteria) {
+  _colaEnviosFiltro = cadeteria;
+  renderColaEnvios();
+}
+
+function renderColaEnvios() {
+  const content = document.getElementById('cola-envios-content');
+
+  // Actualizar estilo de botones
+  document.querySelectorAll('[id^="filtro-cola-"]').forEach(btn => {
+    const activo = btn.id === `filtro-cola-${_colaEnviosFiltro}`;
+    btn.style.background = activo ? '#7c3aed' : 'white';
+    btn.style.color = activo ? 'white' : '#374151';
+    btn.style.borderColor = activo ? '#7c3aed' : '#e5e7eb';
+  });
+
+  const lista = _colaEnviosFiltro === 'todos'
+    ? _colaEnviosTodos
+    : _colaEnviosTodos.filter(e => e.cadeteria === _colaEnviosFiltro);
+
+  if (!lista.length) {
+    content.innerHTML = '<div class="card" style="text-align:center;color:#9ca3af;padding:32px;">No hay env&iacute;os pendientes para este filtro.</div>';
+    return;
+  }
+
+  const secciones = [
+    { label: '🔴 Urgentes — más de 4hs', color: '#dc2626', items: lista.filter(e => e.minutos >= 240) },
+    { label: '🟡 Atentos — 2 a 4hs',     color: '#d97706', items: lista.filter(e => e.minutos >= 120 && e.minutos < 240) },
+    { label: '🟢 Ok — menos de 2hs',      color: '#16a34a', items: lista.filter(e => e.minutos < 120) },
+  ].filter(s => s.items.length > 0);
+
+  content.innerHTML = secciones.map(sec => `
+    <div style="margin-bottom:20px;">
+      <div style="font-size:13px;font-weight:700;color:${sec.color};margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid ${sec.color}20;">
+        ${sec.label} <span style="font-weight:400;color:#9ca3af;">(${sec.items.length})</span>
+      </div>
+      ${sec.items.map(e => renderColaEnviosCard(e)).join('')}
+    </div>
+  `).join('');
+}
+
+function renderColaEnviosCard(e) {
+  const c = getColaEnviosColor(e.minutos);
+  const horas = e.minutos >= 60 ? `${Math.floor(e.minutos / 60)}h ${e.minutos % 60}m` : `${e.minutos}m`;
+  const ciudad = [e.receiver_city, e.receiver_state].filter(Boolean).join(', ') || '—';
+  const esMvd = /montevideo|mdeo/i.test(ciudad);
+  const ciudadHtml = esMvd
+    ? `<span style="background:#ede9fe;color:#5b21b6;border-radius:4px;padding:1px 6px;font-size:11px;font-weight:600;">${ciudad}</span>`
+    : `<span style="font-size:12px;color:#6b7280;">${ciudad}</span>`;
+  const pideHtml = e.pide_envio
+    ? `<span style="background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 6px;font-size:11px;font-weight:600;">⚡ pide env&iacute;o</span>`
+    : '';
+  const cadeteriaColor = { DAC: '#059669', SoyDelivery: '#f97316', Robert: '#2563eb' }[e.cadeteria] || '#6b7280';
+  const packId = e.pack_id || e.order_id;
+
+  return `<div class="card" style="margin-bottom:10px;border-left:4px solid ${c.border};background:${c.bg};padding:12px 16px;">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+      <span style="background:${c.labelBg};color:white;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700;">${c.dot} ${c.label}</span>
+      <span style="font-size:12px;color:#6b7280;">Hace ${horas}</span>
+      ${ciudadHtml}
+      ${pideHtml}
+      <span style="margin-left:auto;background:${cadeteriaColor}20;color:${cadeteriaColor};border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700;">${e.cadeteria || '—'}</span>
+    </div>
+    <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px;flex-wrap:wrap;">
+      <span style="font-size:13px;font-weight:700;color:#111827;">#${e.order_id}</span>
+      <span style="font-size:13px;color:#374151;font-weight:600;">${e.buyer_name || e.buyer || '—'}</span>
+      ${e.quantity > 1 ? `<span style="background:#e0f2fe;color:#0369a1;border-radius:4px;padding:1px 6px;font-size:11px;font-weight:700;">x${e.quantity} uds</span>` : ''}
+    </div>
+    <div style="font-size:12px;color:#374151;margin-bottom:6px;">${e.item_title || '—'}</div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      ${e.receiver_phone ? `<span style="font-size:12px;color:#6b7280;">📞 ${e.receiver_phone}</span>` : ''}
+      ${e.ultimo_msg_buyer ? `<span style="font-size:11px;color:#6b7280;font-style:italic;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">"${e.ultimo_msg_buyer}"</span>` : ''}
+      <div style="margin-left:auto;display:flex;gap:6px;">
+        <button onclick="navigator.clipboard.writeText('${e.order_id}').then(()=>{ this.textContent='✓'; setTimeout(()=>this.textContent='Copiar #',1200) })" style="padding:4px 10px;border:1px solid #d1d5db;border-radius:5px;background:white;font-size:11px;cursor:pointer;color:#374151;">Copiar #</button>
+        <a href="https://www.mercadolibre.com.uy/ventas/${packId}/detalle" target="_blank" style="padding:4px 10px;border:1px solid #d1d5db;border-radius:5px;background:white;font-size:11px;cursor:pointer;color:#374151;text-decoration:none;">Ver en ML</a>
+      </div>
+    </div>
+  </div>`;
 }
 
 // ── DAC ──
