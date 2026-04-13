@@ -1191,7 +1191,7 @@ async function analizarProducto(itemId, btn) {
   btn.disabled = true;
   btn.textContent = 'Analizando...';
   resultDiv.style.display = 'block';
-  resultDiv.innerHTML = '<div class="loading"><span class="spinner"></span>Claude analizando preguntas...</div>';
+  resultDiv.innerHTML = '<div class="loading"><span class="spinner"></span>Claude analizando...</div>';
   try {
     const r = await fetch('/api/ml/recomendaciones/analizar', {
       method: 'POST',
@@ -1200,7 +1200,8 @@ async function analizarProducto(itemId, btn) {
     });
     const d = await r.json();
     if (!r.ok) throw new Error(d.error || 'Error');
-    resultDiv.innerHTML = `<div class="card" style="background:#f8fafc;border-left:4px solid #7c3aed;white-space:pre-wrap;font-size:13px;line-height:1.6;color:#1f2937;">${d.recomendaciones}</div>`;
+    const badge = d['analizó_imágenes'] ? '<span style="background:#0ea5e9;color:white;border-radius:4px;padding:1px 8px;font-size:11px;font-weight:700;margin-left:8px;">📷 Imágenes analizadas</span>' : '';
+    resultDiv.innerHTML = `<div class="card" style="background:#f8fafc;border-left:4px solid #7c3aed;font-size:13px;line-height:1.6;color:#1f2937;"><div style="margin-bottom:8px;">${badge}</div><div style="white-space:pre-wrap;">${d.recomendaciones}</div></div>`;
     btn.textContent = 'Re-analizar';
     btn.disabled = false;
   } catch(e) {
