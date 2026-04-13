@@ -2498,6 +2498,9 @@ app.get('/api/ml/recomendaciones/publicaciones', requireToken, (req, res) => {
   } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+const IMAGEN_KEYWORDS = /foto|imagen|imágen|imagen|color|colore|medida|tamaño|dimensi|igual a la foto|cómo se ve|como se ve|parece|real|se aprecia|detalle|material|textura|aspecto|apariencia|se nota|se ven|se ve igual|igual al|igual a las/i;
+const IMAGEN_CLAIM_REASONS = new Set(['item_not_as_described', 'not_as_described', 'item_damaged', 'different_item']);
+
 // POST /api/ml/recomendaciones/analizar
 app.post('/api/ml/recomendaciones/analizar', requireToken, async (req, res) => {
   if (!anthropic) return res.status(400).json({ error: 'ANTHROPIC_API_KEY no configurada' });
@@ -2507,32 +2510,44 @@ app.post('/api/ml/recomendaciones/analizar', requireToken, async (req, res) => {
   try {
     const headers = { Authorization: `Bearer ${tokenData.access_token}` };
 
-    // Fetch item context and preguntas in parallel
-    const [itemCtx, preguntasData] = await Promise.all([
+    // Fetch item context, preguntas y órdenes en paralelo
+    const [itemCtx, preguntasData, ordersR] = await Promise.all([
       fetchItemContext(itemId),
       fs.existsSync(PREGUNTAS_FILE)
         ? Promise.resolve(JSON.parse(fs.readFileSync(PREGUNTAS_FILE, 'utf8')))
-        : Promise.resolve({ byPub: {} })
+        : Promise.resolve({ byPub: {} }),
+      axios.get(`${ML_API_URL}/orders/search`, {
+        headers,
+        params: { seller: tokenData.user_id, item: itemId, limit: 50 }
+      }).catch(() => ({ data: { results: [] } }))
     ]);
 
     const pub = preguntasData.byPub[itemId];
     const qa = pub?.qa || [];
 
-    // Buscar órdenes recientes del item para cruzar con reclamos
-    let reclamosDelItem = [];
-    try {
-      const ordersR = await axios.get(`${ML_API_URL}/orders/search`, {
-        headers,
-        params: { seller: tokenData.user_id, item: itemId, limit: 50 }
-      });
-      const orderIds = new Set((ordersR.data.results || []).map(o => String(o.id)));
-      if (orderIds.size > 0) {
-        reclamosDelItem = cachedClaims.filter(c => orderIds.has(String(c.resource_id)));
-      }
-    } catch(_) {}
+    const orderIds = new Set((ordersR.data.results || []).map(o => String(o.id)));
+    const reclamosDelItem = orderIds.size > 0
+      ? cachedClaims.filter(c => orderIds.has(String(c.resource_id)))
+      : [];
 
     if (qa.length === 0 && reclamosDelItem.length === 0) {
       return res.json({ recomendaciones: 'No hay preguntas ni reclamos suficientes para analizar esta publicación.' });
+    }
+
+    // Detectar señales de problemas con imágenes
+    const preguntasConImagenSignal = qa.filter(e => IMAGEN_KEYWORDS.test(e.q));
+    const reclamosConImagenSignal  = reclamosDelItem.filter(c =>
+      IMAGEN_CLAIM_REASONS.has(c.reason_id) || IMAGEN_CLAIM_REASONS.has(c.sub_status)
+    );
+    const analizarImagenes = preguntasConImagenSignal.length > 0 || reclamosConImagenSignal.length > 0;
+
+    // Traer fotos del item si hay señales de problemas visuales
+    let pictureUrls = [];
+    if (analizarImagenes) {
+      try {
+        const itemR = await axios.get(`${ML_API_URL}/items/${itemId}`, { headers });
+        pictureUrls = (itemR.data.pictures || []).slice(0, 5).map(p => p.url || p.secure_url).filter(Boolean);
+      } catch(_) {}
     }
 
     const itemText = buildItemContextText(itemCtx);
@@ -2551,30 +2566,48 @@ app.post('/api/ml/recomendaciones/analizar', requireToken, async (req, res) => {
         }).join('\n')
       : '\nSin reclamos ni devoluciones registradas.';
 
-    const r = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1200,
-      messages: [{
-        role: 'user',
-        content: `Sos un experto en optimización de publicaciones de MercadoLibre Uruguay. Analizá las preguntas frecuentes y los problemas de postventa de esta publicación para generar recomendaciones concretas que mejoren la conversión y reduzcan problemas.
+    const imagenesNote = analizarImagenes
+      ? `\nSe detectaron señales de posibles problemas con las imágenes (${preguntasConImagenSignal.length} preguntas visuales, ${reclamosConImagenSignal.length} reclamos por producto no como se describe).${pictureUrls.length ? ' Se adjuntan las fotos de la publicación para análisis.' : ''}`
+      : '';
+
+    const seccionImagenes = analizarImagenes
+      ? '\n5. **Análisis de imágenes**: calidad, ángulos faltantes, fondo, iluminación, si representan bien el producto'
+      : '';
+
+    const promptText = `Sos un experto en optimización de publicaciones de MercadoLibre Uruguay. Analizá todos los datos disponibles y generá recomendaciones concretas para mejorar la publicación.
 
 Datos de la publicación:
 ${itemText}
 
 ${preguntasText}
-${reclamosText}
+${reclamosText}${imagenesNote}
 
 Respondé con:
 1. **Temas más consultados**: qué preguntan más los compradores (agrupado por tema)
 2. **Problemas de postventa**: patrones en reclamos o devoluciones y sus posibles causas
 3. **Qué falta en la publicación**: información que debería estar en la ficha pero no está
-4. **Recomendaciones concretas**: cambios específicos al título, descripción o fotos
+4. **Recomendaciones concretas**: cambios específicos al título, descripción o atributos${seccionImagenes}
 
-Sé directo y específico. Máximo 500 palabras.`
-      }]
+Sé directo y específico. Máximo 600 palabras.`;
+
+    // Armar contenido del mensaje (con o sin imágenes)
+    let messageContent;
+    if (pictureUrls.length > 0) {
+      messageContent = [
+        { type: 'text', text: promptText },
+        ...pictureUrls.map(url => ({ type: 'image', source: { type: 'url', url } }))
+      ];
+    } else {
+      messageContent = promptText;
+    }
+
+    const r = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1400,
+      messages: [{ role: 'user', content: messageContent }]
     });
 
-    res.json({ recomendaciones: r.content[0].text.trim() });
+    res.json({ recomendaciones: r.content[0].text.trim(), analizó_imágenes: analizarImagenes && pictureUrls.length > 0 });
   } catch(e) {
     console.error('[recomendaciones/analizar]', e.message);
     res.status(500).json({ error: e.message });
