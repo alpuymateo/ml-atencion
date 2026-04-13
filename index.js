@@ -2612,16 +2612,14 @@ app.post('/api/ml/recomendaciones/analizar', requireToken, async (req, res) => {
       if (typeof visits === 'object') visits = null; // si devuelve objeto complejo, ignorar
     } catch(_) {}
 
-    if (qa.length === 0 && reclamosDelItem.length === 0) {
-      return res.json({ recomendaciones: 'No hay preguntas ni reclamos suficientes para analizar esta publicación.', visits, sold_quantity: soldQty, health });
-    }
-
     // Detectar señales de problemas con imágenes
     const preguntasConImagenSignal = qa.filter(e => IMAGEN_KEYWORDS.test(e.q));
     const reclamosConImagenSignal  = reclamosDelItem.filter(c =>
       IMAGEN_CLAIM_REASONS.has(c.reason_id) || IMAGEN_CLAIM_REASONS.has(c.sub_status)
     );
-    const analizarImagenes = preguntasConImagenSignal.length > 0 || reclamosConImagenSignal.length > 0;
+    // Para productos sin ventas, siempre analizar imágenes
+    const sinVentas = soldQty === 0 || soldQty === null;
+    const analizarImagenes = sinVentas || preguntasConImagenSignal.length > 0 || reclamosConImagenSignal.length > 0;
     const pictureUrls = analizarImagenes ? pictures : [];
 
     let itemText = buildItemContextText(itemCtx);
@@ -2647,15 +2645,33 @@ app.post('/api/ml/recomendaciones/analizar', requireToken, async (req, res) => {
         }).join('\n')
       : '\nSin reclamos ni devoluciones registradas.';
 
-    const imagenesNote = analizarImagenes
-      ? `\nSe detectaron señales de posibles problemas con las imágenes (${preguntasConImagenSignal.length} preguntas visuales, ${reclamosConImagenSignal.length} reclamos por producto no como se describe).${pictureUrls.length ? ' Se adjuntan las fotos de la publicación para análisis.' : ''}`
+    const imagenesNote = pictureUrls.length
+      ? `\nSe adjuntan las fotos de la publicación para análisis visual.`
       : '';
 
-    const seccionImagenes = analizarImagenes
-      ? '\n5. **Análisis de imágenes**: calidad, ángulos faltantes, fondo, iluminación, si representan bien el producto'
-      : '';
+    // Prompt adaptado según datos disponibles
+    let promptText;
+    if (qa.length === 0 && reclamosDelItem.length === 0) {
+      // Sin historial: análisis puro de la publicación
+      promptText = `Sos un experto en optimización de publicaciones de MercadoLibre Uruguay. Esta publicación tiene ${soldQty === 0 ? 'cero ventas' : 'pocas ventas'} y no hay preguntas ni reclamos registrados. Analizá la publicación y generá recomendaciones concretas para mejorar su conversión.
 
-    const promptText = `Sos un experto en optimización de publicaciones de MercadoLibre Uruguay. Analizá todos los datos disponibles y generá recomendaciones concretas para mejorar la publicación.
+Datos de la publicación:
+${itemText}
+${imagenesNote}
+
+Respondé con:
+1. **Diagnóstico**: posibles razones por las que no está vendiendo (título, descripción, precio, fotos, atributos)
+2. **Qué falta o está mal**: información clave ausente o poco clara
+3. **Recomendaciones concretas**: cambios específicos al título, descripción, atributos o fotos
+4. **Análisis de imágenes**: calidad, ángulos, fondo, si representan bien el producto
+
+Sé directo y específico. Máximo 500 palabras.`;
+    } else {
+      // Con historial: análisis completo
+      const seccionImagenes = analizarImagenes
+        ? '\n5. **Análisis de imágenes**: calidad, ángulos faltantes, fondo, iluminación, si representan bien el producto'
+        : '';
+      promptText = `Sos un experto en optimización de publicaciones de MercadoLibre Uruguay. Analizá todos los datos disponibles y generá recomendaciones concretas para mejorar la publicación.
 
 Datos de la publicación:
 ${itemText}
@@ -2670,6 +2686,7 @@ Respondé con:
 4. **Recomendaciones concretas**: cambios específicos al título, descripción o atributos${seccionImagenes}
 
 Sé directo y específico. Máximo 600 palabras.`;
+    }
 
     // Armar contenido del mensaje (con o sin imágenes)
     let messageContent;
