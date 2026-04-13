@@ -13,7 +13,7 @@
     #login-screen, #ml-connect-screen {
       display: flex; align-items: center; justify-content: center;
       min-height: 100vh;
-      background: linear-gradient(135deg, #1a1d23 0%, #2d3250 100%);
+      background: linear-gradient(135deg, #001560 0%, #00217E 100%);
     }
     .login-card {
       background: white; border-radius: 16px; padding: 48px;
@@ -24,12 +24,12 @@
     .login-card h1 { font-size: 26px; font-weight: 700; margin-bottom: 8px; }
     .login-card p { color: #6b7280; font-size: 14px; margin-bottom: 32px; }
     .btn-login {
-      display: block; background: #FFE600; color: #1a1d23;
+      display: block; background: #FFCA61; color: #1a1d23;
       font-weight: 700; padding: 14px 32px; border-radius: 8px;
       text-decoration: none; font-size: 15px; width: 100%;
       transition: box-shadow 0.15s, transform 0.1s;
     }
-    .btn-login:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(255,230,0,0.4); }
+    .btn-login:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(255,202,97,0.4); }
 
     /* Layout */
     #app { display: none; min-height: 100vh; }
@@ -103,7 +103,7 @@
     }
     .kpi-card::before {
       content: ''; position: absolute; top: 0; left: 0; right: 0;
-      height: 3px; background: var(--accent, #4361ee);
+      height: 3px; background: var(--accent, #00217E);
     }
     .kpi-icon { font-size: 28px; margin-bottom: 12px; display: block; }
     .kpi-label { font-size: 11px; font-weight: 600; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
@@ -124,11 +124,11 @@
     .table-controls { display: flex; gap: 10px; align-items: center; }
     .search-input, .filter-select {
       padding: 8px 13px; border: 1px solid #e5e7eb; border-radius: 8px;
-      font-size: 13px; font-family: 'Inter', sans-serif;
+      font-size: 13px; font-family: 'Montserrat', sans-serif;
       outline: none; background: white; transition: border-color 0.15s;
     }
     .search-input { width: 220px; }
-    .search-input:focus, .filter-select:focus { border-color: #4361ee; }
+    .search-input:focus, .filter-select:focus { border-color: #00217E; }
 
     table { width: 100%; border-collapse: collapse; }
     thead th {
@@ -148,7 +148,7 @@
     }
     .badge-opened { background: #fee2e2; color: #991b1b; }
     .badge-closed { background: #d1fae5; color: #065f46; }
-    .badge-resolved { background: #dbeafe; color: #1e40af; }
+    .badge-resolved { background: #dbeafe; color: #00217E; }
     .badge-in_process { background: #fef3c7; color: #92400e; }
     .badge-default { background: #f3f4f6; color: #6b7280; }
 
@@ -160,16 +160,16 @@
     .btn-refresh {
       padding: 8px 16px; background: #f0f2f5; color: #374151;
       font-weight: 600; font-size: 13px; border: 1px solid #e5e7eb;
-      border-radius: 8px; cursor: pointer; font-family: 'Inter', sans-serif;
+      border-radius: 8px; cursor: pointer; font-family: 'Montserrat', sans-serif;
       transition: background 0.15s;
     }
     .btn-refresh:hover { background: #e5e7eb; }
     .btn-refresh:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .btn-sync {
-      padding: 8px 16px; background: #FFE600; color: #1a1d23;
+      padding: 8px 16px; background: #FFCA61; color: #1a1d23;
       font-weight: 700; font-size: 13px; border: none; border-radius: 8px;
-      cursor: pointer; font-family: 'Inter', sans-serif; transition: opacity 0.15s;
+      cursor: pointer; font-family: 'Montserrat', sans-serif; transition: opacity 0.15s;
     }
     .btn-sync:disabled { opacity: 0.5; cursor: not-allowed; }
     .sync-bar-wrap {
@@ -179,7 +179,7 @@
     }
     .sync-bar-label { font-size: 13px; color: #374151; margin-bottom: 10px; font-weight: 500; }
     .sync-bar-track { background: #f0f2f5; border-radius: 99px; height: 8px; overflow: hidden; }
-    .sync-bar-fill { background: #4361ee; height: 100%; border-radius: 99px; transition: width 0.4s; width: 0%; }
+    .sync-bar-fill { background: #00217E; height: 100%; border-radius: 99px; transition: width 0.4s; width: 0%; }
     .sync-done-msg { display: none; font-size: 13px; color: #065f46; font-weight: 600; margin-top: 8px; }
 
     .pagination {
@@ -191,7 +191,7 @@
     .btn-page {
       padding: 7px 14px; border: 1px solid #e5e7eb; border-radius: 6px;
       background: white; font-size: 13px; cursor: pointer;
-      font-family: 'Inter', sans-serif; font-weight: 500; transition: all 0.1s;
+      font-family: 'Montserrat', sans-serif; font-weight: 500; transition: all 0.1s;
     }
     .btn-page:hover:not(:disabled) { background: #f9fafb; }
     .btn-page:disabled { opacity: 0.35; cursor: not-allowed; }
@@ -199,7 +199,7 @@
     .loading { text-align: center; padding: 48px; color: #9ca3af; font-size: 14px; }
     .spinner {
       display: inline-block; width: 18px; height: 18px;
-      border: 2px solid #e5e7eb; border-top-color: #4361ee;
+      border: 2px solid #e5e7eb; border-top-color: #00217E;
       border-radius: 50%; animation: spin 0.7s linear infinite;
       margin-right: 8px; vertical-align: middle;
     }
@@ -221,10 +221,10 @@
       .filter-select { flex: 1; min-width: 0; }
       #mobile-bar {
         display: flex; align-items: center; gap: 12px;
-        background: #1e2130; padding: 12px 16px;
+        background: #00217E; padding: 12px 16px;
         position: sticky; top: 0; z-index: 99;
       }
-      #mobile-bar .logo-badge { background: #FFE600; color: #1a1d23; font-weight: 800; font-size: 14px; padding: 3px 8px; border-radius: 5px; }
+      #mobile-bar .logo-badge { background: #FFCA61; color: #1a1d23; font-weight: 800; font-size: 14px; padding: 3px 8px; border-radius: 5px; }
       #mobile-bar span { color: white; font-weight: 600; font-size: 15px; }
       #mobile-menu-btn { margin-left: auto; background: none; border: none; cursor: pointer; color: white; font-size: 22px; padding: 4px 8px; }
       #sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 99; }
@@ -244,15 +244,26 @@
 <!-- Login de usuario -->
 <div id="login-screen" style="display:none">
   <div class="login-card">
-    <div class="login-logo">💬</div>
-    <h1>ML Atenci&oacute;n</h1>
-    <p>Ingres&aacute; con tu usuario y contrase&ntilde;a</p>
+    <div style="margin-bottom:24px;">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 375 86.95" style="width:180px;height:auto;">
+        <path fill="#00217E" d="M0,9.16C0,3.15,1.92,0,9.9,0c6.23,0,9.44,2.31,10.91,9.9l6.05,32h.18l6.05-32c1.47-7.58,4.67-9.9,10.91-9.9,7.97,0,9.9,3.15,9.9,9.16v53.46c0,3.89-2.84,6.38-6.14,6.38s-6.14-2.5-6.14-6.38V14.8h-.18l-10.08,50.13c-.46,2.13-1.19,4.07-4.4,4.07s-3.94-1.94-4.4-4.07L12.46,14.8h-.18v47.82c0,3.89-2.84,6.38-6.14,6.38s-6.14-2.5-6.14-6.38V9.16Z"/>
+        <path fill="#00217E" d="M62.87,23.31c0-4.62,2.2-6.75,5.59-6.75s5.59,2.13,5.59,6.75v30.62c0,3.7,1.56,5.27,4.31,5.27,3.94,0,5.87-2.68,5.87-8.97v-26.92c0-4.62,2.2-6.75,5.59-6.75s5.59,2.13,5.59,6.75v38.94c0,4.62-2.2,6.75-5.59,6.75s-5.59-2.13-5.59-6.48h-.18c-1.83,4.35-6.14,6.48-10.45,6.48-6.23,0-10.72-3.89-10.72-12.4V23.31Z"/>
+        <path fill="#00217E" d="M102.82,23.31c0-4.62,2.2-6.75,5.59-6.75s5.59,2.13,5.59,6.47h.18c1.83-4.35,6.14-6.47,10.45-6.47,6.23,0,10.72,3.88,10.72,12.39v33.3c0,4.62-2.2,6.75-5.59,6.75s-5.59-2.13-5.59-6.75v-30.62c0-3.7-1.92-5.27-4.31-5.27-3.57,0-5.87,2.68-5.87,8.97v26.92c0,4.62-2.2,6.75-5.59,6.75s-5.59-2.13-5.59-6.75V23.31Z"/>
+        <path fill="#00217E" d="M141.68,36.07c0-10.27,1.83-19.52,11.91-19.52,4.12,0,7.88,2.03,9.9,5.83h.18V6.75c0-4.62,2.2-6.75,5.59-6.75s5.59,2.13,5.59,6.75v55.5c0,4.62-2.2,6.75-5.59,6.75s-5.59-2.5-5.59-5.83h-.18c-2.02,3.98-5.68,5.83-9.9,5.83-10.08,0-11.91-9.25-11.91-19.52v-13.41ZM153.41,46.53c0,8.33.55,13.13,4.67,13.13,4.4,0,5.59-5.09,5.59-12.21v-9.44c0-10.08-2.84-12.12-5.5-12.12-3.76,0-4.77,3.05-4.77,14.06v6.57Z"/>
+        <path fill="#00217E" d="M181.27,35.98c0-10.73,3.48-19.42,16.86-19.42s16.86,8.69,16.86,19.42v13.6c0,10.73-3.48,19.42-16.86,19.42s-16.86-8.69-16.86-19.42v-13.6ZM193,48.65c0,9.25,1.47,11.47,5.13,11.47s5.13-2.22,5.13-11.47v-11.93c0-9.06-1.83-11.28-5.13-11.28s-5.13,2.22-5.13,11.28v11.93Z"/>
+        <path fill="#FFCA61" d="M233.05,43.29c-6.42-4.81-7.51-7.96-7.51-13.23,0-9.06,6.32-13.5,15.3-13.5,11.91,0,15.03,8.23,15.03,12.3,0,3.33-1.37,5.55-5.87,5.55-3.02,0-4.4-1.57-4.58-4.35-.18-3.42-2.02-5.09-4.86-5.09-2.29,0-3.85,1.48-3.85,3.89,0,1.67.64,3.42,2.47,4.81l6.87,5.27c6.96,5.27,10.63,8.6,10.63,15.35,0,9.81-7.06,14.71-16.22,14.71-12.01,0-15.4-7.96-15.4-13.78,0-4.26,2.66-5.64,5.32-5.64,4.12,0,5.5,2.22,5.87,6.94.18,2.13,1.38,4.07,4.86,4.07,2.93,0,4.4-1.67,4.4-4.62,0-2.5-.83-3.88-3.94-6.29l-8.52-6.38Z"/>
+        <path fill="#FFCA61" d="M262.83,6.75c0-4.62,2.2-6.75,5.59-6.75s5.59,2.13,5.59,6.75v16.28h.18c1.83-4.35,6.14-6.47,10.45-6.47,6.23,0,10.72,3.88,10.72,12.39v33.3c0,4.62-2.2,6.75-5.59,6.75s-5.59-2.13-5.59-6.75v-30.62c0-3.7-1.92-5.27-4.31-5.27-3.57,0-5.87,2.68-5.87,8.97v26.92c0,4.62-2.2,6.75-5.59,6.75s-5.59-2.13-5.59-6.75V6.75Z"/>
+        <path fill="#FFCA61" d="M302.15,35.98c0-10.73,3.48-19.42,16.86-19.42s16.86,8.69,16.86,19.42v13.6c0,10.73-3.48,19.42-16.86,19.42s-16.86-8.69-16.86-19.42v-13.6ZM313.88,48.65c0,9.25,1.47,11.47,5.13,11.47s5.13-2.22,5.13-11.47v-11.93c0-9.06-1.83-11.28-5.13-11.28s-5.13,2.22-5.13,11.28v11.93Z"/>
+        <path fill="#FFCA61" d="M341.83,23.31c0-4.62,2.2-6.75,5.59-6.75s5.59,2.13,5.59,6.75h.18c1.92-4.35,6.05-6.75,9.9-6.75,10.08,0,11.91,9.25,11.91,19.52v13.41c0,10.27-1.83,19.52-11.91,19.52-4.22,0-7.88-1.85-9.9-5.64h-.18v16.83c0,4.62-2.2,6.75-5.59,6.75s-5.59-2.13-5.59-6.75V23.31ZM353.01,47.91c0,7.12,1.19,12.21,5.59,12.21,4.12,0,4.67-4.81,4.67-13.13v-7.03c0-11.01-1.01-14.06-4.77-14.06-2.66,0-5.5,2.03-5.5,12.12v9.9Z"/>
+      </svg>
+    </div>
+    <p style="color:#6b7280;font-size:14px;margin-bottom:24px;">Panel de Atenci&oacute;n &mdash; Ingres&aacute; con tu usuario</p>
     <div id="login-error" style="display:none;background:#fee2e2;color:#991b1b;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:16px;"></div>
     <input id="login-username" type="text" placeholder="Usuario" autocomplete="username"
-      style="display:block;width:100%;padding:12px 14px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;font-family:Inter,sans-serif;margin-bottom:10px;box-sizing:border-box;"
+      style="display:block;width:100%;padding:12px 14px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;font-family:Montserrat,sans-serif;margin-bottom:10px;box-sizing:border-box;"
       onkeydown="if(event.key==='Enter')doLogin()">
     <input id="login-password" type="password" placeholder="Contrase&ntilde;a" autocomplete="current-password"
-      style="display:block;width:100%;padding:12px 14px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;font-family:Inter,sans-serif;margin-bottom:16px;box-sizing:border-box;"
+      style="display:block;width:100%;padding:12px 14px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;font-family:Montserrat,sans-serif;margin-bottom:16px;box-sizing:border-box;"
       onkeydown="if(event.key==='Enter')doLogin()">
     <button onclick="doLogin()" class="btn-login" style="cursor:pointer;border:none;">Ingresar</button>
   </div>
@@ -261,11 +272,23 @@
 <!-- Conectar ML -->
 <div id="ml-connect-screen" style="display:none">
   <div class="login-card">
-    <div class="login-logo">🟡</div>
+    <div style="margin-bottom:20px;">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 375 86.95" style="width:160px;height:auto;">
+        <path fill="#00217E" d="M0,9.16C0,3.15,1.92,0,9.9,0c6.23,0,9.44,2.31,10.91,9.9l6.05,32h.18l6.05-32c1.47-7.58,4.67-9.9,10.91-9.9,7.97,0,9.9,3.15,9.9,9.16v53.46c0,3.89-2.84,6.38-6.14,6.38s-6.14-2.5-6.14-6.38V14.8h-.18l-10.08,50.13c-.46,2.13-1.19,4.07-4.4,4.07s-3.94-1.94-4.4-4.07L12.46,14.8h-.18v47.82c0,3.89-2.84,6.38-6.14,6.38s-6.14-2.5-6.14-6.38V9.16Z"/>
+        <path fill="#00217E" d="M62.87,23.31c0-4.62,2.2-6.75,5.59-6.75s5.59,2.13,5.59,6.75v30.62c0,3.7,1.56,5.27,4.31,5.27,3.94,0,5.87-2.68,5.87-8.97v-26.92c0-4.62,2.2-6.75,5.59-6.75s5.59,2.13,5.59,6.75v38.94c0,4.62-2.2,6.75-5.59,6.75s-5.59-2.13-5.59-6.48h-.18c-1.83,4.35-6.14,6.48-10.45,6.48-6.23,0-10.72-3.89-10.72-12.4V23.31Z"/>
+        <path fill="#00217E" d="M102.82,23.31c0-4.62,2.2-6.75,5.59-6.75s5.59,2.13,5.59,6.47h.18c1.83-4.35,6.14-6.47,10.45-6.47,6.23,0,10.72,3.88,10.72,12.39v33.3c0,4.62-2.2,6.75-5.59,6.75s-5.59-2.13-5.59-6.75v-30.62c0-3.7-1.92-5.27-4.31-5.27-3.57,0-5.87,2.68-5.87,8.97v26.92c0,4.62-2.2,6.75-5.59,6.75s-5.59-2.13-5.59-6.75V23.31Z"/>
+        <path fill="#00217E" d="M141.68,36.07c0-10.27,1.83-19.52,11.91-19.52,4.12,0,7.88,2.03,9.9,5.83h.18V6.75c0-4.62,2.2-6.75,5.59-6.75s5.59,2.13,5.59,6.75v55.5c0,4.62-2.2,6.75-5.59,6.75s-5.59-2.5-5.59-5.83h-.18c-2.02,3.98-5.68,5.83-9.9,5.83-10.08,0-11.91-9.25-11.91-19.52v-13.41ZM153.41,46.53c0,8.33.55,13.13,4.67,13.13,4.4,0,5.59-5.09,5.59-12.21v-9.44c0-10.08-2.84-12.12-5.5-12.12-3.76,0-4.77,3.05-4.77,14.06v6.57Z"/>
+        <path fill="#00217E" d="M181.27,35.98c0-10.73,3.48-19.42,16.86-19.42s16.86,8.69,16.86,19.42v13.6c0,10.73-3.48,19.42-16.86,19.42s-16.86-8.69-16.86-19.42v-13.6ZM193,48.65c0,9.25,1.47,11.47,5.13,11.47s5.13-2.22,5.13-11.47v-11.93c0-9.06-1.83-11.28-5.13-11.28s-5.13,2.22-5.13,11.28v11.93Z"/>
+        <path fill="#FFCA61" d="M233.05,43.29c-6.42-4.81-7.51-7.96-7.51-13.23,0-9.06,6.32-13.5,15.3-13.5,11.91,0,15.03,8.23,15.03,12.3,0,3.33-1.37,5.55-5.87,5.55-3.02,0-4.4-1.57-4.58-4.35-.18-3.42-2.02-5.09-4.86-5.09-2.29,0-3.85,1.48-3.85,3.89,0,1.67.64,3.42,2.47,4.81l6.87,5.27c6.96,5.27,10.63,8.6,10.63,15.35,0,9.81-7.06,14.71-16.22,14.71-12.01,0-15.4-7.96-15.4-13.78,0-4.26,2.66-5.64,5.32-5.64,4.12,0,5.5,2.22,5.87,6.94.18,2.13,1.38,4.07,4.86,4.07,2.93,0,4.4-1.67,4.4-4.62,0-2.5-.83-3.88-3.94-6.29l-8.52-6.38Z"/>
+        <path fill="#FFCA61" d="M262.83,6.75c0-4.62,2.2-6.75,5.59-6.75s5.59,2.13,5.59,6.75v16.28h.18c1.83-4.35,6.14-6.47,10.45-6.47,6.23,0,10.72,3.88,10.72,12.39v33.3c0,4.62-2.2,6.75-5.59,6.75s-5.59-2.13-5.59-6.75v-30.62c0-3.7-1.92-5.27-4.31-5.27-3.57,0-5.87,2.68-5.87,8.97v26.92c0,4.62-2.2,6.75-5.59,6.75s-5.59-2.13-5.59-6.75V6.75Z"/>
+        <path fill="#FFCA61" d="M302.15,35.98c0-10.73,3.48-19.42,16.86-19.42s16.86,8.69,16.86,19.42v13.6c0,10.73-3.48,19.42-16.86,19.42s-16.86-8.69-16.86-19.42v-13.6ZM313.88,48.65c0,9.25,1.47,11.47,5.13,11.47s5.13-2.22,5.13-11.47v-11.93c0-9.06-1.83-11.28-5.13-11.28s-5.13,2.22-5.13,11.28v11.93Z"/>
+        <path fill="#FFCA61" d="M341.83,23.31c0-4.62,2.2-6.75,5.59-6.75s5.59,2.13,5.59,6.75h.18c1.92-4.35,6.05-6.75,9.9-6.75,10.08,0,11.91,9.25,11.91,19.52v13.41c0,10.27-1.83,19.52-11.91,19.52-4.22,0-7.88-1.85-9.9-5.64h-.18v16.83c0,4.62-2.2,6.75-5.59,6.75s-5.59-2.13-5.59-6.75V23.31ZM353.01,47.91c0,7.12,1.19,12.21,5.59,12.21,4.12,0,4.67-4.81,4.67-13.13v-7.03c0-11.01-1.01-14.06-4.77-14.06-2.66,0-5.5,2.03-5.5,12.12v9.9Z"/>
+      </svg>
+    </div>
     <h1>Conectar MercadoLibre</h1>
     <p id="ml-connect-user-msg">Para continuar, conect&aacute; tu cuenta de MercadoLibre</p>
     <a href="/login" class="btn-login" style="margin-bottom:12px;display:block;">Conectar con MercadoLibre</a>
-    <button onclick="doLogout()" style="background:none;border:none;color:#9ca3af;font-size:13px;cursor:pointer;font-family:Inter,sans-serif;">Cerrar sesi&oacute;n</button>
+    <button onclick="doLogout()" style="background:none;border:none;color:#9ca3af;font-size:13px;cursor:pointer;font-family:Montserrat,sans-serif;">Cerrar sesi&oacute;n</button>
   </div>
 </div>
 
@@ -273,8 +296,17 @@
 <div id="app">
   <!-- Mobile top bar -->
   <div id="mobile-bar">
-    <span class="logo-badge">ML</span>
-    <span>Atenci&oacute;n</span>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 375 86.95" style="width:110px;height:auto;">
+      <path fill="#fff" d="M0,9.16C0,3.15,1.92,0,9.9,0c6.23,0,9.44,2.31,10.91,9.9l6.05,32h.18l6.05-32c1.47-7.58,4.67-9.9,10.91-9.9,7.97,0,9.9,3.15,9.9,9.16v53.46c0,3.89-2.84,6.38-6.14,6.38s-6.14-2.5-6.14-6.38V14.8h-.18l-10.08,50.13c-.46,2.13-1.19,4.07-4.4,4.07s-3.94-1.94-4.4-4.07L12.46,14.8h-.18v47.82c0,3.89-2.84,6.38-6.14,6.38s-6.14-2.5-6.14-6.38V9.16Z"/>
+      <path fill="#fff" d="M62.87,23.31c0-4.62,2.2-6.75,5.59-6.75s5.59,2.13,5.59,6.75v30.62c0,3.7,1.56,5.27,4.31,5.27,3.94,0,5.87-2.68,5.87-8.97v-26.92c0-4.62,2.2-6.75,5.59-6.75s5.59,2.13,5.59,6.75v38.94c0,4.62-2.2,6.75-5.59,6.75s-5.59-2.13-5.59-6.48h-.18c-1.83,4.35-6.14,6.48-10.45,6.48-6.23,0-10.72-3.89-10.72-12.4V23.31Z"/>
+      <path fill="#fff" d="M102.82,23.31c0-4.62,2.2-6.75,5.59-6.75s5.59,2.13,5.59,6.47h.18c1.83-4.35,6.14-6.47,10.45-6.47,6.23,0,10.72,3.88,10.72,12.39v33.3c0,4.62-2.2,6.75-5.59,6.75s-5.59-2.13-5.59-6.75v-30.62c0-3.7-1.92-5.27-4.31-5.27-3.57,0-5.87,2.68-5.87,8.97v26.92c0,4.62-2.2,6.75-5.59,6.75s-5.59-2.13-5.59-6.75V23.31Z"/>
+      <path fill="#fff" d="M141.68,36.07c0-10.27,1.83-19.52,11.91-19.52,4.12,0,7.88,2.03,9.9,5.83h.18V6.75c0-4.62,2.2-6.75,5.59-6.75s5.59,2.13,5.59,6.75v55.5c0,4.62-2.2,6.75-5.59,6.75s-5.59-2.5-5.59-5.83h-.18c-2.02,3.98-5.68,5.83-9.9,5.83-10.08,0-11.91-9.25-11.91-19.52v-13.41ZM153.41,46.53c0,8.33.55,13.13,4.67,13.13,4.4,0,5.59-5.09,5.59-12.21v-9.44c0-10.08-2.84-12.12-5.5-12.12-3.76,0-4.77,3.05-4.77,14.06v6.57Z"/>
+      <path fill="#fff" d="M181.27,35.98c0-10.73,3.48-19.42,16.86-19.42s16.86,8.69,16.86,19.42v13.6c0,10.73-3.48,19.42-16.86,19.42s-16.86-8.69-16.86-19.42v-13.6ZM193,48.65c0,9.25,1.47,11.47,5.13,11.47s5.13-2.22,5.13-11.47v-11.93c0-9.06-1.83-11.28-5.13-11.28s-5.13,2.22-5.13,11.28v11.93Z"/>
+      <path fill="#FFCA61" d="M233.05,43.29c-6.42-4.81-7.51-7.96-7.51-13.23,0-9.06,6.32-13.5,15.3-13.5,11.91,0,15.03,8.23,15.03,12.3,0,3.33-1.37,5.55-5.87,5.55-3.02,0-4.4-1.57-4.58-4.35-.18-3.42-2.02-5.09-4.86-5.09-2.29,0-3.85,1.48-3.85,3.89,0,1.67.64,3.42,2.47,4.81l6.87,5.27c6.96,5.27,10.63,8.6,10.63,15.35,0,9.81-7.06,14.71-16.22,14.71-12.01,0-15.4-7.96-15.4-13.78,0-4.26,2.66-5.64,5.32-5.64,4.12,0,5.5,2.22,5.87,6.94.18,2.13,1.38,4.07,4.86,4.07,2.93,0,4.4-1.67,4.4-4.62,0-2.5-.83-3.88-3.94-6.29l-8.52-6.38Z"/>
+      <path fill="#FFCA61" d="M262.83,6.75c0-4.62,2.2-6.75,5.59-6.75s5.59,2.13,5.59,6.75v16.28h.18c1.83-4.35,6.14-6.47,10.45-6.47,6.23,0,10.72,3.88,10.72,12.39v33.3c0,4.62-2.2,6.75-5.59,6.75s-5.59-2.13-5.59-6.75v-30.62c0-3.7-1.92-5.27-4.31-5.27-3.57,0-5.87,2.68-5.87,8.97v26.92c0,4.62-2.2,6.75-5.59,6.75s-5.59-2.13-5.59-6.75V6.75Z"/>
+      <path fill="#FFCA61" d="M302.15,35.98c0-10.73,3.48-19.42,16.86-19.42s16.86,8.69,16.86,19.42v13.6c0,10.73-3.48,19.42-16.86,19.42s-16.86-8.69-16.86-19.42v-13.6ZM313.88,48.65c0,9.25,1.47,11.47,5.13,11.47s5.13-2.22,5.13-11.47v-11.93c0-9.06-1.83-11.28-5.13-11.28s-5.13,2.22-5.13,11.28v11.93Z"/>
+      <path fill="#FFCA61" d="M341.83,23.31c0-4.62,2.2-6.75,5.59-6.75s5.59,2.13,5.59,6.75h.18c1.92-4.35,6.05-6.75,9.9-6.75,10.08,0,11.91,9.25,11.91,19.52v13.41c0,10.27-1.83,19.52-11.91,19.52-4.22,0-7.88-1.85-9.9-5.64h-.18v16.83c0,4.62-2.2,6.75-5.59,6.75s-5.59-2.13-5.59-6.75V23.31ZM353.01,47.91c0,7.12,1.19,12.21,5.59,12.21,4.12,0,4.67-4.81,4.67-13.13v-7.03c0-11.01-1.01-14.06-4.77-14.06-2.66,0-5.5,2.03-5.5,12.12v9.9Z"/>
+    </svg>
     <button id="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
   </div>
   <div id="sidebar-overlay" onclick="toggleSidebar()"></div>
@@ -478,7 +510,7 @@
           <div class="kpi-value" id="kpi-claims-closed">0</div>
           <div class="kpi-sub">resueltos</div>
         </div>
-        <div class="kpi-card" style="--accent:#4361ee">
+        <div class="kpi-card" style="--accent:#00217E">
           <span class="kpi-icon">📋</span>
           <div class="kpi-label">Tipos</div>
           <div class="kpi-value" id="kpi-claims-types">&mdash;</div>
@@ -541,7 +573,7 @@
           <p>Preguntas, mensajes post-venta y reglas IA</p>
         </div>
         <div style="display:flex;gap:8px;">
-          <button onclick="showAnalizarTab('pendientes')" id="tab-pendientes" style="padding:8px 16px;background:#7c3aed;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">💬 Preguntas</button>
+          <button onclick="showAnalizarTab('pendientes')" id="tab-pendientes" style="padding:8px 16px;background:#00217E;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">💬 Preguntas</button>
           <button onclick="showAnalizarTab('mensajes')" id="tab-mensajes" style="padding:8px 16px;background:#e5e7eb;color:#374151;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">📨 Post-venta</button>
           <button onclick="showAnalizarTab('preguntas')" id="tab-preguntas" style="padding:8px 16px;background:#e5e7eb;color:#374151;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">❓ Frecuentes</button>
           <button onclick="showAnalizarTab('reglas')" id="tab-reglas" style="padding:8px 16px;background:#e5e7eb;color:#374151;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">⚙️ Reglas</button>
@@ -570,7 +602,7 @@
           </div>
           <div style="display:flex;gap:8px;">
             <button onclick="loadPendientes()" style="padding:8px 14px;background:#e5e7eb;color:#374151;border:none;border-radius:6px;font-size:13px;cursor:pointer;">↺ Actualizar</button>
-            <button onclick="simularTodas()" id="btn-simular-todas" style="padding:8px 16px;background:#7c3aed;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">🤖 Generar todas con IA</button>
+            <button onclick="simularTodas()" id="btn-simular-todas" style="padding:8px 16px;background:#00217E;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">🤖 Generar todas con IA</button>
           </div>
         </div>
         <div id="pendientes-list"></div>
@@ -603,7 +635,7 @@
               <input type="text" id="preguntas-search" class="search-input" style="width:100%;" placeholder="T&iacute;tulo o ID..." oninput="filtrarPreguntasPubs()"/>
             </div>
             <button onclick="loadPreguntasStats()" style="padding:8px 14px;background:#e5e7eb;color:#374151;border:none;border-radius:6px;font-size:13px;cursor:pointer;">↺ Actualizar</button>
-            <button onclick="importarHistorial()" id="btn-importar-historial" style="padding:8px 14px;background:#2563eb;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">⬇ Importar historial ML</button>
+            <button onclick="importarHistorial()" id="btn-importar-historial" style="padding:8px 14px;background:#00217E;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">⬇ Importar historial ML</button>
           </div>
           <div id="importar-estado" style="display:none;margin-top:10px;font-size:12px;color:#6b7280;"></div>
         </div>
@@ -632,7 +664,7 @@
                 <option value="Tareas">Tareas</option>
               </select>
             </div>
-            <button onclick="agregarRegla()" style="padding:7px 16px;background:#7c3aed;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">+ Agregar</button>
+            <button onclick="agregarRegla()" style="padding:7px 16px;background:#00217E;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">+ Agregar</button>
           </div>
         </div>
         <div id="reglas-list"></div>
@@ -649,14 +681,14 @@
               <label style="font-size:11px;color:#6b7280;display:block;margin-bottom:4px;">ID Publicaci&oacute;n ML</label>
               <input type="text" id="skumap-mlid" placeholder="Ej: 467234915" style="padding:7px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;width:160px;">
             </div>
-            <button onclick="agregarSkuMap()" style="padding:7px 16px;background:#2563eb;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">+ Agregar</button>
+            <button onclick="agregarSkuMap()" style="padding:7px 16px;background:#00217E;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">+ Agregar</button>
           </div>
           <div id="skumap-list"></div>
         </div>
         <div id="reglas-interpretacion" style="display:none;margin-top:16px;" class="card">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-            <span style="font-size:13px;font-weight:700;color:#7c3aed;">🤖 C&oacute;mo Claude interpreta estas reglas</span>
-            <button onclick="interpretarReglas()" id="btn-interpretar" style="padding:3px 10px;background:#ede9fe;border:1px solid #c4b5fd;color:#6d28d9;border-radius:5px;font-size:11px;cursor:pointer;">↺ Actualizar</button>
+            <span style="font-size:13px;font-weight:700;color:#00217E;">🤖 C&oacute;mo Claude interpreta estas reglas</span>
+            <button onclick="interpretarReglas()" id="btn-interpretar" style="padding:3px 10px;background:#dce6f5;border:1px solid #c4b5fd;color:#6d28d9;border-radius:5px;font-size:11px;cursor:pointer;">↺ Actualizar</button>
           </div>
           <p id="reglas-interpretacion-text" style="font-size:13px;color:#374151;line-height:1.6;margin:0;"></p>
         </div>
@@ -670,7 +702,7 @@
         <div style="display:flex;gap:8px;align-items:center;">
           <span id="retiros-updated" style="font-size:11px;color:#9ca3af;"></span>
           <button onclick="loadRetiros()" style="padding:8px 14px;background:#e5e7eb;color:#374151;border:none;border-radius:6px;font-size:13px;cursor:pointer;">Recargar</button>
-          <button onclick="loadRetiros(true)" style="padding:8px 14px;background:#7c3aed;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">Forzar refresh</button>
+          <button onclick="loadRetiros(true)" style="padding:8px 14px;background:#00217E;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">Forzar refresh</button>
         </div>
       </div>
       <div id="retiros-resumen"></div>
@@ -738,7 +770,7 @@
             <label style="font-size:12px;color:#6b7280;font-weight:600;display:block;margin-bottom:4px;">Buscar por order ID de Deri, orden ML o comprador</label>
             <input type="text" id="envios-deri-input" class="search-input" style="width:100%;" placeholder="Ej: 12345 (Deri order ID)" onkeydown="if(event.key==='Enter')buscarEnviosDeri()"/>
           </div>
-          <button onclick="buscarEnviosDeri()" style="padding:10px 20px;background:#2563eb;color:white;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;">Buscar</button>
+          <button onclick="buscarEnviosDeri()" style="padding:10px 20px;background:#00217E;color:white;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;">Buscar</button>
         </div>
       </div>
       <div id="envios-deri-resumen"></div>
@@ -749,7 +781,7 @@
     <div id="page-retira-local" style="display:none">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
         <h2 style="font-size:20px;font-weight:700;margin:0;">🏪 Retira en local</h2>
-        <button onclick="loadRetiraLocal()" style="padding:8px 14px;background:#7c3aed;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">Actualizar</button>
+        <button onclick="loadRetiraLocal()" style="padding:8px 14px;background:#00217E;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">Actualizar</button>
       </div>
       <div id="retira-local-list"></div>
     </div>
@@ -763,7 +795,7 @@
         </div>
         <div style="display:flex;align-items:center;gap:10px;">
           <span id="cola-envios-updated" style="font-size:11px;color:#9ca3af;"></span>
-          <button onclick="loadColaEnvios()" style="padding:8px 14px;background:#7c3aed;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">Actualizar</button>
+          <button onclick="loadColaEnvios()" style="padding:8px 14px;background:#00217E;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">Actualizar</button>
         </div>
       </div>
       <div id="cola-envios-resumen" style="margin-bottom:12px;"></div>
@@ -782,7 +814,7 @@
             <label style="font-size:12px;color:#6b7280;font-weight:600;display:block;margin-bottom:4px;">N&uacute;mero de venta, tracking o nickname</label>
             <input type="text" id="buscar-input" class="search-input" style="width:100%;" placeholder="Ej: 2000015797058784, 46768933429, CAMA2069701" onkeydown="if(event.key==='Enter')buscarVenta()"/>
           </div>
-          <button onclick="buscarVenta()" style="padding:10px 20px;background:#7c3aed;color:white;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;">Buscar</button>
+          <button onclick="buscarVenta()" style="padding:10px 20px;background:#00217E;color:white;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;">Buscar</button>
         </div>
       </div>
       <div id="buscar-resultado"></div>
@@ -794,7 +826,7 @@
           <h1>Usuarios</h1>
           <p>Gesti&oacute;n de acceso al panel</p>
         </div>
-        <button class="btn-refresh" onclick="showUserForm()" style="background:#4361ee;color:white;border:none;">+ Nuevo usuario</button>
+        <button class="btn-refresh" onclick="showUserForm()" style="background:#00217E;color:white;border:none;">+ Nuevo usuario</button>
       </div>
       <div class="table-card">
         <div id="users-table-content"><div class="loading"><span class="spinner"></span>Cargando...</div></div>
@@ -829,7 +861,7 @@
           </div>
           <div style="display:flex;gap:10px;justify-content:flex-end;">
             <button onclick="closeUserForm()" style="padding:8px 16px;border:1px solid #e5e7eb;border-radius:8px;background:white;cursor:pointer;font-size:14px;">Cancelar</button>
-            <button onclick="saveUser()" style="padding:8px 20px;background:#4361ee;color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;">Guardar</button>
+            <button onclick="saveUser()" style="padding:8px 20px;background:#00217E;color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;">Guardar</button>
           </div>
         </div>
       </div>
@@ -1146,7 +1178,7 @@ async function loadAlertas() {
         </div>
         <div style="font-size:14px;font-weight:600;color:${c.bg === '#7f1d1d' ? '#fee2e2' : '#111827'};">${q.text}</div>
         <div style="margin-top:8px;">
-          <button onclick="showPage('ml-preguntas')" style="padding:4px 12px;background:#7c3aed;color:white;border:none;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer;">Ir a responder →</button>
+          <button onclick="showPage('ml-preguntas')" style="padding:4px 12px;background:#00217E;color:white;border:none;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer;">Ir a responder →</button>
         </div>
       </div>`;
     }).join('');
@@ -1216,7 +1248,7 @@ function recRenderLista() {
           ${cacheInfo}
         </div>
       </div>
-      <button id="rec-btn-${p.id}" onclick="analizarProducto('${p.id}')" style="padding:6px 14px;background:#7c3aed;color:white;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;">${btnLabel}</button>
+      <button id="rec-btn-${p.id}" onclick="analizarProducto('${p.id}')" style="padding:6px 14px;background:#00217E;color:white;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;">${btnLabel}</button>
     </div>
     <div id="rec-resultado-${p.id}" style="margin-bottom:10px;">${cache ? recRenderResultado(cache, p.id) : ''}</div>`;
   }).join('');
@@ -1232,7 +1264,7 @@ function recRenderResultado(d, itemId) {
   const conv = d.visits && d.sold_quantity ? `<span style="font-size:11px;color:#6b7280;">Conversión: ${((d.sold_quantity / d.visits) * 100).toFixed(1)}%</span>` : '';
   const meta = [imgBadge, visits, conv].filter(Boolean).join(' &nbsp; ');
   const uid = itemId || Math.random().toString(36).slice(2);
-  return `<div class="card" style="background:#f8fafc;border-left:4px solid #7c3aed;font-size:13px;line-height:1.6;color:#1f2937;">
+  return `<div class="card" style="background:#f8fafc;border-left:4px solid #00217E;font-size:13px;line-height:1.6;color:#1f2937;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">${meta}</div>
       <button onclick="recToggleResultado('${uid}')" style="padding:2px 10px;background:#e5e7eb;color:#374151;border:none;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;">Minimizar ▲</button>
@@ -1280,7 +1312,7 @@ function recSetFiltro(f) {
   recFiltroActivo = f;
   recPagina = 0;
   document.querySelectorAll('.rec-filtro-btn').forEach(b => {
-    b.style.background = b.dataset.f === f ? '#7c3aed' : '#e5e7eb';
+    b.style.background = b.dataset.f === f ? '#00217E' : '#e5e7eb';
     b.style.color = b.dataset.f === f ? 'white' : '#374151';
   });
   recRenderLista();
@@ -1310,7 +1342,7 @@ async function loadRecomendaciones() {
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
         ${filtros.map(f => `<button class="rec-filtro-btn" data-f="${f.f}" onclick="recSetFiltro('${f.f}')"
           style="padding:5px 12px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;
-          background:${f.f === 'todos' ? '#7c3aed' : '#e5e7eb'};color:${f.f === 'todos' ? 'white' : '#374151'};">${f.label}</button>`).join('')}
+          background:${f.f === 'todos' ? '#00217E' : '#e5e7eb'};color:${f.f === 'todos' ? 'white' : '#374151'};">${f.label}</button>`).join('')}
         <input type="text" placeholder="Buscar producto..." oninput="recBusqueda=this.value;recPagina=0;recRenderLista()"
           style="margin-left:auto;padding:5px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;width:200px;">
       </div>
@@ -1447,15 +1479,15 @@ async function loadTareas() {
       : '<div style="color:#9ca3af;font-size:13px;padding:8px 0;">Sin órdenes acuerda con comprador</div>';
 
     const me1Html = me1.length
-      ? me1.map(o => orderCard(o, '#4361ee',
-          `<div style="background:#4361ee10;border-left:3px solid #4361ee;padding:8px 12px;border-radius:4px;font-size:13px;">
+      ? me1.map(o => orderCard(o, '#00217E',
+          `<div style="background:#00217E10;border-left:3px solid #00217E;padding:8px 12px;border-radius:4px;font-size:13px;">
             📦 <strong>Acción:</strong> Preparar paquete y generar etiqueta ME1
           </div>`)).join('')
       : '<div style="color:#9ca3af;font-size:13px;padding:8px 0;">Sin órdenes ME1</div>';
 
     const dacHtml = dac.length
-      ? dac.map(o => orderCard(o, '#7c3aed',
-          `<div style="background:#7c3aed10;border-left:3px solid #7c3aed;padding:8px 12px;border-radius:4px;font-size:13px;">
+      ? dac.map(o => orderCard(o, '#00217E',
+          `<div style="background:#00217E10;border-left:3px solid #00217E;padding:8px 12px;border-radius:4px;font-size:13px;">
             🚚 <strong>Acción:</strong> Coordinar fecha y horario de entrega con el comprador
           </div>`)).join('')
       : '<div style="color:#9ca3af;font-size:13px;padding:8px 0;">Sin órdenes a coordinar</div>';
@@ -1470,9 +1502,9 @@ async function loadTareas() {
 
     document.getElementById('tareas-content').innerHTML =
       section('Preguntas sin responder (últimos 7 días)', questions.length, '#d97706', qHtml) +
-      section('ME1 a coordinar', dac.length, '#7c3aed', dacHtml) +
+      section('ME1 a coordinar', dac.length, '#00217E', dacHtml) +
       section('Acuerda con comprador', acuerda.length, '#f77f00', acuerdaHtml) +
-      section('Envíos ME1', me1.length, '#4361ee', me1Html);
+      section('Envíos ME1', me1.length, '#00217E', me1Html);
 
   } catch(e) {
     console.error('[tareas]', e);
@@ -1513,7 +1545,7 @@ async function loadDevoluciones() {
       waiting_seller: 'Esperando vendedor', closed: 'Cerradas',
       approved: 'Aprobadas', rejected: 'Rechazadas',
     };
-    const pillColors = ['#4361ee','#f77f00','#06d6a0','#ef476f','#ffd166','#9ca3af'];
+    const pillColors = ['#00217E','#f77f00','#06d6a0','#ef476f','#ffd166','#9ca3af'];
     let pillIdx = 0;
     const pills = Object.entries(bySubstatus).map(([k, v]) => {
       const c = pillColors[pillIdx++ % pillColors.length];
@@ -1563,7 +1595,7 @@ async function loadDevoluciones() {
       return `
         <div style="background:white;border-radius:12px;border:1px solid #e5e7eb;margin-bottom:12px;overflow:hidden;">
           <div class="dev-card-header" style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #f0f2f5;background:#fafafa;">
-            <span style="font-size:13px;font-weight:600;color:#4361ee;">#${d.resource_id || d.id}</span>
+            <span style="font-size:13px;font-weight:600;color:#00217E;">#${d.resource_id || d.id}</span>
             <span style="font-size:12px;color:#6b7280;">${dt}</span>
             ${logisticBadge}
             <div style="flex:1;"></div>
@@ -1574,7 +1606,7 @@ async function loadDevoluciones() {
           <div class="dev-card-product" style="display:flex;align-items:center;gap:14px;padding:14px 16px;">
             ${thumb}
             <div style="flex:1;min-width:0;">
-              <div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.item_permalink ? `<a href="${d.item_permalink}" target="_blank" style="color:#1d4ed8;text-decoration:none;">${d.item_title || d.item_id || '—'}</a>` : (d.item_title || d.item_id || '—')}</div>
+              <div style="font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.item_permalink ? `<a href="${d.item_permalink}" target="_blank" style="color:#00217E;text-decoration:none;">${d.item_title || d.item_id || '—'}</a>` : (d.item_title || d.item_id || '—')}</div>
               ${variantRow}
               <div style="display:flex;gap:16px;font-size:12px;color:#6b7280;margin-top:4px;">
                 ${priceRow}${qtyRow}${skuRow}
@@ -1723,10 +1755,10 @@ async function loadUsersPage() {
   const rows = users.map(u => `<tr>
     <td style="font-weight:600;">${u.name}</td>
     <td style="font-family:monospace;color:#6b7280;">${u.username}</td>
-    <td><span style="background:${u.role==='admin'?'#ede9fe':'#f3f4f6'};color:${u.role==='admin'?'#5b21b6':'#374151'};padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;">${u.role==='admin'?'Admin':'Usuario'}</span></td>
+    <td><span style="background:${u.role==='admin'?'#dce6f5':'#f3f4f6'};color:${u.role==='admin'?'#5b21b6':'#374151'};padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;">${u.role==='admin'?'Admin':'Usuario'}</span></td>
     <td style="font-size:12px;color:#9ca3af;">${u.createdAt ? new Date(u.createdAt).toLocaleDateString('es-UY') : '—'}</td>
     <td style="display:flex;gap:6px;">
-      <button onclick='editUser(${JSON.stringify(u).replace(/'/g,"&#39;")})' style="background:#e0e7ff;border:none;border-radius:6px;padding:5px 12px;cursor:pointer;color:#4361ee;font-size:12px;font-weight:700;">Editar</button>
+      <button onclick='editUser(${JSON.stringify(u).replace(/'/g,"&#39;")})' style="background:#dce6f5;border:none;border-radius:6px;padding:5px 12px;cursor:pointer;color:#00217E;font-size:12px;font-weight:700;">Editar</button>
       ${u.id !== currentUser?.id ? `<button onclick="deleteUser('${u.id}','${u.name}')" style="background:#fee2e2;border:none;border-radius:6px;padding:5px 10px;cursor:pointer;color:#ef4444;font-size:12px;font-weight:700;">✕</button>` : ''}
     </td>
   </tr>`).join('');
@@ -1792,7 +1824,7 @@ function showAnalizarTab(tab) {
     const el = document.getElementById('analizar-tab-' + t);
     if (el) el.style.display = t === tab ? '' : 'none';
     const btn = document.getElementById('tab-' + t);
-    if (btn) { btn.style.background = t === tab ? '#7c3aed' : '#e5e7eb'; btn.style.color = t === tab ? 'white' : '#374151'; }
+    if (btn) { btn.style.background = t === tab ? '#00217E' : '#e5e7eb'; btn.style.color = t === tab ? 'white' : '#374151'; }
   });
   if (tab === 'preguntas' && !preguntasStatsData.length) loadPreguntasStats();
   if (tab === 'pendientes' && !pendientesData.length) loadPendientes();
@@ -1845,7 +1877,7 @@ function renderPendientes() {
     <div style="display:flex;align-items:center;justify-content:center;gap:6px;padding:12px 0;flex-wrap:wrap;">
       ${Array.from({ length: totalPages }, (_, i) => `
         <button onclick="pendientesPage=${i};renderPendientes();"
-          style="padding:6px 12px;border:1px solid ${i === pendientesPage ? '#7c3aed' : '#d1d5db'};background:${i === pendientesPage ? '#7c3aed' : 'white'};color:${i === pendientesPage ? 'white' : '#374151'};border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">
+          style="padding:6px 12px;border:1px solid ${i === pendientesPage ? '#00217E' : '#d1d5db'};background:${i === pendientesPage ? '#00217E' : 'white'};color:${i === pendientesPage ? 'white' : '#374151'};border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">
           ${i * PREGUNTAS_PER_PAGE + 1}–${Math.min((i + 1) * PREGUNTAS_PER_PAGE, pendientesData.length)}
         </button>
       `).join('')}
@@ -1862,7 +1894,7 @@ function renderPendientes() {
         ${q.item_thumbnail ? `<img src="${q.item_thumbnail}" style="width:48px;height:48px;object-fit:contain;border-radius:6px;background:#f9fafb;flex-shrink:0;" onerror="this.style.display='none'">` : ''}
         <div style="flex:1;min-width:0;">
           <div style="font-size:11px;color:#9ca3af;margin-bottom:2px;display:flex;align-items:center;gap:6px;">
-            <span>${q.item_permalink ? `<a href="${q.item_permalink}" target="_blank" style="color:#1d4ed8;text-decoration:none;font-weight:600;">${q.item_title?.slice(0,70) || q.item_id}</a>` : (q.item_title?.slice(0,70) || q.item_id)} · ${new Date(q.date_created).toLocaleDateString('es-UY')}</span>
+            <span>${q.item_permalink ? `<a href="${q.item_permalink}" target="_blank" style="color:#00217E;text-decoration:none;font-weight:600;">${q.item_title?.slice(0,70) || q.item_id}</a>` : (q.item_title?.slice(0,70) || q.item_id)} · ${new Date(q.date_created).toLocaleDateString('es-UY')}</span>
             ${alerta ? `<span style="background:${alerta.labelBg};color:white;border-radius:4px;padding:1px 7px;font-size:10px;font-weight:700;">${minutos >= 60 ? Math.floor(minutos/60)+'h '+minutos%60+'m' : minutos+'m'}</span>` : ''}
           </div>
           <div style="font-size:14px;font-weight:600;color:#111827;margin-bottom:10px;">${q.text}</div>
@@ -1873,7 +1905,7 @@ function renderPendientes() {
             ${q.answer.text}
           </div>
           <div id="pend-ia-${q.id}" style="display:none;margin-bottom:8px;">
-            <div style="background:#ede9fe;border-left:3px solid #7c3aed;padding:8px 12px;border-radius:4px;font-size:13px;color:#4c1d95;">
+            <div style="background:#dce6f5;border-left:3px solid #00217E;padding:8px 12px;border-radius:4px;font-size:13px;color:#001560;">
               <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;">🤖 Simulación IA</span><br>
               <span id="pend-sim-text-${q.id}"></span>
             </div>
@@ -1881,7 +1913,7 @@ function renderPendientes() {
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
             <button onclick="generarRespuestaIA(${idx})"
               id="btn-ia-${q.id}"
-              style="padding:6px 12px;background:#7c3aed;color:white;border:none;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer;">
+              style="padding:6px 12px;background:#00217E;color:white;border:none;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer;">
               🤖 Simular con IA
             </button>
           </div>` : `
@@ -1894,7 +1926,7 @@ function renderPendientes() {
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
             <button onclick="generarRespuestaIA(${idx})"
               id="btn-ia-${q.id}"
-              style="padding:6px 12px;background:#7c3aed;color:white;border:none;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer;">
+              style="padding:6px 12px;background:#00217E;color:white;border:none;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer;">
               🤖 Generar con IA
             </button>
             <div id="pend-feedback-${q.id}" style="display:none;gap:6px;align-items:center;">
@@ -1979,7 +2011,7 @@ async function feedbackRespuesta(questionId, tipo) {
       }).catch(() => {});
     }
     const mlItemUrl = q?.item_id ? `https://www.mercadolibre.com.uy/p/${q.item_id}` : null;
-    fbDiv.innerHTML = `<span style="font-size:12px;color:#166534;font-weight:600;">👍 Buena — guardada para aprendizaje</span>${mlItemUrl ? ` <a href="${mlItemUrl}" target="_blank" style="font-size:11px;color:#1d4ed8;text-decoration:underline;margin-left:6px;">Ver publicación →</a>` : ''}`;
+    fbDiv.innerHTML = `<span style="font-size:12px;color:#166534;font-weight:600;">👍 Buena — guardada para aprendizaje</span>${mlItemUrl ? ` <a href="${mlItemUrl}" target="_blank" style="font-size:11px;color:#00217E;text-decoration:underline;margin-left:6px;">Ver publicación →</a>` : ''}`;
   } else {
     const txtId = `pend-txt-${questionId}`;
     const actual = document.getElementById(txtId)?.value || '';
@@ -2139,20 +2171,20 @@ function renderMensajes() {
             <span style="font-size:11px;color:${statusColor[t.order_status]||'#6b7280'};background:${statusColor[t.order_status]||'#6b7280'}18;padding:1px 6px;border-radius:10px;">${statusLabel[t.order_status]||t.order_status}</span>
             <span style="font-size:11px;color:#9ca3af;">${t.item_title?.slice(0,50)}</span>
             <span style="font-size:11px;color:#9ca3af;">${new Date(t.last_message_date).toLocaleDateString('es-UY', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span>
-            ${t.unread ? '<span style="font-size:10px;background:#eff6ff;color:#1d4ed8;padding:1px 6px;border-radius:10px;font-weight:700;">No leído</span>' : ''}
-            <a href="https://www.mercadolibre.com.uy/ventas/${t.order_id}/detalle" target="_blank" style="font-size:11px;color:#1d4ed8;text-decoration:underline;margin-left:2px;">Ver orden →</a>
+            ${t.unread ? '<span style="font-size:10px;background:#eaeff8;color:#00217E;padding:1px 6px;border-radius:10px;font-weight:700;">No leído</span>' : ''}
+            <a href="https://www.mercadolibre.com.uy/ventas/${t.order_id}/detalle" target="_blank" style="font-size:11px;color:#00217E;text-decoration:underline;margin-left:2px;">Ver orden →</a>
           </div>
 
           <div id="msg-hist-${t.pack_id}" style="display:none;background:#f9fafb;border-radius:6px;padding:8px 10px;margin-bottom:8px;font-size:12px;">
             ${t.messages.map(m => `
               <div style="margin-bottom:6px;">
-                <span style="font-weight:600;color:${m.from_buyer?'#1d4ed8':'#059669'};">${m.from_buyer?'Comprador':'Vos'}:</span>
+                <span style="font-weight:600;color:${m.from_buyer?'#00217E':'#059669'};">${m.from_buyer?'Comprador':'Vos'}:</span>
                 <span style="color:#374151;margin-left:4px;">${m.text}</span>
                 <span style="color:#d1d5db;margin-left:6px;font-size:10px;">${new Date(m.date).toLocaleTimeString('es-UY',{hour:'2-digit',minute:'2-digit'})}</span>
               </div>`).join('')}
           </div>
 
-          <div style="background:#eff6ff;border-left:3px solid #3b82f6;padding:8px 10px;border-radius:0 6px 6px 0;font-size:13px;color:#1e3a5f;margin-bottom:10px;">
+          <div style="background:#eaeff8;border-left:3px solid #00217E;padding:8px 10px;border-radius:0 6px 6px 0;font-size:13px;color:#001560;margin-bottom:10px;">
             <b>Comprador:</b> ${t.last_message}
           </div>
 
@@ -2176,7 +2208,7 @@ function renderMensajes() {
             </button>
             <button onclick="generarRespuestaMensaje(${idx})"
               id="msg-btn-ia-${t.pack_id}"
-              style="padding:6px 14px;background:#7c3aed;color:white;border:none;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">
+              style="padding:6px 14px;background:#00217E;color:white;border:none;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">
               🤖 Sugerir respuesta
             </button>
             <button onclick="enviarMensaje('${t.pack_id}',${t.buyer_id})"
@@ -2279,7 +2311,7 @@ async function enviarMensaje(packId, buyerId) {
   if (d.ok) {
     const thread = mensajesData.find(t => String(t.pack_id) === String(packId));
     const mlUrl = `https://www.mercadolibre.com.uy/ventas/${thread?.order_id || packId}/detalle`;
-    status.innerHTML = `<span style="color:#059669;font-weight:600;">✓ Mensaje enviado</span> <a href="${mlUrl}" target="_blank" style="margin-left:8px;font-size:12px;color:#1d4ed8;text-decoration:underline;">Ver en ML →</a>`;
+    status.innerHTML = `<span style="color:#059669;font-weight:600;">✓ Mensaje enviado</span> <a href="${mlUrl}" target="_blank" style="margin-left:8px;font-size:12px;color:#00217E;text-decoration:underline;">Ver en ML →</a>`;
     btn.style.display = 'none';
     if (thread) {
       fetch('/api/ml/preguntas/feedback', {
@@ -2327,7 +2359,7 @@ async function loadSkuMap() {
     </tr></thead>
     <tbody>${entries.map(([sku, mlId]) => `
       <tr style="border-top:1px solid #f3f4f6;">
-        <td style="padding:7px 12px;font-family:monospace;color:#7c3aed;font-weight:600;">${sku}</td>
+        <td style="padding:7px 12px;font-family:monospace;color:#00217E;font-weight:600;">${sku}</td>
         <td style="padding:7px 12px;color:#374151;">MLU${mlId}</td>
         <td style="padding:7px 12px;text-align:center;">
           <button onclick="eliminarSkuMap('${sku}')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;" title="Eliminar">×</button>
@@ -2352,7 +2384,7 @@ async function eliminarSkuMap(sku) {
 
 const REGLA_CAT_COLORS = {
   'General':    { bg:'#f0fdf4', color:'#166534', border:'#bbf7d0' },
-  'Envíos':     { bg:'#eff6ff', color:'#1e40af', border:'#bfdbfe' },
+  'Envíos':     { bg:'#eaeff8', color:'#00217E', border:'#b3c6e8' },
   'Retiros':    { bg:'#fefce8', color:'#713f12', border:'#fde68a' },
   'Post-venta': { bg:'#fdf4ff', color:'#6b21a8', border:'#e9d5ff' },
   'Preguntas':  { bg:'#fff7ed', color:'#7c2d12', border:'#fed7aa' },
@@ -2416,7 +2448,7 @@ async function interpretarReglas() {
     const accion = rest.join('→').trim();
     return accion
       ? `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-           <span style="background:#ede9fe;color:#6d28d9;padding:3px 10px;border-radius:999px;font-size:12px;white-space:nowrap;">${sit.trim()}</span>
+           <span style="background:#dce6f5;color:#6d28d9;padding:3px 10px;border-radius:999px;font-size:12px;white-space:nowrap;">${sit.trim()}</span>
            <span style="color:#9ca3af;">→</span>
            <span style="font-size:13px;color:#111827;font-weight:600;">${accion}</span>
          </div>`
@@ -2527,10 +2559,10 @@ function renderPreguntasStats(pubs, total) {
                 <div style="font-size:11px;color:#9ca3af;">${p.id}</div>
               </td>
               <td style="padding:10px 16px;text-align:center;">
-                <span style="background:#eff6ff;color:#1d4ed8;padding:2px 8px;border-radius:12px;font-weight:700;">${p.total}</span>
+                <span style="background:#eaeff8;color:#00217E;padding:2px 8px;border-radius:12px;font-weight:700;">${p.total}</span>
               </td>
               <td style="padding:10px 16px;text-align:center;">
-                <button onclick="verPreguntasDetalle('${p.id}')" style="padding:4px 10px;background:#7c3aed;color:white;border:none;border-radius:4px;font-size:12px;cursor:pointer;">Ver preguntas</button>
+                <button onclick="verPreguntasDetalle('${p.id}')" style="padding:4px 10px;background:#00217E;color:white;border:none;border-radius:4px;font-size:12px;cursor:pointer;">Ver preguntas</button>
               </td>
             </tr>`).join('')}
         </tbody>
@@ -2560,7 +2592,7 @@ async function verPreguntasDetalle(itemId) {
         ${qa.map((item, i) => `
           <div style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
             <div style="background:#f9fafb;padding:10px 14px;font-size:13px;color:#374151;border-bottom:1px solid #e5e7eb;">
-              <b style="color:#7c3aed;">P:</b> ${item.q || ''}
+              <b style="color:#00217E;">P:</b> ${item.q || ''}
             </div>
             <div style="padding:10px 14px;font-size:13px;color:#111827;display:flex;gap:10px;align-items:flex-start;">
               <div style="flex:1;"><b style="color:#059669;">R:</b> ${item.a || '<span style="color:#9ca3af;font-style:italic;">sin respuesta</span>'}</div>
@@ -2617,7 +2649,7 @@ async function loadRetiros(forceRefresh) {
       if (d.loading) {
         const pct = d.progress?.total ? Math.round((d.progress.current / d.progress.total) * 100) : 0;
         const progBar = `<div style="margin-top:6px;background:#e5e7eb;border-radius:6px;height:6px;overflow:hidden;">
-          <div style="background:#7c3aed;height:100%;width:${pct}%;transition:width 0.3s;border-radius:6px;"></div>
+          <div style="background:#00217E;height:100%;width:${pct}%;transition:width 0.3s;border-radius:6px;"></div>
         </div>`;
         if (!d.updated_at) {
           updatedEl.innerHTML = `<span style="color:#d97706;">Construyendo cache... ${d.progress?.current || 0}/${d.progress?.total || '?'}</span>`;
@@ -2652,7 +2684,7 @@ async function loadRetiros(forceRefresh) {
           <div style="font-size:15px;font-weight:700;margin-bottom:6px;">${c.icon} ${c.name}</div>
           <div style="display:flex;gap:16px;">
             <div><span style="font-size:20px;font-weight:700;color:#dc2626;">${pendCount}</span><div style="font-size:10px;color:#6b7280;">Por retirar</div></div>
-            <div><span style="font-size:20px;font-weight:700;color:#2563eb;">${retCount}</span><div style="font-size:10px;color:#6b7280;">Retirados</div></div>
+            <div><span style="font-size:20px;font-weight:700;color:#00217E;">${retCount}</span><div style="font-size:10px;color:#6b7280;">Retirados</div></div>
             <div><span style="font-size:20px;font-weight:700;color:#374151;">${c.items.length}</span><div style="font-size:10px;color:#6b7280;">Total</div></div>
           </div>
         </div>`;
@@ -2698,7 +2730,7 @@ async function loadRetiros(forceRefresh) {
 // ── Envíos por cadete ──
 
 function renderEnvioItem(e, color) {
-  const etapaColors = { pendiente: '#dc2626', en_camino_sin_escaneo: '#d97706', en_camino: '#2563eb', entregado: '#059669' };
+  const etapaColors = { pendiente: '#dc2626', en_camino_sin_escaneo: '#d97706', en_camino: '#00217E', entregado: '#059669' };
   const etapaLabels = { pendiente: 'Pendiente', en_camino_sin_escaneo: 'Sin escaneo', en_camino: 'En camino', entregado: 'Entregado' };
   return `<div style="padding:10px 14px;margin-bottom:4px;background:white;border:1px solid #f3f4f6;border-radius:6px;cursor:pointer;font-size:12px;" onclick="document.getElementById('buscar-input').value='${e.order_id}';showPage('buscador');buscarVenta();">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
@@ -2711,13 +2743,13 @@ function renderEnvioItem(e, color) {
         ${e.dac_guia ? `<span style="font-size:10px;color:#059669;">Guía: ${e.dac_guia}</span>` : ''}
         ${e.dac_estado ? `<span style="font-size:10px;color:#059669;">${e.dac_estado}</span>` : ''}
         ${e.sd_estado ? `<span style="font-size:10px;color:#f97316;">${e.sd_estado}</span>` : ''}
-        ${e.retirado_por ? `<span style="font-size:10px;color:#7c3aed;">${e.retirado_por}</span>` : ''}
+        ${e.retirado_por ? `<span style="font-size:10px;color:#00217E;">${e.retirado_por}</span>` : ''}
         ${e.tracking ? `<span style="font-size:10px;color:#9ca3af;">#${e.tracking}</span>` : ''}
         ${e.mensajes_no_leidos ? `<span style="font-size:10px;color:#dc2626;font-weight:700;">${e.mensajes_no_leidos} sin leer</span>` : ''}
         ${e.receiver_phone ? `<span style="font-size:10px;color:#6b7280;">Tel: ${e.receiver_phone}</span>` : (e.cadeteria==='DAC' ? `<span style="font-size:10px;color:#dc2626;font-weight:700;">⚠️ Sin tel</span>` : '')}
       </div>
     </div>
-    ${e.ultimo_msg_buyer ? `<div style="margin-top:4px;padding:4px 8px;background:#f5f3ff;border-radius:4px;font-size:11px;color:#7c3aed;"><b>Comprador:</b> ${e.ultimo_msg_buyer}</div>` : ''}
+    ${e.ultimo_msg_buyer ? `<div style="margin-top:4px;padding:4px 8px;background:#eaeff8;border-radius:4px;font-size:11px;color:#00217E;"><b>Comprador:</b> ${e.ultimo_msg_buyer}</div>` : ''}
   </div>`;
 }
 
@@ -2797,9 +2829,9 @@ async function loadColaEnvios() {
           <div style="font-size:26px;font-weight:700;color:#16a34a;">${verdes.length}</div>
           <div style="font-size:11px;color:#6b7280;">menos de 2hs</div>
         </div>
-        <div class="card" style="flex:1;min-width:90px;margin:0;text-align:center;border-top:3px solid #7c3aed;padding:12px 8px;">
+        <div class="card" style="flex:1;min-width:90px;margin:0;text-align:center;border-top:3px solid #00217E;padding:12px 8px;">
           <div style="font-size:22px;line-height:1;">📦</div>
-          <div style="font-size:26px;font-weight:700;color:#7c3aed;">${_colaEnviosTodos.length}</div>
+          <div style="font-size:26px;font-weight:700;color:#00217E;">${_colaEnviosTodos.length}</div>
           <div style="font-size:11px;color:#6b7280;">total pendientes</div>
         </div>
       </div>`;
@@ -2829,9 +2861,9 @@ function renderColaEnvios() {
   // Actualizar estilo de botones
   document.querySelectorAll('[id^="filtro-cola-"]').forEach(btn => {
     const activo = btn.id === `filtro-cola-${_colaEnviosFiltro}`;
-    btn.style.background = activo ? '#7c3aed' : 'white';
+    btn.style.background = activo ? '#00217E' : 'white';
     btn.style.color = activo ? 'white' : '#374151';
-    btn.style.borderColor = activo ? '#7c3aed' : '#e5e7eb';
+    btn.style.borderColor = activo ? '#00217E' : '#e5e7eb';
   });
 
   const lista = _colaEnviosFiltro === 'todos'
@@ -2865,12 +2897,12 @@ function renderColaEnviosCard(e) {
   const ciudad = [e.receiver_city, e.receiver_state].filter(Boolean).join(', ') || '—';
   const esMvd = /montevideo|mdeo/i.test(ciudad);
   const ciudadHtml = esMvd
-    ? `<span style="background:#ede9fe;color:#5b21b6;border-radius:4px;padding:1px 6px;font-size:11px;font-weight:600;">${ciudad}</span>`
+    ? `<span style="background:#dce6f5;color:#5b21b6;border-radius:4px;padding:1px 6px;font-size:11px;font-weight:600;">${ciudad}</span>`
     : `<span style="font-size:12px;color:#6b7280;">${ciudad}</span>`;
   const pideHtml = e.pide_envio
     ? `<span style="background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 6px;font-size:11px;font-weight:600;">⚡ pide env&iacute;o</span>`
     : '';
-  const cadeteriaColor = { DAC: '#059669', SoyDelivery: '#f97316', Robert: '#2563eb' }[e.cadeteria] || '#6b7280';
+  const cadeteriaColor = { DAC: '#059669', SoyDelivery: '#f97316', Robert: '#00217E' }[e.cadeteria] || '#6b7280';
   const packId = e.pack_id || e.order_id;
 
   return `<div class="card" style="margin-bottom:10px;border-left:4px solid ${c.border};background:${c.bg};padding:12px 16px;">
@@ -2911,10 +2943,10 @@ async function loadEnviosDac() {
     if (updated && d.updated_at) updated.textContent = 'Actualizado: ' + new Date(d.updated_at).toLocaleString('es-UY',{hour:'2-digit',minute:'2-digit'});
 
     const stages = [
-      { key: 'dac-acuerda', label: 'Acuerda comprador', data: d.acuerda||[], color: '#7c3aed', icon: '💬', bg: '#f5f3ff' },
+      { key: 'dac-acuerda', label: 'Acuerda comprador', data: d.acuerda||[], color: '#00217E', icon: '💬', bg: '#eaeff8' },
       { key: 'dac-sincoord', label: 'Pendientes de coordinar', data: d.sin_coordinar||[], color: '#dc2626', icon: '⚠️', bg: '#fef2f2' },
       { key: 'dac-coord', label: 'Coordinados (sin retiro)', data: d.coordinados||[], color: '#d97706', icon: '📦', bg: '#fffbeb' },
-      { key: 'dac-ret', label: 'Retirados por DAC', data: d.retirados||[], color: '#2563eb', icon: '🚚', bg: '#eff6ff' },
+      { key: 'dac-ret', label: 'Retirados por DAC', data: d.retirados||[], color: '#00217E', icon: '🚚', bg: '#eaeff8' },
       { key: 'dac-ent', label: 'Entregados', data: d.entregados||[], color: '#059669', icon: '✅', bg: '#f0fdf4' },
     ];
     resumen.innerHTML = `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
@@ -2943,7 +2975,7 @@ async function buscarEnviosDac() {
     const d = await r.json();
     if (d.guia) {
       // Resultado directo de DAC API
-      const estadoColor = d.estado === 'ENTREGADA' ? '#059669' : d.estado === 'EN TRANSITO' ? '#2563eb' : '#d97706';
+      const estadoColor = d.estado === 'ENTREGADA' ? '#059669' : d.estado === 'EN TRANSITO' ? '#00217E' : '#d97706';
       resultado.innerHTML = `<div class="card" style="margin-bottom:16px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
           <div>
@@ -2988,7 +3020,7 @@ async function loadEnviosSd() {
     const stages = [
       { key: 'sd-pend', label: 'Pendientes', data: d.pendientes||[], color: '#dc2626', icon: '📦', bg: '#fef2f2' },
       { key: 'sd-sin', label: 'Sin escaneo', data: d.en_camino_sin_escaneo||[], color: '#d97706', icon: '⚠️', bg: '#fffbeb' },
-      { key: 'sd-cam', label: 'En camino', data: d.en_camino||[], color: '#2563eb', icon: '🚚', bg: '#eff6ff' },
+      { key: 'sd-cam', label: 'En camino', data: d.en_camino||[], color: '#00217E', icon: '🚚', bg: '#eaeff8' },
       { key: 'sd-ent', label: 'Entregados', data: d.entregados||[], color: '#059669', icon: '✅', bg: '#f0fdf4' },
     ];
     resumen.innerHTML = `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
@@ -3016,7 +3048,7 @@ async function buscarEnviosSd() {
     const r = await fetch(`/api/envios/soydelivery?q=${encodeURIComponent(q)}`, { headers: authHeaders() });
     const d = await r.json();
     if (d.pedido_id) {
-      const sdColors = { P: '#d97706', S: '#2563eb', A: '#2563eb', R: '#7c3aed', E: '#059669', N: '#dc2626' };
+      const sdColors = { P: '#d97706', S: '#00217E', A: '#00217E', R: '#00217E', E: '#059669', N: '#dc2626' };
       const sdLabels = { P: 'Pendiente', S: 'Solicitado', A: 'Aceptado', R: 'Retirado', E: 'Entregado', N: 'No entregado' };
       resultado.innerHTML = `<div class="card" style="margin-bottom:16px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
@@ -3032,7 +3064,7 @@ async function buscarEnviosSd() {
         ${d.fecha_entregado ? `<div style="font-size:12px;margin-bottom:2px;"><b>Entregado:</b> ${d.fecha_entregado}</div>` : ''}
         ${d.delivery ? `<div style="margin-top:8px;padding:8px 10px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;font-size:12px;">
           <b>Repartidor:</b> ${d.delivery.nombre || 'Sin asignar'}
-          ${d.delivery.telefono ? ` · <a href="tel:${d.delivery.telefono}" style="color:#2563eb;">${d.delivery.telefono}</a>` : ''}
+          ${d.delivery.telefono ? ` · <a href="tel:${d.delivery.telefono}" style="color:#00217E;">${d.delivery.telefono}</a>` : ''}
           ${d.delivery.franja ? ` · ${d.delivery.franja}` : ''}
           ${d.delivery.fecha_estimada ? `<br><b>Estimada:</b> ${d.delivery.fecha_estimada}` : ''}
         </div>` : ''}
@@ -3067,7 +3099,7 @@ async function loadEnviosDeri() {
 
     const stages = [
       { key: 'deri-pend', label: 'Pendientes', data: d.pendientes||[], color: '#dc2626', icon: '📦', bg: '#fef2f2' },
-      { key: 'deri-cam', label: 'En camino', data: d.en_camino||[], color: '#2563eb', icon: '🚚', bg: '#eff6ff' },
+      { key: 'deri-cam', label: 'En camino', data: d.en_camino||[], color: '#00217E', icon: '🚚', bg: '#eaeff8' },
       { key: 'deri-ent', label: 'Entregados', data: d.entregados||[], color: '#059669', icon: '✅', bg: '#f0fdf4' },
     ];
     resumen.innerHTML = `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
@@ -3076,13 +3108,13 @@ async function loadEnviosDeri() {
         <div style="font-size:24px;font-weight:700;color:${s.color};">${s.data.length}</div>
         <div style="font-size:10px;color:#6b7280;">${s.label}</div>
       </div>`).join('')}
-      <div class="card" style="flex:1;min-width:100px;margin:0;text-align:center;border-top:3px solid #2563eb;">
+      <div class="card" style="flex:1;min-width:100px;margin:0;text-align:center;border-top:3px solid #00217E;">
         <div style="font-size:22px;">📊</div>
-        <div style="font-size:24px;font-weight:700;color:#2563eb;">${d.total||0}</div>
+        <div style="font-size:24px;font-weight:700;color:#00217E;">${d.total||0}</div>
         <div style="font-size:10px;color:#6b7280;">Total</div>
       </div>
     </div>`;
-    list.innerHTML = renderEnviosStages(stages, d.items, e => renderEnvioItem(e, '#2563eb'));
+    list.innerHTML = renderEnviosStages(stages, d.items, e => renderEnvioItem(e, '#00217E'));
   } catch(e) { list.innerHTML = `<div class="card" style="color:#dc2626;">Error: ${e.message}</div>`; }
 }
 
@@ -3096,7 +3128,7 @@ async function buscarEnviosDeri() {
     const d = await r.json();
     if (d.order) {
       const o = d.order;
-      const statusColor = o.status === 'delivered' ? '#059669' : o.status === 'in_transit' ? '#2563eb' : o.status === 'pending' ? '#d97706' : '#6b7280';
+      const statusColor = o.status === 'delivered' ? '#059669' : o.status === 'in_transit' ? '#00217E' : o.status === 'pending' ? '#d97706' : '#6b7280';
       resultado.innerHTML = `<div class="card" style="margin-bottom:16px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
           <div>
@@ -3105,7 +3137,7 @@ async function buscarEnviosDeri() {
           </div>
           <span style="padding:4px 12px;border-radius:12px;font-size:12px;font-weight:700;color:white;background:${statusColor};">${o.status || 'desconocido'}</span>
         </div>
-        ${o.tracking_url ? `<div style="font-size:12px;margin-bottom:4px;"><a href="${o.tracking_url}" target="_blank" style="color:#2563eb;">Ver tracking</a></div>` : ''}
+        ${o.tracking_url ? `<div style="font-size:12px;margin-bottom:4px;"><a href="${o.tracking_url}" target="_blank" style="color:#00217E;">Ver tracking</a></div>` : ''}
         ${d.historial?.length ? `<div style="border-top:1px solid #e5e7eb;padding-top:8px;margin-top:8px;">
           <div style="font-size:12px;font-weight:700;margin-bottom:6px;">Historial</div>
           ${d.historial.map(h => `<div style="display:flex;gap:8px;padding:3px 0;font-size:11px;">
@@ -3116,7 +3148,7 @@ async function buscarEnviosDeri() {
         </div>` : ''}
       </div>`;
     } else if (d.items?.length) {
-      resultado.innerHTML = `<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:8px;">${d.total} resultados</div>${d.items.map(e => renderEnvioItem(e, '#2563eb')).join('')}</div>`;
+      resultado.innerHTML = `<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:8px;">${d.total} resultados</div>${d.items.map(e => renderEnvioItem(e, '#00217E')).join('')}</div>`;
     } else {
       resultado.innerHTML = '<div class="card" style="text-align:center;color:#9ca3af;padding:24px;">No se encontr&oacute; el env&iacute;o</div>';
     }
@@ -3136,8 +3168,8 @@ async function loadRetiraLocal() {
     }
 
     list.innerHTML = `
-      <div class="card" style="margin-bottom:16px;border-left:4px solid #7c3aed;text-align:center;">
-        <div style="font-size:28px;font-weight:700;color:#7c3aed;">${d.total}</div>
+      <div class="card" style="margin-bottom:16px;border-left:4px solid #00217E;text-align:center;">
+        <div style="font-size:28px;font-weight:700;color:#00217E;">${d.total}</div>
         <div style="font-size:12px;color:#6b7280;">Pedidos para retirar en local</div>
       </div>
       <div style="display:grid;gap:10px;">
@@ -3158,12 +3190,12 @@ async function loadRetiraLocal() {
                   ${e.mensajes_no_leidos ? `<span style="padding:3px 8px;border-radius:10px;font-size:10px;font-weight:700;color:white;background:#dc2626;">${e.mensajes_no_leidos} sin leer</span>` : '<span style="padding:3px 8px;border-radius:10px;font-size:10px;font-weight:600;color:#059669;background:#f0fdf4;">Leído</span>'}
                 </div>
               </div>
-              ${e.ultimo_msg ? `<div style="margin-top:8px;padding:6px 10px;background:#f5f3ff;border-radius:6px;font-size:11px;color:#7c3aed;border-left:3px solid #7c3aed;"><b>Último mensaje:</b> ${e.ultimo_msg}</div>` : ''}
+              ${e.ultimo_msg ? `<div style="margin-top:8px;padding:6px 10px;background:#eaeff8;border-radius:6px;font-size:11px;color:#00217E;border-left:3px solid #00217E;"><b>Último mensaje:</b> ${e.ultimo_msg}</div>` : ''}
             </div>
             <div style="display:flex;border-top:1px solid #f3f4f6;">
-              <a href="https://www.mercadolibre.com.uy/ventas/${e.order_id}/detalle" target="_blank" style="flex:1;padding:8px;text-align:center;font-size:12px;font-weight:600;color:#1d4ed8;text-decoration:none;background:#f9fafb;">Ver en ML</a>
+              <a href="https://www.mercadolibre.com.uy/ventas/${e.order_id}/detalle" target="_blank" style="flex:1;padding:8px;text-align:center;font-size:12px;font-weight:600;color:#00217E;text-decoration:none;background:#f9fafb;">Ver en ML</a>
               <div style="width:1px;background:#f3f4f6;"></div>
-              <div style="flex:1;padding:8px;text-align:center;font-size:12px;font-weight:600;color:#7c3aed;cursor:pointer;background:#f9fafb;" onclick="document.getElementById('buscar-input').value='${e.order_id}';showPage('buscador');buscarVenta();">Ver detalle</div>
+              <div style="flex:1;padding:8px;text-align:center;font-size:12px;font-weight:600;color:#00217E;cursor:pointer;background:#f9fafb;" onclick="document.getElementById('buscar-input').value='${e.order_id}';showPage('buscador');buscarVenta();">Ver detalle</div>
             </div>
           </div>
         `).join('')}
@@ -3190,12 +3222,12 @@ async function buscarVenta() {
 
     const o = d.order;
     const s = d.shipping;
-    const statusColors = { paid: '#059669', cancelled: '#dc2626', confirmed: '#2563eb' };
+    const statusColors = { paid: '#059669', cancelled: '#dc2626', confirmed: '#00217E' };
     const statusLabels = { paid: 'Pagada', cancelled: 'Cancelada', confirmed: 'Confirmada' };
-    const shipColors = { delivered: '#059669', shipped: '#2563eb', pending: '#d97706', not_delivered: '#dc2626' };
+    const shipColors = { delivered: '#059669', shipped: '#00217E', pending: '#d97706', not_delivered: '#dc2626' };
     const shipLabels = { delivered: 'Entregado', shipped: 'En camino', pending: 'Pendiente', not_delivered: 'No entregado' };
     const logisticLabels = { fulfillment: 'ME Full', self_service: 'Flex', drop_off: 'Mercado Env\u00edos', xd_drop_off: 'Mercado Env\u00edos', cross_docking: 'ME1' };
-    const sdStatusColors = { P: '#d97706', S: '#2563eb', A: '#2563eb', R: '#7c3aed', E: '#059669', N: '#dc2626', T: '#dc2626', Z: '#6b7280', X: '#6b7280' };
+    const sdStatusColors = { P: '#d97706', S: '#00217E', A: '#00217E', R: '#00217E', E: '#059669', N: '#dc2626', T: '#dc2626', Z: '#6b7280', X: '#6b7280' };
 
     let html = '';
 
@@ -3212,7 +3244,7 @@ async function buscarVenta() {
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
           <span style="padding:4px 10px;border-radius:12px;font-size:11px;font-weight:700;color:white;background:${statusColors[o.status] || '#6b7280'};">${statusLabels[o.status] || o.status}</span>
           ${s ? `<span style="padding:4px 10px;border-radius:12px;font-size:11px;font-weight:700;color:white;background:${shipColors[s.status] || '#6b7280'};">${shipLabels[s.status] || s.status}</span>` : ''}
-          <span style="padding:4px 10px;border-radius:12px;font-size:11px;font-weight:700;color:#4c1d95;background:#ede9fe;">${s ? (logisticLabels[s.logistic_type] || s.logistic_type) : 'Sin env\u00edo'}</span>
+          <span style="padding:4px 10px;border-radius:12px;font-size:11px;font-weight:700;color:#001560;background:#dce6f5;">${s ? (logisticLabels[s.logistic_type] || s.logistic_type) : 'Sin env\u00edo'}</span>
           ${claimOpen ? `<span style="padding:4px 10px;border-radius:12px;font-size:11px;font-weight:700;color:white;background:#dc2626;">Reclamo abierto</span>` : ''}
           ${d.soydelivery ? `<span style="padding:4px 10px;border-radius:12px;font-size:11px;font-weight:700;color:white;background:${sdStatusColors[d.soydelivery.estado_id] || '#6b7280'};">SD: ${d.soydelivery.estado}</span>` : ''}
         </div>
@@ -3220,8 +3252,8 @@ async function buscarVenta() {
 
       <!-- Acciones rápidas -->
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;">
-        <a href="https://www.mercadolibre.com.uy/ventas/${o.id}/detalle" target="_blank" style="padding:6px 14px;background:#FFE600;color:#111;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;">Ver en ML</a>
-        ${d.item_detail?.permalink ? `<a href="${d.item_detail.permalink}" target="_blank" style="padding:6px 14px;background:#eff6ff;color:#1d4ed8;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;">Ver publicaci&oacute;n</a>` : ''}
+        <a href="https://www.mercadolibre.com.uy/ventas/${o.id}/detalle" target="_blank" style="padding:6px 14px;background:#FFCA61;color:#111;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;">Ver en ML</a>
+        ${d.item_detail?.permalink ? `<a href="${d.item_detail.permalink}" target="_blank" style="padding:6px 14px;background:#eaeff8;color:#00217E;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;">Ver publicaci&oacute;n</a>` : ''}
         ${hasClaim ? `<a href="https://www.mercadolibre.com.uy/ventas/${o.id}/reclamo" target="_blank" style="padding:6px 14px;background:#fef2f2;color:#dc2626;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;">Ir al reclamo</a>` : ''}
         ${s?.receiver_address ? `<a href="https://www.google.com/maps/search/${encodeURIComponent((s.receiver_address.street||'')+' '+(s.receiver_address.number||'')+' '+(s.receiver_address.city||''))}" target="_blank" style="padding:6px 14px;background:#f0fdf4;color:#059669;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;">Ver direcci&oacute;n</a>` : ''}
         ${d.soydelivery?.delivery_telefono ? `<a href="tel:${d.soydelivery.delivery_telefono}" style="padding:6px 14px;background:#fff7ed;color:#f97316;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;">Llamar repartidor</a>` : ''}
@@ -3245,8 +3277,8 @@ async function buscarVenta() {
           ${[
             { label: 'Creado', date: s.history.date_created, icon: '#9ca3af' },
             { label: 'Listo', date: s.history.date_ready_to_ship, icon: '#d97706' },
-            { label: 'Despachado', date: s.history.date_shipped, icon: '#2563eb' },
-            { label: '1er intento', date: s.history.date_first_visit, icon: '#7c3aed' },
+            { label: 'Despachado', date: s.history.date_shipped, icon: '#00217E' },
+            { label: '1er intento', date: s.history.date_first_visit, icon: '#00217E' },
             { label: 'Entregado', date: s.history.date_delivered, icon: '#059669' },
             { label: 'No entregado', date: s.history.date_not_delivered, icon: '#dc2626' },
             { label: 'Devuelto', date: s.history.date_returned, icon: '#dc2626' },
@@ -3275,10 +3307,10 @@ async function buscarVenta() {
         </div>
         ${sdh?.estado_interno ? `<div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">Estado interno:</span> <b>${sdh.estado_interno}</b></div>` : ''}
         ${sd?.delivery_nombre ? `<div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">Repartidor:</span> <b>${sd.delivery_nombre}</b></div>` : ''}
-        ${sd?.delivery_telefono ? `<div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">Tel:</span> <a href="tel:${sd.delivery_telefono}" style="color:#1d4ed8;font-weight:600;">${sd.delivery_telefono}</a></div>` : ''}
+        ${sd?.delivery_telefono ? `<div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">Tel:</span> <a href="tel:${sd.delivery_telefono}" style="color:#00217E;font-weight:600;">${sd.delivery_telefono}</a></div>` : ''}
         ${sdh?.fecha_entrega && sdh.fecha_entrega !== '0000-00-00' ? `<div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">Fecha entrega:</span> <b>${sdh.fecha_entrega}</b></div>` : ''}
         ${sd?.fecha_estimada && !sd.fecha_estimada.startsWith('0000') ? `<div style="font-size:12px;margin-bottom:4px;"><span style="color:#6b7280;">ETA:</span> <b>${new Date(sd.fecha_estimada).toLocaleString('es-UY',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</b></div>` : ''}
-        ${sd?.delivery_ubicacion ? `<div style="font-size:12px;margin-bottom:6px;"><a href="https://www.google.com/maps?q=${sd.delivery_ubicacion}" target="_blank" style="color:#1d4ed8;">Ver ubicaci&oacute;n en mapa</a></div>` : ''}
+        ${sd?.delivery_ubicacion ? `<div style="font-size:12px;margin-bottom:6px;"><a href="https://www.google.com/maps?q=${sd.delivery_ubicacion}" target="_blank" style="color:#00217E;">Ver ubicaci&oacute;n en mapa</a></div>` : ''}
         ${sdh?.historial?.length ? `
           <div style="border-top:1px solid #f3f4f6;padding-top:8px;margin-top:6px;">
             <div style="font-size:11px;color:#6b7280;font-weight:600;margin-bottom:6px;">Historial cadeter&iacute;a</div>
@@ -3295,13 +3327,13 @@ async function buscarVenta() {
         ` : ''}
       </div>`;
     } else if (s?.logistic_type === 'self_service') {
-      html += `<div class="card" style="margin:0;border-left:3px solid #2563eb;">
-        <div style="font-size:14px;font-weight:700;color:#2563eb;margin-bottom:10px;">Cadeter&iacute;a — Robert</div>
+      html += `<div class="card" style="margin:0;border-left:3px solid #00217E;">
+        <div style="font-size:14px;font-weight:700;color:#00217E;margin-bottom:10px;">Cadeter&iacute;a — Robert</div>
         <div style="font-size:12px;color:#9ca3af;">Integraci&oacute;n pendiente</div>
       </div>`;
     } else if (d.dac) {
       const dac = d.dac;
-      const dacColors = { REGISTRADA: '#d97706', DOCUMENTADA: '#d97706', DESEMBARCADO: '#2563eb', 'PROXIMO A SALIR A REPARTO': '#7c3aed', 'EN REPARTO': '#7c3aed', ENTREGADA: '#059669', CANCELADA: '#dc2626' };
+      const dacColors = { REGISTRADA: '#d97706', DOCUMENTADA: '#d97706', DESEMBARCADO: '#00217E', 'PROXIMO A SALIR A REPARTO': '#00217E', 'EN REPARTO': '#00217E', ENTREGADA: '#059669', CANCELADA: '#dc2626' };
       html += `<div class="card" style="margin:0;border-left:3px solid #059669;">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
           <span style="font-size:14px;font-weight:700;color:#059669;">Cadeter&iacute;a — DAC</span>
@@ -3391,7 +3423,7 @@ async function buscarVenta() {
       html += `<div class="card" style="margin-bottom:12px;">
         <div style="font-size:14px;font-weight:700;margin-bottom:8px;">Mensajes post-venta</div>
         ${d.messages.sort((a,b) => new Date(a.date) - new Date(b.date)).map(m => `
-          <div style="padding:6px 10px;margin-bottom:3px;border-radius:6px;background:${m.from === 'comprador' ? '#eff6ff' : '#f9fafb'};border-left:3px solid ${m.from === 'comprador' ? '#93c5fd' : '#d1d5db'};font-size:12px;">
+          <div style="padding:6px 10px;margin-bottom:3px;border-radius:6px;background:${m.from === 'comprador' ? '#eaeff8' : '#f9fafb'};border-left:3px solid ${m.from === 'comprador' ? '#8aaad4' : '#d1d5db'};font-size:12px;">
             <span style="color:#6b7280;"><b>${m.from === 'comprador' ? 'Comprador' : 'Vendedor'}</b> · ${new Date(m.date).toLocaleString('es-UY',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span><br>
             ${m.text}
           </div>
