@@ -1236,11 +1236,37 @@ function recRenderResultado(d, itemId) {
 
 function recToggleResultado(uid) {
   const body = document.getElementById(`rec-body-${uid}`);
-  const btn = body?.previousElementSibling?.querySelector('button');
+  const btnEnResultado = body?.previousElementSibling?.querySelector('button');
   if (!body) return;
   const minimizado = body.style.display === 'none';
-  body.style.display = minimizado ? '' : 'none';
-  if (btn) btn.textContent = minimizado ? 'Minimizar ▲' : 'Expandir ▼';
+  // Mostrar/ocultar cuerpo del análisis y card completa
+  const resultadoCard = body.closest('.card');
+  if (minimizado) {
+    // Expandir
+    body.style.display = '';
+    if (resultadoCard) resultadoCard.style.display = '';
+    if (btnEnResultado) btnEnResultado.textContent = 'Minimizar ▲';
+    // Quitar botón expandir de la card del producto si existe
+    const expandBtn = document.getElementById(`rec-expand-btn-${uid}`);
+    if (expandBtn) expandBtn.remove();
+  } else {
+    // Minimizar: ocultar solo el cuerpo, mostrar card vacía con solo el header
+    body.style.display = 'none';
+    if (btnEnResultado) btnEnResultado.textContent = 'Expandir ▼';
+    // Agregar botón expandir en la card del producto
+    const productoCard = resultadoCard?.previousElementSibling;
+    if (productoCard && !document.getElementById(`rec-expand-btn-${uid}`)) {
+      const expandBtn = document.createElement('button');
+      expandBtn.id = `rec-expand-btn-${uid}`;
+      expandBtn.textContent = 'Expandir ▼';
+      expandBtn.onclick = () => recToggleResultado(uid);
+      expandBtn.style.cssText = 'padding:2px 10px;background:#e5e7eb;color:#374151;border:none;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;margin-left:8px;';
+      const analizarBtn = productoCard.querySelector(`#rec-btn-${uid}`);
+      if (analizarBtn) analizarBtn.insertAdjacentElement('beforebegin', expandBtn);
+    }
+    // Ocultar la card del análisis completamente
+    if (resultadoCard) resultadoCard.style.display = 'none';
+  }
 }
 
 function recSetFiltro(f) {
