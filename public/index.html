@@ -1064,13 +1064,33 @@ function getAlertaColor(minutos) {
   return                     { bg: '#fefce8', border: '#fbbf24', text: '#111827', label: '+15 min',  labelBg: '#eab308' };
 }
 
+function getAlertasDescartadas() {
+  try { return new Set(JSON.parse(localStorage.getItem('alertas_descartadas') || '[]')); } catch(_) { return new Set(); }
+}
+function descartarAlerta(id) {
+  const s = getAlertasDescartadas();
+  s.add(String(id));
+  localStorage.setItem('alertas_descartadas', JSON.stringify([...s]));
+  const el = document.getElementById(`alerta-${id}`);
+  if (el) el.remove();
+  // Actualizar badge
+  const remaining = document.querySelectorAll('#alertas-content .card[id^="alerta-"]').length;
+  const badge = document.getElementById('alertas-badge');
+  if (badge) { badge.textContent = remaining; badge.style.display = remaining ? '' : 'none'; }
+  if (!remaining) {
+    document.getElementById('alertas-content').innerHTML =
+      '<div class="card" style="text-align:center;color:#9ca3af;padding:32px;">No hay preguntas demoradas 🎉</div>';
+  }
+}
+
 async function loadAlertas() {
   const content = document.getElementById('alertas-content');
   content.innerHTML = '<div class="loading"><span class="spinner"></span>Cargando...</div>';
   try {
     const r = await fetch('/api/ml/preguntas/pendientes?limit=100', { headers: authHeaders() });
     const d = await r.json();
-    const preguntas = (d.questions || d.results || []).filter(q => !q.answer);
+    const descartadas = getAlertasDescartadas();
+    const preguntas = (d.questions || d.results || []).filter(q => !q.answer && !descartadas.has(String(q.id)));
     const ahora = Date.now();
     const conAlerta = preguntas
       .map(q => ({ ...q, minutos: Math.floor((ahora - new Date(q.date_created).getTime()) / 60000) }))
@@ -1089,11 +1109,12 @@ async function loadAlertas() {
     content.innerHTML = conAlerta.map(q => {
       const c = getAlertaColor(q.minutos);
       const horas = q.minutos >= 60 ? `${Math.floor(q.minutos/60)}h ${q.minutos%60}m` : `${q.minutos}m`;
-      return `<div class="card" style="margin-bottom:10px;border-left:4px solid ${c.border};background:${c.bg};">
+      return `<div id="alerta-${q.id}" class="card" style="margin-bottom:10px;border-left:4px solid ${c.border};background:${c.bg};">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
           <span style="background:${c.labelBg};color:white;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700;">${c.label}</span>
           <span style="font-size:12px;color:#6b7280;">Hace ${horas}</span>
           <span style="flex:1;font-size:11px;color:#9ca3af;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${q.item_title?.slice(0,60) || ''}</span>
+          <button onclick="descartarAlerta('${q.id}')" style="padding:2px 8px;background:transparent;color:#9ca3af;border:1px solid #d1d5db;border-radius:4px;font-size:11px;cursor:pointer;" title="Descartar">✕</button>
         </div>
         <div style="font-size:14px;font-weight:600;color:${c.bg === '#7f1d1d' ? '#fee2e2' : '#111827'};">${q.text}</div>
         <div style="margin-top:8px;">
