@@ -1211,23 +1211,36 @@ function recRenderLista() {
       </div>
       <button id="rec-btn-${p.id}" onclick="analizarProducto('${p.id}')" style="padding:6px 14px;background:#7c3aed;color:white;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;">${btnLabel}</button>
     </div>
-    <div id="rec-resultado-${p.id}" style="margin-bottom:10px;">${cache ? recRenderResultado(cache) : ''}</div>`;
+    <div id="rec-resultado-${p.id}" style="margin-bottom:10px;">${cache ? recRenderResultado(cache, p.id) : ''}</div>`;
   }).join('');
 
   const loadMore = document.getElementById('rec-load-more');
   if (loadMore) loadMore.style.display = hayMas ? '' : 'none';
 }
 
-function recRenderResultado(d) {
+function recRenderResultado(d, itemId) {
   if (!d) return '';
-  const imgBadge = d['analizó_imágenes'] ? '<span style="background:#0ea5e9;color:white;border-radius:4px;padding:1px 8px;font-size:11px;font-weight:700;">📷 Imágenes analizadas</span> ' : '';
+  const imgBadge = d['analizó_imágenes'] ? '<span style="background:#0ea5e9;color:white;border-radius:4px;padding:1px 8px;font-size:11px;font-weight:700;">📷 Imágenes analizadas</span>' : '';
   const visits = d.visits != null ? `<span style="font-size:11px;color:#6b7280;">👁 ${d.visits} visitas</span>` : '';
   const conv = d.visits && d.sold_quantity ? `<span style="font-size:11px;color:#6b7280;">Conversión: ${((d.sold_quantity / d.visits) * 100).toFixed(1)}%</span>` : '';
   const meta = [imgBadge, visits, conv].filter(Boolean).join(' &nbsp; ');
+  const uid = itemId || Math.random().toString(36).slice(2);
   return `<div class="card" style="background:#f8fafc;border-left:4px solid #7c3aed;font-size:13px;line-height:1.6;color:#1f2937;">
-    ${meta ? `<div style="margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">${meta}</div>` : ''}
-    <div style="white-space:pre-wrap;">${d.recomendaciones}</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">${meta}</div>
+      <button onclick="recToggleResultado('${uid}')" style="padding:2px 10px;background:#e5e7eb;color:#374151;border:none;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;">Minimizar ▲</button>
+    </div>
+    <div id="rec-body-${uid}" style="white-space:pre-wrap;">${d.recomendaciones}</div>
   </div>`;
+}
+
+function recToggleResultado(uid) {
+  const body = document.getElementById(`rec-body-${uid}`);
+  const btn = body?.previousElementSibling?.querySelector('button');
+  if (!body) return;
+  const minimizado = body.style.display === 'none';
+  body.style.display = minimizado ? '' : 'none';
+  if (btn) btn.textContent = minimizado ? 'Minimizar ▲' : 'Expandir ▼';
 }
 
 function recSetFiltro(f) {
@@ -1293,7 +1306,7 @@ async function analizarProducto(itemId) {
     const d = await r.json();
     if (!r.ok) throw new Error(d.error || 'Error');
     setRecCache(itemId, d);
-    if (resultDiv) resultDiv.innerHTML = recRenderResultado(d);
+    if (resultDiv) resultDiv.innerHTML = recRenderResultado(d, itemId);
     if (btn) { btn.disabled = false; btn.textContent = 'Re-analizar'; }
     // Actualizar timestamp en card
     const pubIdx = recAllPubs.findIndex(p => p.id === itemId);
