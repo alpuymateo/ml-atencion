@@ -2505,6 +2505,9 @@ app.post('/api/ml/recomendaciones/analizar', requireToken, async (req, res) => {
   if (!itemId) return res.status(400).json({ error: 'itemId requerido' });
 
   try {
+    const headers = { Authorization: `Bearer ${tokenData.access_token}` };
+
+    // Fetch item context and preguntas in parallel
     const [itemCtx, preguntasData] = await Promise.all([
       fetchItemContext(itemId),
       fs.existsSync(PREGUNTAS_FILE)
@@ -2515,32 +2518,59 @@ app.post('/api/ml/recomendaciones/analizar', requireToken, async (req, res) => {
     const pub = preguntasData.byPub[itemId];
     const qa = pub?.qa || [];
 
-    if (qa.length === 0) {
-      return res.json({ recomendaciones: 'No hay preguntas históricas suficientes para analizar esta publicación.' });
+    // Buscar órdenes recientes del item para cruzar con reclamos
+    let reclamosDelItem = [];
+    try {
+      const ordersR = await axios.get(`${ML_API_URL}/orders/search`, {
+        headers,
+        params: { seller: tokenData.user_id, item: itemId, limit: 50 }
+      });
+      const orderIds = new Set((ordersR.data.results || []).map(o => String(o.id)));
+      if (orderIds.size > 0) {
+        reclamosDelItem = cachedClaims.filter(c => orderIds.has(String(c.resource_id)));
+      }
+    } catch(_) {}
+
+    if (qa.length === 0 && reclamosDelItem.length === 0) {
+      return res.json({ recomendaciones: 'No hay preguntas ni reclamos suficientes para analizar esta publicación.' });
     }
 
     const itemText = buildItemContextText(itemCtx);
-    const preguntasText = qa.map((e, i) => `${i + 1}. P: ${e.q}${e.a ? `\n   R: ${e.a}` : ''}`).join('\n');
+    const preguntasText = qa.length
+      ? `Historial de preguntas de compradores (${qa.length} en total):\n` +
+        qa.map((e, i) => `${i + 1}. P: ${e.q}${e.a ? `\n   R: ${e.a}` : ''}`).join('\n')
+      : 'Sin preguntas históricas.';
+
+    const reclamosText = reclamosDelItem.length
+      ? `\nProblemas de postventa detectados (${reclamosDelItem.length} reclamos/devoluciones):\n` +
+        reclamosDelItem.map((c, i) => {
+          const tipo = c.type === 'return' ? 'Devolución' : 'Reclamo';
+          const motivo = c.reason_id || c.sub_status || c.status || 'sin motivo';
+          const resolucion = c.resolution?.reason || '';
+          return `${i + 1}. [${tipo}] Motivo: ${motivo}${resolucion ? ` | Resolución: ${resolucion}` : ''}`;
+        }).join('\n')
+      : '\nSin reclamos ni devoluciones registradas.';
 
     const r = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 1000,
+      max_tokens: 1200,
       messages: [{
         role: 'user',
-        content: `Sos un experto en optimización de publicaciones de MercadoLibre Uruguay. Analizá las preguntas frecuentes de compradores sobre esta publicación e identificá qué información falta o está poco clara para generar recomendaciones concretas que mejoren la conversión.
+        content: `Sos un experto en optimización de publicaciones de MercadoLibre Uruguay. Analizá las preguntas frecuentes y los problemas de postventa de esta publicación para generar recomendaciones concretas que mejoren la conversión y reduzcan problemas.
 
 Datos de la publicación:
 ${itemText}
 
-Historial de preguntas de compradores (${qa.length} en total):
 ${preguntasText}
+${reclamosText}
 
-Analizá los patrones y respondé con:
+Respondé con:
 1. **Temas más consultados**: qué preguntan más los compradores (agrupado por tema)
-2. **Qué falta en la descripción**: información que debería estar en la ficha pero no está
-3. **Recomendaciones concretas**: cambios específicos al título, descripción o fotos que reducirían estas preguntas
+2. **Problemas de postventa**: patrones en reclamos o devoluciones y sus posibles causas
+3. **Qué falta en la publicación**: información que debería estar en la ficha pero no está
+4. **Recomendaciones concretas**: cambios específicos al título, descripción o fotos
 
-Sé directo y específico. Máximo 400 palabras.`
+Sé directo y específico. Máximo 500 palabras.`
       }]
     });
 
