@@ -1150,51 +1150,140 @@ async function loadAlertas() {
 
 // ── Recomendaciones de publicaciones ─────────────────────────────
 
+let recAllPubs = [];
+let recFiltroActivo = 'todos';
+let recBusqueda = '';
+const REC_PAGE_SIZE = 50;
+let recPagina = 0;
+
+function getRecCache(itemId) {
+  try { return JSON.parse(localStorage.getItem(`rec_cache_${itemId}`) || 'null'); } catch { return null; }
+}
+function setRecCache(itemId, data) {
+  localStorage.setItem(`rec_cache_${itemId}`, JSON.stringify({ ...data, ts: Date.now() }));
+}
+function recTiempoCache(ts) {
+  const diff = Date.now() - ts;
+  const h = Math.floor(diff / 3600000);
+  const d = Math.floor(diff / 86400000);
+  if (d >= 1) return `hace ${d} día${d > 1 ? 's' : ''}`;
+  if (h >= 1) return `hace ${h}h`;
+  return 'hace menos de 1h';
+}
+
+function recPubsFiltradas() {
+  return recAllPubs.filter(p => {
+    const matchBusq = !recBusqueda || p.titulo.toLowerCase().includes(recBusqueda.toLowerCase());
+    if (!matchBusq) return false;
+    if (recFiltroActivo === 'health_bajo') return p.health != null && p.health < 0.5;
+    if (recFiltroActivo === 'con_preguntas') return p.total_preguntas > 0;
+    if (recFiltroActivo === 'sin_ventas') return p.sold_quantity === 0;
+    return true;
+  });
+}
+
+function recRenderLista() {
+  const filtradas = recPubsFiltradas();
+  const slice = filtradas.slice(0, (recPagina + 1) * REC_PAGE_SIZE);
+  const hayMas = filtradas.length > slice.length;
+
+  document.getElementById('rec-contador').textContent =
+    `${filtradas.length} de ${recAllPubs.length} publicaciones`;
+
+  document.getElementById('rec-lista').innerHTML = slice.map(p => {
+    const healthPct  = p.health != null ? Math.round(p.health * 100) : null;
+    const healthColor = healthPct == null ? '#9ca3af' : healthPct >= 70 ? '#22c55e' : healthPct >= 50 ? '#f97316' : '#ef4444';
+    const borderColor = p.health != null && p.health < 0.5 ? '#f87171' : p.total_preguntas >= 10 ? '#fb923c' : '#d1d5db';
+    const bgColor     = p.health != null && p.health < 0.5 ? '#fef2f2' : p.total_preguntas >= 10 ? '#fff7ed' : 'white';
+    const cache = getRecCache(p.id);
+    const btnLabel = cache ? 'Re-analizar' : 'Analizar';
+    const cacheInfo = cache ? `<span style="font-size:10px;color:#9ca3af;margin-left:6px;">${recTiempoCache(cache.ts)}</span>` : '';
+    return `<div class="card" style="margin-bottom:6px;display:flex;align-items:center;gap:12px;border-left:4px solid ${borderColor};background:${bgColor};">
+      ${p.thumbnail ? `<img src="${p.thumbnail}" style="width:48px;height:48px;object-fit:cover;border-radius:6px;flex-shrink:0;">` : ''}
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:600;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.titulo}</div>
+        <div style="margin-top:4px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          ${healthPct != null ? `<span style="font-size:11px;color:${healthColor};font-weight:700;">● Health ${healthPct}%</span>` : ''}
+          <span style="font-size:11px;color:#6b7280;">📦 ${p.sold_quantity} vendidos</span>
+          ${p.total_preguntas > 0 ? `<span style="font-size:11px;color:#6b7280;">💬 ${p.total_preguntas} preguntas</span>` : ''}
+          ${cacheInfo}
+        </div>
+      </div>
+      <button id="rec-btn-${p.id}" onclick="analizarProducto('${p.id}')" style="padding:6px 14px;background:#7c3aed;color:white;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;">${btnLabel}</button>
+    </div>
+    <div id="rec-resultado-${p.id}" style="margin-bottom:10px;">${cache ? recRenderResultado(cache) : ''}</div>`;
+  }).join('');
+
+  const loadMore = document.getElementById('rec-load-more');
+  if (loadMore) loadMore.style.display = hayMas ? '' : 'none';
+}
+
+function recRenderResultado(d) {
+  if (!d) return '';
+  const imgBadge = d['analizó_imágenes'] ? '<span style="background:#0ea5e9;color:white;border-radius:4px;padding:1px 8px;font-size:11px;font-weight:700;">📷 Imágenes analizadas</span> ' : '';
+  const visits = d.visits != null ? `<span style="font-size:11px;color:#6b7280;">👁 ${d.visits} visitas</span>` : '';
+  const conv = d.visits && d.sold_quantity ? `<span style="font-size:11px;color:#6b7280;">Conversión: ${((d.sold_quantity / d.visits) * 100).toFixed(1)}%</span>` : '';
+  const meta = [imgBadge, visits, conv].filter(Boolean).join(' &nbsp; ');
+  return `<div class="card" style="background:#f8fafc;border-left:4px solid #7c3aed;font-size:13px;line-height:1.6;color:#1f2937;">
+    ${meta ? `<div style="margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">${meta}</div>` : ''}
+    <div style="white-space:pre-wrap;">${d.recomendaciones}</div>
+  </div>`;
+}
+
+function recSetFiltro(f) {
+  recFiltroActivo = f;
+  recPagina = 0;
+  document.querySelectorAll('.rec-filtro-btn').forEach(b => {
+    b.style.background = b.dataset.f === f ? '#7c3aed' : '#e5e7eb';
+    b.style.color = b.dataset.f === f ? 'white' : '#374151';
+  });
+  recRenderLista();
+}
+
 async function loadRecomendaciones() {
   const content = document.getElementById('recomendaciones-content');
   content.innerHTML = '<div class="loading"><span class="spinner"></span>Cargando publicaciones...</div>';
   try {
     const r = await fetch('/api/ml/recomendaciones/publicaciones', { headers: authHeaders() });
     const d = await r.json();
-    const pubs = d.pubs || [];
-    if (!pubs.length) {
+    recAllPubs = d.pubs || [];
+    recPagina = 0;
+    recFiltroActivo = 'todos';
+    recBusqueda = '';
+    if (!recAllPubs.length) {
       content.innerHTML = '<div class="card" style="text-align:center;color:#9ca3af;padding:32px;">No hay publicaciones activas.</div>';
       return;
     }
+    const filtros = [
+      { f: 'todos', label: 'Todos' },
+      { f: 'health_bajo', label: '🔴 Health bajo' },
+      { f: 'con_preguntas', label: '💬 Con preguntas' },
+      { f: 'sin_ventas', label: '📦 Sin ventas' }
+    ];
     content.innerHTML = `
-      <div style="font-size:12px;color:#6b7280;margin-bottom:10px;">${pubs.length} publicaciones activas &middot; ordenadas por prioridad</div>
-      <div id="rec-lista">
-        ${pubs.map(p => {
-          const healthPct = p.health != null ? Math.round(p.health * 100) : null;
-          const healthColor = healthPct == null ? '#9ca3af' : healthPct >= 70 ? '#22c55e' : healthPct >= 50 ? '#f97316' : '#ef4444';
-          const borderColor = p.health != null && p.health < 0.5 ? '#f87171' : p.total_preguntas >= 10 ? '#fb923c' : '#d1d5db';
-          const bgColor = p.health != null && p.health < 0.5 ? '#fef2f2' : p.total_preguntas >= 10 ? '#fff7ed' : 'white';
-          return `<div class="card" style="margin-bottom:6px;display:flex;align-items:center;gap:12px;border-left:4px solid ${borderColor};background:${bgColor};">
-            ${p.thumbnail ? `<img src="${p.thumbnail}" style="width:48px;height:48px;object-fit:cover;border-radius:6px;flex-shrink:0;">` : ''}
-            <div style="flex:1;min-width:0;">
-              <div style="font-size:13px;font-weight:600;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.titulo}</div>
-              <div style="margin-top:4px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                ${healthPct != null ? `<span style="font-size:11px;color:${healthColor};font-weight:700;">● Health ${healthPct}%</span>` : ''}
-                <span style="font-size:11px;color:#6b7280;">📦 ${p.sold_quantity} vendidos</span>
-                ${p.total_preguntas > 0 ? `<span style="font-size:11px;color:#6b7280;">💬 ${p.total_preguntas} preguntas</span>` : ''}
-              </div>
-            </div>
-            <button onclick="analizarProducto('${p.id}', this)" style="padding:6px 14px;background:#7c3aed;color:white;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;">Analizar</button>
-          </div>
-          <div id="rec-resultado-${p.id}" style="display:none;margin-bottom:10px;"></div>`;
-        }).join('')}
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+        ${filtros.map(f => `<button class="rec-filtro-btn" data-f="${f.f}" onclick="recSetFiltro('${f.f}')"
+          style="padding:5px 12px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;
+          background:${f.f === 'todos' ? '#7c3aed' : '#e5e7eb'};color:${f.f === 'todos' ? 'white' : '#374151'};">${f.label}</button>`).join('')}
+        <input type="text" placeholder="Buscar producto..." oninput="recBusqueda=this.value;recPagina=0;recRenderLista()"
+          style="margin-left:auto;padding:5px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;width:200px;">
+      </div>
+      <div id="rec-contador" style="font-size:12px;color:#6b7280;margin-bottom:8px;"></div>
+      <div id="rec-lista"></div>
+      <div id="rec-load-more" style="text-align:center;margin-top:12px;display:none;">
+        <button onclick="recPagina++;recRenderLista()" style="padding:8px 24px;background:#e5e7eb;color:#374151;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">Cargar más</button>
       </div>`;
+    recRenderLista();
   } catch(e) {
     content.innerHTML = `<div class="card" style="color:#991b1b;">Error: ${e.message}</div>`;
   }
 }
 
-async function analizarProducto(itemId, btn) {
+async function analizarProducto(itemId) {
+  const btn = document.getElementById(`rec-btn-${itemId}`);
   const resultDiv = document.getElementById(`rec-resultado-${itemId}`);
-  btn.disabled = true;
-  btn.textContent = 'Analizando...';
-  resultDiv.style.display = 'block';
-  resultDiv.innerHTML = '<div class="loading"><span class="spinner"></span>Claude analizando...</div>';
+  if (btn) { btn.disabled = true; btn.textContent = 'Analizando...'; }
+  if (resultDiv) resultDiv.innerHTML = '<div class="loading"><span class="spinner"></span>Claude analizando...</div>';
   try {
     const r = await fetch('/api/ml/recomendaciones/analizar', {
       method: 'POST',
@@ -1203,14 +1292,15 @@ async function analizarProducto(itemId, btn) {
     });
     const d = await r.json();
     if (!r.ok) throw new Error(d.error || 'Error');
-    const badge = d['analizó_imágenes'] ? '<span style="background:#0ea5e9;color:white;border-radius:4px;padding:1px 8px;font-size:11px;font-weight:700;margin-left:8px;">📷 Imágenes analizadas</span>' : '';
-    resultDiv.innerHTML = `<div class="card" style="background:#f8fafc;border-left:4px solid #7c3aed;font-size:13px;line-height:1.6;color:#1f2937;"><div style="margin-bottom:8px;">${badge}</div><div style="white-space:pre-wrap;">${d.recomendaciones}</div></div>`;
-    btn.textContent = 'Re-analizar';
-    btn.disabled = false;
+    setRecCache(itemId, d);
+    if (resultDiv) resultDiv.innerHTML = recRenderResultado(d);
+    if (btn) { btn.disabled = false; btn.textContent = 'Re-analizar'; }
+    // Actualizar timestamp en card
+    const pubIdx = recAllPubs.findIndex(p => p.id === itemId);
+    if (pubIdx >= 0) recRenderLista();
   } catch(e) {
-    resultDiv.innerHTML = `<div class="card" style="color:#991b1b;">Error: ${e.message}</div>`;
-    btn.textContent = 'Analizar';
-    btn.disabled = false;
+    if (resultDiv) resultDiv.innerHTML = `<div class="card" style="color:#991b1b;">Error: ${e.message}</div>`;
+    if (btn) { btn.disabled = false; btn.textContent = 'Analizar'; }
   }
 }
 
