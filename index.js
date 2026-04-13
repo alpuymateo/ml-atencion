@@ -2564,8 +2564,16 @@ app.post('/api/ml/recomendaciones/analizar', requireToken, async (req, res) => {
       ? cachedClaims.filter(c => orderIds.has(String(c.resource_id)))
       : [];
 
+    // Fetch visitas para calcular tasa de conversión
+    let visits = null;
+    try {
+      const visitsR = await axios.get(`${ML_API_URL}/items/${itemId}/visits`, { headers });
+      visits = visitsR.data?.total_visits ?? visitsR.data ?? null;
+      if (typeof visits === 'object') visits = null; // si devuelve objeto complejo, ignorar
+    } catch(_) {}
+
     if (qa.length === 0 && reclamosDelItem.length === 0) {
-      return res.json({ recomendaciones: 'No hay preguntas ni reclamos suficientes para analizar esta publicación.' });
+      return res.json({ recomendaciones: 'No hay preguntas ni reclamos suficientes para analizar esta publicación.', visits, sold_quantity: soldQty, health });
     }
 
     // Detectar señales de problemas con imágenes
@@ -2579,6 +2587,10 @@ app.post('/api/ml/recomendaciones/analizar', requireToken, async (req, res) => {
     let itemText = buildItemContextText(itemCtx);
     if (soldQty != null) itemText += `\nUnidades vendidas: ${soldQty}`;
     if (health   != null) itemText += `\nHealth score ML: ${Math.round(health * 100)}% (${health >= 0.7 ? 'bueno' : health >= 0.5 ? 'regular' : 'bajo'})`;
+    if (visits   != null) {
+      const conversion = soldQty && visits > 0 ? ((soldQty / visits) * 100).toFixed(1) : null;
+      itemText += `\nVisitas: ${visits}${conversion ? ` | Tasa de conversión: ${conversion}%` : ''}`;
+    }
 
     const preguntasText = qa.length
       ? `Historial de preguntas de compradores (${qa.length} en total):\n` +
@@ -2636,7 +2648,13 @@ Sé directo y específico. Máximo 600 palabras.`;
       messages: [{ role: 'user', content: messageContent }]
     });
 
-    res.json({ recomendaciones: r.content[0].text.trim(), analizó_imágenes: analizarImagenes && pictureUrls.length > 0 });
+    res.json({
+      recomendaciones: r.content[0].text.trim(),
+      analizó_imágenes: analizarImagenes && pictureUrls.length > 0,
+      visits,
+      sold_quantity: soldQty,
+      health
+    });
   } catch(e) {
     console.error('[recomendaciones/analizar]', e.message);
     res.status(500).json({ error: e.message });
