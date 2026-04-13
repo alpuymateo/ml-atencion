@@ -2501,16 +2501,56 @@ function loadPreguntasMerged() {
   return merged;
 }
 
+let recItemsCache = null; // cache en memoria de items traídos desde ML API
+
+async function fetchActiveItemsFromML() {
+  if (recItemsCache) return recItemsCache;
+  const headers = { Authorization: `Bearer ${tokenData.access_token}` };
+  const uid = tokenData.user_id;
+  // Traer IDs de items activos
+  let allIds = [];
+  let offset = 0;
+  while (true) {
+    const r = await axios.get(`${ML_API_URL}/users/${uid}/items/search`, {
+      headers, params: { status: 'active', limit: 100, offset }
+    });
+    const ids = r.data.results || [];
+    allIds = allIds.concat(ids);
+    if (ids.length < 100 || allIds.length >= (r.data.paging?.total || 0)) break;
+    offset += 100;
+    await sleep(150);
+  }
+  // Fetch detalles en batches de 20
+  const items = [];
+  for (let i = 0; i < allIds.length; i += 20) {
+    const batch = allIds.slice(i, i + 20);
+    try {
+      const r = await axios.get(`${ML_API_URL}/items`, { headers, params: { ids: batch.join(',') } });
+      const results = Array.isArray(r.data) ? r.data : [];
+      results.forEach(entry => { if (entry.body) items.push(entry.body); });
+    } catch(_) {}
+    if (i + 20 < allIds.length) await sleep(150);
+  }
+  recItemsCache = items;
+  // Limpiar cache después de 30 minutos
+  setTimeout(() => { recItemsCache = null; }, 30 * 60 * 1000);
+  return items;
+}
+
 // GET /api/ml/recomendaciones/publicaciones
-app.get('/api/ml/recomendaciones/publicaciones', requireToken, (req, res) => {
+app.get('/api/ml/recomendaciones/publicaciones', requireToken, async (req, res) => {
   try {
     const preguntasData = loadPreguntasMerged();
-    const activeItems = cachedItems.filter(i => i.status === 'active');
+    let activeItems = cachedItems.filter(i => i.status === 'active');
+
+    // Si no hay items en cache local, traer de ML API
+    if (!activeItems.length) {
+      activeItems = await fetchActiveItemsFromML();
+    }
 
     const pubs = activeItems.map(item => {
       const pub = preguntasData.byPub[item.id];
       const health = item.health != null ? item.health : null;
-      // Prioridad: health bajo o muchas preguntas primero
       const priority = (health != null ? (1 - health) : 0.5) + ((pub?.qa.length || 0) * 0.01);
       return {
         id: item.id,
