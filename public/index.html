@@ -300,6 +300,9 @@
       <div class="nav-item" data-page="buscador" onclick="showPage('buscador')">
         <span class="nav-icon">🔍</span> Buscador
       </div>
+      <div class="nav-item" data-page="recomendaciones" onclick="showPage('recomendaciones')">
+        <span class="nav-icon">💡</span> Recomendaciones
+      </div>
 
       <!-- Atención al cliente -->
       <div class="nav-group-header" onclick="toggleNavGroup('nav-atencion')">
@@ -403,6 +406,20 @@
       </div>
       <div id="alertas-content">
         <div class="loading"><span class="spinner"></span>Cargando alertas...</div>
+      </div>
+    </div>
+
+    <!-- Recomendaciones Productos -->
+    <div id="page-recomendaciones" style="display:none">
+      <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;">
+        <div>
+          <h1>Recomendaciones Productos</h1>
+          <p>An&aacute;lisis de preguntas frecuentes para mejorar tus publicaciones</p>
+        </div>
+        <button class="btn-refresh" onclick="loadRecomendaciones()">Actualizar</button>
+      </div>
+      <div id="recomendaciones-content">
+        <div class="loading"><span class="spinner"></span>Cargando...</div>
       </div>
     </div>
 
@@ -848,7 +865,7 @@ function fmtDateTime(d) {
 }
 
 // ── Navigation ──
-const PAGES = ['tareas', 'alertas', 'reclamos', 'devoluciones', 'buscador', 'retiros', 'retira-local', 'cola-envios', 'envios-dac', 'envios-sd', 'envios-deri', 'ml-analizar', 'usuarios'];
+const PAGES = ['tareas', 'alertas', 'recomendaciones', 'reclamos', 'devoluciones', 'buscador', 'retiros', 'retira-local', 'cola-envios', 'envios-dac', 'envios-sd', 'envios-deri', 'ml-analizar', 'usuarios'];
 const ML_TAB_PAGES = { 'ml-preguntas': 'pendientes', 'ml-postventa': 'mensajes', 'ml-reglas': 'reglas' };
 
 function toggleNavGroup(id) {
@@ -917,6 +934,9 @@ function showPage(page) {
   }
   if (page === 'alertas') {
     loadAlertas();
+  }
+  if (page === 'recomendaciones') {
+    loadRecomendaciones();
   }
   if (page === 'retiros') {
     loadRetiros();
@@ -1125,6 +1145,68 @@ async function loadAlertas() {
     }).join('');
   } catch(e) {
     content.innerHTML = `<div class="card" style="color:#991b1b;">Error: ${e.message}</div>`;
+  }
+}
+
+// ── Recomendaciones de publicaciones ─────────────────────────────
+
+async function loadRecomendaciones() {
+  const content = document.getElementById('recomendaciones-content');
+  content.innerHTML = '<div class="loading"><span class="spinner"></span>Cargando publicaciones...</div>';
+  try {
+    const r = await fetch('/api/ml/recomendaciones/publicaciones', { headers: authHeaders() });
+    const d = await r.json();
+    const pubs = d.pubs || [];
+    if (!pubs.length) {
+      content.innerHTML = '<div class="card" style="text-align:center;color:#9ca3af;padding:32px;">No hay historial de preguntas todav&iacute;a.</div>';
+      return;
+    }
+    content.innerHTML = `
+      <div id="rec-lista">
+        ${pubs.map(p => {
+          const nivel = p.total_preguntas >= 20 ? { bg: '#fef2f2', border: '#f87171', badge: '#ef4444', label: 'Alta' }
+                      : p.total_preguntas >= 8  ? { bg: '#fff7ed', border: '#fb923c', badge: '#f97316', label: 'Media' }
+                      :                           { bg: '#f0fdf4', border: '#86efac', badge: '#22c55e', label: 'Baja' };
+          return `<div class="card" style="margin-bottom:10px;display:flex;align-items:center;gap:12px;border-left:4px solid ${nivel.border};background:${nivel.bg};">
+            ${p.thumbnail ? `<img src="${p.thumbnail}" style="width:52px;height:52px;object-fit:cover;border-radius:6px;flex-shrink:0;">` : ''}
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:13px;font-weight:600;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.titulo}</div>
+              <div style="margin-top:4px;display:flex;align-items:center;gap:8px;">
+                <span style="background:${nivel.badge};color:white;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:700;">${nivel.label}</span>
+                <span style="font-size:12px;color:#6b7280;">${p.total_preguntas} preguntas</span>
+              </div>
+            </div>
+            <button onclick="analizarProducto('${p.id}', this)" style="padding:6px 14px;background:#7c3aed;color:white;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;">Analizar</button>
+          </div>
+          <div id="rec-resultado-${p.id}" style="display:none;margin-bottom:14px;"></div>`;
+        }).join('')}
+      </div>`;
+  } catch(e) {
+    content.innerHTML = `<div class="card" style="color:#991b1b;">Error: ${e.message}</div>`;
+  }
+}
+
+async function analizarProducto(itemId, btn) {
+  const resultDiv = document.getElementById(`rec-resultado-${itemId}`);
+  btn.disabled = true;
+  btn.textContent = 'Analizando...';
+  resultDiv.style.display = 'block';
+  resultDiv.innerHTML = '<div class="loading"><span class="spinner"></span>Claude analizando preguntas...</div>';
+  try {
+    const r = await fetch('/api/ml/recomendaciones/analizar', {
+      method: 'POST',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ itemId })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Error');
+    resultDiv.innerHTML = `<div class="card" style="background:#f8fafc;border-left:4px solid #7c3aed;white-space:pre-wrap;font-size:13px;line-height:1.6;color:#1f2937;">${d.recomendaciones}</div>`;
+    btn.textContent = 'Re-analizar';
+    btn.disabled = false;
+  } catch(e) {
+    resultDiv.innerHTML = `<div class="card" style="color:#991b1b;">Error: ${e.message}</div>`;
+    btn.textContent = 'Analizar';
+    btn.disabled = false;
   }
 }
 

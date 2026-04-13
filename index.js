@@ -2473,6 +2473,84 @@ Responde SOLO con el texto de la respuesta, sin explicaciones adicionales. Si no
   }
 });
 
+// ── Recomendaciones de publicaciones ─────────────────────────────
+
+// GET /api/ml/recomendaciones/publicaciones
+app.get('/api/ml/recomendaciones/publicaciones', requireToken, (req, res) => {
+  try {
+    if (!fs.existsSync(PREGUNTAS_FILE)) return res.json({ pubs: [] });
+    const data = JSON.parse(fs.readFileSync(PREGUNTAS_FILE, 'utf8'));
+    const itemMap = {};
+    cachedItems.forEach(i => { itemMap[i.id] = i; });
+
+    const pubs = Object.entries(data.byPub).map(([id, p]) => {
+      const cached = itemMap[id] || {};
+      return {
+        id,
+        titulo: p.titulo || cached.title || id,
+        thumbnail: cached.thumbnail || '',
+        permalink: cached.permalink || '',
+        total_preguntas: p.qa.length
+      };
+    }).sort((a, b) => b.total_preguntas - a.total_preguntas);
+
+    res.json({ pubs });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/ml/recomendaciones/analizar
+app.post('/api/ml/recomendaciones/analizar', requireToken, async (req, res) => {
+  if (!anthropic) return res.status(400).json({ error: 'ANTHROPIC_API_KEY no configurada' });
+  const { itemId } = req.body;
+  if (!itemId) return res.status(400).json({ error: 'itemId requerido' });
+
+  try {
+    const [itemCtx, preguntasData] = await Promise.all([
+      fetchItemContext(itemId),
+      fs.existsSync(PREGUNTAS_FILE)
+        ? Promise.resolve(JSON.parse(fs.readFileSync(PREGUNTAS_FILE, 'utf8')))
+        : Promise.resolve({ byPub: {} })
+    ]);
+
+    const pub = preguntasData.byPub[itemId];
+    const qa = pub?.qa || [];
+
+    if (qa.length === 0) {
+      return res.json({ recomendaciones: 'No hay preguntas históricas suficientes para analizar esta publicación.' });
+    }
+
+    const itemText = buildItemContextText(itemCtx);
+    const preguntasText = qa.map((e, i) => `${i + 1}. P: ${e.q}${e.a ? `\n   R: ${e.a}` : ''}`).join('\n');
+
+    const r = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1000,
+      messages: [{
+        role: 'user',
+        content: `Sos un experto en optimización de publicaciones de MercadoLibre Uruguay. Analizá las preguntas frecuentes de compradores sobre esta publicación e identificá qué información falta o está poco clara para generar recomendaciones concretas que mejoren la conversión.
+
+Datos de la publicación:
+${itemText}
+
+Historial de preguntas de compradores (${qa.length} en total):
+${preguntasText}
+
+Analizá los patrones y respondé con:
+1. **Temas más consultados**: qué preguntan más los compradores (agrupado por tema)
+2. **Qué falta en la descripción**: información que debería estar en la ficha pero no está
+3. **Recomendaciones concretas**: cambios específicos al título, descripción o fotos que reducirían estas preguntas
+
+Sé directo y específico. Máximo 400 palabras.`
+      }]
+    });
+
+    res.json({ recomendaciones: r.content[0].text.trim() });
+  } catch(e) {
+    console.error('[recomendaciones/analizar]', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ── Static files (ya montado arriba) ──
 
 app.listen(PORT, () => {
