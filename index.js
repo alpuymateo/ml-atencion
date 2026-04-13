@@ -2475,24 +2475,54 @@ Responde SOLO con el texto de la respuesta, sin explicaciones adicionales. Si no
 
 // ── Recomendaciones de publicaciones ─────────────────────────────
 
+// Helper: merge preguntas de ml-panel y ml-atencion
+function loadPreguntasMerged() {
+  const files = [
+    path.join(DATA_DIR, 'preguntas_por_publicacion.json'),  // ml-panel
+    PREGUNTAS_FILE                                           // ml-atencion
+  ];
+  const merged = { byPub: {} };
+  for (const f of files) {
+    if (!fs.existsSync(f)) continue;
+    try {
+      const d = JSON.parse(fs.readFileSync(f, 'utf8'));
+      for (const [id, p] of Object.entries(d.byPub || {})) {
+        if (!merged.byPub[id]) {
+          merged.byPub[id] = { titulo: p.titulo, qa: [] };
+        }
+        // Merge QA evitando duplicados por texto de pregunta
+        const existing = new Set(merged.byPub[id].qa.map(e => e.q));
+        for (const qa of (p.qa || [])) {
+          if (!existing.has(qa.q)) { merged.byPub[id].qa.push(qa); existing.add(qa.q); }
+        }
+      }
+    } catch(_) {}
+  }
+  return merged;
+}
+
 // GET /api/ml/recomendaciones/publicaciones
 app.get('/api/ml/recomendaciones/publicaciones', requireToken, (req, res) => {
   try {
-    if (!fs.existsSync(PREGUNTAS_FILE)) return res.json({ pubs: [] });
-    const data = JSON.parse(fs.readFileSync(PREGUNTAS_FILE, 'utf8'));
-    const itemMap = {};
-    cachedItems.forEach(i => { itemMap[i.id] = i; });
+    const preguntasData = loadPreguntasMerged();
+    const activeItems = cachedItems.filter(i => i.status === 'active');
 
-    const pubs = Object.entries(data.byPub).map(([id, p]) => {
-      const cached = itemMap[id] || {};
+    const pubs = activeItems.map(item => {
+      const pub = preguntasData.byPub[item.id];
+      const health = item.health != null ? item.health : null;
+      // Prioridad: health bajo o muchas preguntas primero
+      const priority = (health != null ? (1 - health) : 0.5) + ((pub?.qa.length || 0) * 0.01);
       return {
-        id,
-        titulo: p.titulo || cached.title || id,
-        thumbnail: cached.thumbnail || '',
-        permalink: cached.permalink || '',
-        total_preguntas: p.qa.length
+        id: item.id,
+        titulo: item.title,
+        thumbnail: item.thumbnail || '',
+        permalink: item.permalink || '',
+        sold_quantity: item.sold_quantity || 0,
+        health: health,
+        total_preguntas: pub?.qa.length || 0,
+        priority
       };
-    }).sort((a, b) => b.total_preguntas - a.total_preguntas);
+    }).sort((a, b) => b.priority - a.priority);
 
     res.json({ pubs });
   } catch(e) { res.status(500).json({ error: e.message }); }
@@ -2510,20 +2540,24 @@ app.post('/api/ml/recomendaciones/analizar', requireToken, async (req, res) => {
   try {
     const headers = { Authorization: `Bearer ${tokenData.access_token}` };
 
-    // Fetch item context, preguntas y órdenes en paralelo
-    const [itemCtx, preguntasData, ordersR] = await Promise.all([
+    // Fetch item context y órdenes en paralelo; preguntas del merge local
+    const [itemCtx, ordersR] = await Promise.all([
       fetchItemContext(itemId),
-      fs.existsSync(PREGUNTAS_FILE)
-        ? Promise.resolve(JSON.parse(fs.readFileSync(PREGUNTAS_FILE, 'utf8')))
-        : Promise.resolve({ byPub: {} }),
       axios.get(`${ML_API_URL}/orders/search`, {
         headers,
         params: { seller: tokenData.user_id, item: itemId, limit: 50 }
       }).catch(() => ({ data: { results: [] } }))
     ]);
 
+    const preguntasData = loadPreguntasMerged();
     const pub = preguntasData.byPub[itemId];
     const qa = pub?.qa || [];
+
+    // Métricas del item desde cachedItems
+    const cachedItem = cachedItems.find(i => i.id === itemId) || {};
+    const soldQty  = cachedItem.sold_quantity ?? null;
+    const health   = cachedItem.health         ?? null;
+    const pictures = (cachedItem.pictures || []).slice(0, 5).map(p => p.url || p.secure_url).filter(Boolean);
 
     const orderIds = new Set((ordersR.data.results || []).map(o => String(o.id)));
     const reclamosDelItem = orderIds.size > 0
@@ -2540,17 +2574,12 @@ app.post('/api/ml/recomendaciones/analizar', requireToken, async (req, res) => {
       IMAGEN_CLAIM_REASONS.has(c.reason_id) || IMAGEN_CLAIM_REASONS.has(c.sub_status)
     );
     const analizarImagenes = preguntasConImagenSignal.length > 0 || reclamosConImagenSignal.length > 0;
+    const pictureUrls = analizarImagenes ? pictures : [];
 
-    // Traer fotos del item si hay señales de problemas visuales
-    let pictureUrls = [];
-    if (analizarImagenes) {
-      try {
-        const itemR = await axios.get(`${ML_API_URL}/items/${itemId}`, { headers });
-        pictureUrls = (itemR.data.pictures || []).slice(0, 5).map(p => p.url || p.secure_url).filter(Boolean);
-      } catch(_) {}
-    }
+    let itemText = buildItemContextText(itemCtx);
+    if (soldQty != null) itemText += `\nUnidades vendidas: ${soldQty}`;
+    if (health   != null) itemText += `\nHealth score ML: ${Math.round(health * 100)}% (${health >= 0.7 ? 'bueno' : health >= 0.5 ? 'regular' : 'bajo'})`;
 
-    const itemText = buildItemContextText(itemCtx);
     const preguntasText = qa.length
       ? `Historial de preguntas de compradores (${qa.length} en total):\n` +
         qa.map((e, i) => `${i + 1}. P: ${e.q}${e.a ? `\n   R: ${e.a}` : ''}`).join('\n')
