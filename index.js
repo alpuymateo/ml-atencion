@@ -1051,6 +1051,8 @@ ${kb.reglas_generales.slice(0, 8).map(r => '- ' + r).join('\n')}` : '';
     const lastText = lastBuyerMsg?.text?.toLowerCase() || '';
     const esReclamo = /problema|roto|rota|no funciona|no llegó|no llego|reclamo|devolución|devolucion|mal estado|defecto|falla|faltó|falto|incompleto/.test(lastText);
     const esAgradecimiento = /gracias|genial|perfecto|excelente|buenísimo|buenisimo|re bien|muy bien/.test(lastText);
+    const esRetiroLocal = !!itemCtx?.shipping?.local_pick_up;
+    const preguntaDireccion = /dónde|donde|dirección|direccion|local|retirar|retiro|cómo busco|como busco|paso a buscar/.test(lastText);
 
     // Nombre para el saludo
     const nombreComprador = buyer_name ? buyer_name.split(' ')[0] : null;
@@ -1088,6 +1090,8 @@ ${esAgradecimiento ? '- El cliente está conforme: respondé breve y cálido, no
 - NUNCA menciones "MUNDO SHOP" más de una vez (solo al cerrar)
 - Si no tenés la info exacta, no la inventes
 ${esReclamo ? '- Sugerí una acción concreta (coordinar retiro, reenviar producto, emitir reembolso, etc)' : ''}
+${esRetiroLocal && preguntaDireccion ? '- Esta compra es para retiro en local. Dales la dirección y horario exactos que están en las reglas del negocio (categoría "local").' : ''}
+${esRetiroLocal && !preguntaDireccion ? '- Esta compra es para retiro en local. Si el comprador menciona que va a pasar a buscar, confirmale la dirección y horario.' : ''}
 Respondé en JSON: {"respuesta":"...","accion":null}`
       }]
     });
