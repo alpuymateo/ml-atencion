@@ -1277,23 +1277,24 @@ function recToggleResultado(uid) {
   const body = document.getElementById(`rec-body-${uid}`);
   const btnEnResultado = body?.previousElementSibling?.querySelector('button');
   if (!body) return;
-  const minimizado = body.style.display === 'none';
-  // Mostrar/ocultar cuerpo del análisis y card completa
   const resultadoCard = body.closest('.card');
+  // El wrapper es el padre del resultadoCard (#rec-resultado-X)
+  const wrapper = resultadoCard?.parentElement;
+  const minimizado = wrapper?.style.display === 'none';
+  // El product card es el hermano previo del wrapper
+  const productoCard = wrapper?.previousElementSibling;
   if (minimizado) {
-    // Expandir
-    body.style.display = '';
-    if (resultadoCard) resultadoCard.style.display = '';
+    // Expandir: mostrar wrapper
+    if (wrapper) wrapper.style.display = '';
     if (btnEnResultado) btnEnResultado.textContent = 'Minimizar ▲';
-    // Quitar botón expandir de la card del producto si existe
+    // Quitar botón expandir de la card del producto
     const expandBtn = document.getElementById(`rec-expand-btn-${uid}`);
     if (expandBtn) expandBtn.remove();
   } else {
-    // Minimizar: ocultar solo el cuerpo, mostrar card vacía con solo el header
-    body.style.display = 'none';
+    // Minimizar: ocultar wrapper completo
+    if (wrapper) wrapper.style.display = 'none';
     if (btnEnResultado) btnEnResultado.textContent = 'Expandir ▼';
     // Agregar botón expandir en la card del producto
-    const productoCard = resultadoCard?.previousElementSibling;
     if (productoCard && !document.getElementById(`rec-expand-btn-${uid}`)) {
       const expandBtn = document.createElement('button');
       expandBtn.id = `rec-expand-btn-${uid}`;
@@ -1303,8 +1304,6 @@ function recToggleResultado(uid) {
       const analizarBtn = productoCard.querySelector(`#rec-btn-${uid}`);
       if (analizarBtn) analizarBtn.insertAdjacentElement('beforebegin', expandBtn);
     }
-    // Ocultar la card del análisis completamente
-    if (resultadoCard) resultadoCard.style.display = 'none';
   }
 }
 
