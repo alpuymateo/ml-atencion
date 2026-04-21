@@ -2819,6 +2819,99 @@ Sé directo y específico. Máximo 600 palabras.`;
   }
 });
 
+// ── Dashboard de oficina ──────────────────────────────────────────
+
+// Horas hábiles transcurridas desde una fecha (L-V 9-18, S 9-13)
+function businessMinutesSinceNode(dateCreated) {
+  const SCHEDULE = [null, [9,18], [9,18], [9,18], [9,18], [9,18], [9,13]];
+  let mins = 0;
+  let cursor = new Date(dateCreated);
+  const now = new Date();
+  if (cursor >= now) return 0;
+  while (cursor < now) {
+    const dow = cursor.getDay();
+    const range = SCHEDULE[dow];
+    if (range) {
+      const dayStart = new Date(cursor); dayStart.setHours(range[0], 0, 0, 0);
+      const dayEnd   = new Date(cursor); dayEnd.setHours(range[1], 0, 0, 0);
+      const from = cursor < dayStart ? dayStart : cursor;
+      const to   = now < dayEnd ? now : dayEnd;
+      if (to > from) mins += (to - from) / 60000;
+    }
+    cursor.setDate(cursor.getDate() + 1);
+    cursor.setHours(0, 0, 0, 0);
+  }
+  return Math.floor(mins);
+}
+
+let dashboardCache = null;
+let dashboardUpdating = false;
+
+async function actualizarDashboard() {
+  if (dashboardUpdating || !tokenData?.access_token) return;
+  dashboardUpdating = true;
+  try {
+    const headers = { Authorization: `Bearer ${tokenData.access_token}` };
+    const sellerId = tokenData.user_id;
+    const hoyStart = new Date(); hoyStart.setHours(0, 0, 0, 0);
+
+    const [preguntasRes, ventasRes, mensajesRes] = await Promise.all([
+      axios.get(`${ML_API_URL}/my/received_questions/search`, {
+        params: { status: 'UNANSWERED', limit: 50, sort_fields: 'date_created', sort_types: 'DESC' },
+        headers
+      }).catch(() => ({ data: { questions: [] } })),
+      axios.get(`${ML_API_URL}/orders/search`, {
+        params: { seller: sellerId, sort: 'date_desc', limit: 50, 'order.status': 'paid', 'order.date_created.from': hoyStart.toISOString() },
+        headers
+      }).catch(() => ({ data: { results: [], paging: { total: 0 } } })),
+      axios.get(`${ML_API_URL}/messages/unread`, { headers })
+        .catch(() => ({ data: { total: 0 } })),
+    ]);
+
+    const preguntas = preguntasRes.data.questions || [];
+    const demoraMins = preguntas.length
+      ? Math.max(...preguntas.map(q => businessMinutesSinceNode(q.date_created)))
+      : 0;
+
+    const ventasHoy  = ventasRes.data.results || [];
+    const totalVentas = ventasRes.data.paging?.total || ventasHoy.length;
+    const montoHoy   = ventasHoy.reduce((s, o) => s + (o.total_amount || 0), 0);
+    const mensajesSinLeer = mensajesRes.data.total || 0;
+
+    dashboardCache = {
+      preguntas_sin_responder: preguntas.length,
+      demora_maxima_min: demoraMins,
+      mensajes_sin_leer: mensajesSinLeer,
+      reclamos_abiertos: cachedClaims.filter(c => c.status === 'opened').length,
+      pendientes_despacho: retirosCache?.pendientes?.length || 0,
+      en_camino: (retirosCache?.en_camino?.length || 0) + (retirosCache?.en_camino_sin_escaneo?.length || 0),
+      ventas_hoy: totalVentas,
+      monto_hoy: montoHoy,
+      updated_at: new Date().toISOString(),
+    };
+  } catch(e) {
+    console.error('[dashboard] error:', e.message);
+  } finally {
+    dashboardUpdating = false;
+  }
+}
+
+// Actualizar dashboard cada 2 minutos
+setTimeout(() => actualizarDashboard(), 15000);
+setInterval(() => actualizarDashboard(), 2 * 60 * 1000);
+
+app.get('/api/dashboard-data', (req, res) => {
+  const key = req.query.key || req.headers['x-dashboard-key'];
+  const DASHBOARD_KEY = process.env.DASHBOARD_KEY;
+  if (!DASHBOARD_KEY || key !== DASHBOARD_KEY) return res.status(401).json({ error: 'No autorizado' });
+  if (!dashboardCache) return res.json({ loading: true });
+  res.json(dashboardCache);
+});
+
+app.get('/dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
+});
+
 // ── Static files (ya montado arriba) ──
 
 app.listen(PORT, () => {

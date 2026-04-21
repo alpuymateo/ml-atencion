@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MUNDO SHOP — Dashboard</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0f1117;
+    color: #f1f5f9;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 36px;
+    background: #00217E;
+    border-bottom: 3px solid #1d4ed8;
+  }
+  .header-logo {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: .04em;
+    color: white;
+  }
+  .header-meta {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    font-size: 13px;
+    color: #bfdbfe;
+  }
+  .refresh-countdown {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .refresh-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #22c55e;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  main {
+    flex: 1;
+    padding: 28px 32px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: auto auto;
+    gap: 20px;
+    align-content: start;
+  }
+
+  .card {
+    background: #1e2130;
+    border-radius: 16px;
+    padding: 24px 28px;
+    border: 2px solid #2d3148;
+    transition: border-color .3s;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .card.ok     { border-color: #166534; background: #052e16; }
+  .card.warn   { border-color: #854d0e; background: #1c1000; }
+  .card.alert  { border-color: #9a3412; background: #1c0a00; }
+  .card.danger { border-color: #991b1b; background: #1c0000; }
+
+  .card-label {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    opacity: .6;
+  }
+  .card-value {
+    font-size: 64px;
+    font-weight: 800;
+    line-height: 1;
+    color: white;
+  }
+  .card.ok     .card-value { color: #4ade80; }
+  .card.warn   .card-value { color: #fbbf24; }
+  .card.alert  .card-value { color: #fb923c; }
+  .card.danger .card-value { color: #f87171; }
+
+  .card-sub {
+    font-size: 13px;
+    opacity: .55;
+    margin-top: 2px;
+  }
+  .card-icon {
+    font-size: 28px;
+    margin-bottom: 4px;
+  }
+
+  /* Card de ventas ocupa 2 columnas */
+  .card-wide {
+    grid-column: span 2;
+  }
+  .card-wide .card-value { font-size: 72px; }
+  .ventas-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 24px;
+  }
+  .ventas-monto {
+    font-size: 32px;
+    font-weight: 700;
+    color: #4ade80;
+    opacity: .85;
+  }
+
+  .loading-overlay {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    font-size: 20px;
+    opacity: .4;
+  }
+
+  footer {
+    text-align: center;
+    padding: 12px;
+    font-size: 12px;
+    opacity: .3;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-logo">🏪 MUNDO SHOP</div>
+  <div class="header-meta">
+    <span id="fecha-hora">—</span>
+    <div class="refresh-countdown">
+      <div class="refresh-dot"></div>
+      <span>Actualiza en <span id="countdown">60</span>s</span>
+    </div>
+    <span id="last-update" style="opacity:.6;">—</span>
+  </div>
+</header>
+
+<main id="main-grid">
+  <div class="loading-overlay" style="grid-column:span 4;">Cargando dashboard...</div>
+</main>
+
+<footer>MUNDO SHOP · Dashboard interno · Actualización automática cada 60 segundos</footer>
+
+<script>
+  const params = new URLSearchParams(location.search);
+  const KEY = params.get('key') || '';
+
+  function fmt(n) { return (n || 0).toLocaleString('es-UY'); }
+  function fmtMonto(n) {
+    if (!n) return '$0';
+    return '$' + Math.round(n).toLocaleString('es-UY');
+  }
+  function fmtDemora(mins) {
+    if (!mins) return '0 min';
+    if (mins < 60) return `${mins} min`;
+    const h = Math.floor(mins / 60), m = mins % 60;
+    return m ? `${h}h ${m}m` : `${h}h`;
+  }
+
+  function cardClass(value, thresholds) {
+    // thresholds: [warn, alert, danger]
+    if (value >= thresholds[2]) return 'danger';
+    if (value >= thresholds[1]) return 'alert';
+    if (value >= thresholds[0]) return 'warn';
+    return 'ok';
+  }
+
+  function renderGrid(d) {
+    const pregClass   = cardClass(d.preguntas_sin_responder, [1, 3, 6]);
+    const demoraClass = cardClass(d.demora_maxima_min,       [15, 60, 120]);
+    const msgClass    = cardClass(d.mensajes_sin_leer,       [1, 3, 5]);
+    const recClass    = cardClass(d.reclamos_abiertos,       [1, 2, 4]);
+    const despClass   = cardClass(d.pendientes_despacho,     [1, 4, 8]);
+
+    document.getElementById('main-grid').innerHTML = `
+      <div class="card ${pregClass}">
+        <div class="card-icon">💬</div>
+        <div class="card-label">Preguntas sin responder</div>
+        <div class="card-value">${fmt(d.preguntas_sin_responder)}</div>
+        <div class="card-sub">MercadoLibre</div>
+      </div>
+
+      <div class="card ${demoraClass}">
+        <div class="card-icon">⏱️</div>
+        <div class="card-label">Demora máxima de respuesta</div>
+        <div class="card-value" style="font-size:${d.demora_maxima_min >= 60 ? '48px' : '64px'};">${fmtDemora(d.demora_maxima_min)}</div>
+        <div class="card-sub">horas hábiles · peor caso</div>
+      </div>
+
+      <div class="card ${msgClass}">
+        <div class="card-icon">📨</div>
+        <div class="card-label">Mensajes post-venta sin leer</div>
+        <div class="card-value">${fmt(d.mensajes_sin_leer)}</div>
+        <div class="card-sub">mensajes del comprador</div>
+      </div>
+
+      <div class="card ${recClass}">
+        <div class="card-icon">⚠️</div>
+        <div class="card-label">Reclamos abiertos</div>
+        <div class="card-value">${fmt(d.reclamos_abiertos)}</div>
+        <div class="card-sub">requieren atención</div>
+      </div>
+
+      <div class="card ${despClass}">
+        <div class="card-icon">📦</div>
+        <div class="card-label">Pedidos pendientes de despacho</div>
+        <div class="card-value">${fmt(d.pendientes_despacho)}</div>
+        <div class="card-sub">sin enviar</div>
+      </div>
+
+      <div class="card ok">
+        <div class="card-icon">🚚</div>
+        <div class="card-label">Envíos en camino</div>
+        <div class="card-value">${fmt(d.en_camino)}</div>
+        <div class="card-sub">DAC · SoyDelivery · Robert</div>
+      </div>
+
+      <div class="card ok card-wide">
+        <div class="card-icon">🛒</div>
+        <div class="card-label">Ventas de hoy</div>
+        <div class="ventas-row">
+          <div class="card-value">${fmt(d.ventas_hoy)}</div>
+          <div class="ventas-monto">${fmtMonto(d.monto_hoy)}</div>
+        </div>
+        <div class="card-sub">órdenes pagadas · monto total</div>
+      </div>
+    `;
+
+    const upd = d.updated_at ? new Date(d.updated_at).toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—';
+    document.getElementById('last-update').textContent = `Datos al ${upd}`;
+  }
+
+  async function fetchData() {
+    try {
+      const r = await fetch(`/api/dashboard-data?key=${encodeURIComponent(KEY)}`);
+      if (!r.ok) {
+        document.getElementById('main-grid').innerHTML =
+          '<div class="loading-overlay" style="grid-column:span 4;color:#f87171;">Error al cargar datos (¿clave incorrecta?)</div>';
+        return;
+      }
+      const d = await r.json();
+      if (d.loading) return; // esperar al próximo ciclo
+      renderGrid(d);
+    } catch(e) {
+      console.error(e);
+    }
+  }
+
+  // Reloj
+  function tickClock() {
+    document.getElementById('fecha-hora').textContent =
+      new Date().toLocaleString('es-UY', { weekday:'long', day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  }
+  setInterval(tickClock, 1000);
+  tickClock();
+
+  // Countdown y refresh
+  let countdown = 60;
+  setInterval(() => {
+    countdown--;
+    document.getElementById('countdown').textContent = countdown;
+    if (countdown <= 0) { countdown = 60; fetchData(); }
+  }, 1000);
+
+  fetchData();
+</script>
+</body>
+</html>
