@@ -1719,9 +1719,10 @@ function showApp() {
   document.getElementById('app').style.display = 'block';
   const savedPage = localStorage.getItem('currentPage') || 'tareas';
   showPage(savedPage);
-  // Actualizar badge de alertas al iniciar y cada 3 minutos
+  // Actualizar badge de alertas al iniciar, cada minuto, y al volver a la pestaña
   refreshAlertasBadge();
-  setInterval(refreshAlertasBadge, 3 * 60 * 1000);
+  setInterval(refreshAlertasBadge, 60 * 1000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshAlertasBadge(); });
 }
 
 async function init() {
