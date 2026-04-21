@@ -3,74 +3,66 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MUNDO SHOP — Dashboard</title>
+<title>Mundoshop — Panel de Operaciones</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: 'Montserrat', sans-serif;
-    background: #f0f2f5;
-    color: #1a1d23;
+    background: #f5f6fa;
+    color: #000;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
   }
 
+  /* ── Header ── */
   header {
-    background: linear-gradient(135deg, #001560 0%, #00217E 100%);
-    padding: 16px 36px;
+    background: #00217E;
+    padding: 18px 40px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    box-shadow: 0 2px 12px rgba(0,33,126,0.25);
   }
-  .header-left {
+  .header-logo {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 20px;
   }
-  .header-logo-text {
-    font-size: 20px;
-    font-weight: 800;
-    color: white;
-    letter-spacing: .02em;
-  }
-  .header-logo-text span {
-    color: #FFCA61;
-  }
+  .header-logo svg { height: 38px; width: auto; }
   .header-divider {
-    width: 1px; height: 28px;
-    background: rgba(255,255,255,0.2);
+    width: 1px; height: 32px;
+    background: rgba(255,255,255,0.25);
   }
-  .header-subtitle {
+  .header-label {
     font-size: 12px;
-    font-weight: 500;
-    color: rgba(255,255,255,0.5);
-    letter-spacing: .05em;
+    font-weight: 600;
+    letter-spacing: .1em;
     text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
   }
   .header-right {
     display: flex;
     align-items: center;
-    gap: 28px;
-    font-size: 13px;
-    color: rgba(255,255,255,0.7);
-    font-weight: 500;
+    gap: 32px;
   }
   .header-clock {
     font-size: 15px;
     font-weight: 700;
     color: white;
+    letter-spacing: .02em;
   }
   .refresh-pill {
     display: flex;
     align-items: center;
-    gap: 7px;
+    gap: 8px;
     background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
     border-radius: 20px;
-    padding: 6px 14px;
+    padding: 7px 16px;
     font-size: 12px;
-    color: rgba(255,255,255,0.8);
+    font-weight: 600;
+    color: rgba(255,255,255,0.75);
   }
   .refresh-dot {
     width: 7px; height: 7px;
@@ -78,122 +70,154 @@
     background: #FFCA61;
     animation: pulse 2s infinite;
   }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
+  .refresh-pill strong { color: #FFCA61; }
+  .last-update {
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.4);
+  }
 
+  /* ── Grid ── */
   main {
     flex: 1;
-    padding: 28px 32px;
+    padding: 32px 40px;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 20px;
     align-content: start;
   }
 
-  .kpi-card {
+  /* ── Cards ── */
+  .card {
     background: white;
-    border-radius: 14px;
-    padding: 24px 26px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
-    border: 1px solid #ebebeb;
+    border-radius: 12px;
+    padding: 28px 28px 24px;
+    border: 1.5px solid #e8eaf0;
     position: relative;
     overflow: hidden;
   }
-  .kpi-card::before {
+  .card::after {
     content: '';
     position: absolute;
     top: 0; left: 0; right: 0;
-    height: 4px;
-    background: var(--accent, #00217E);
+    height: 5px;
+    background: var(--top, #00217E);
+    border-radius: 12px 12px 0 0;
   }
+
   /* Estados */
-  .kpi-card.ok     { --accent: #16a34a; }
-  .kpi-card.warn   { --accent: #d97706; }
-  .kpi-card.alert  { --accent: #ea580c; }
-  .kpi-card.danger { --accent: #dc2626; }
+  .card.ok     { --top: #00217E; }
+  .card.warn   { --top: #FFCA61; background: #fffdf0; border-color: #fde68a; }
+  .card.alert  { --top: #f97316; background: #fff8f5; border-color: #fed7aa; }
+  .card.danger { --top: #dc2626; background: #fff5f5; border-color: #fecaca; }
 
-  .kpi-card.warn   { background: #fffbeb; border-color: #fde68a; }
-  .kpi-card.alert  { background: #fff7ed; border-color: #fed7aa; }
-  .kpi-card.danger { background: #fef2f2; border-color: #fecaca; }
-
-  .kpi-icon { font-size: 26px; margin-bottom: 14px; display: block; }
-  .kpi-label {
-    font-size: 11px;
+  .card-icon { font-size: 24px; margin-bottom: 16px; display: block; }
+  .card-label {
+    font-size: 10px;
     font-weight: 700;
-    color: #9ca3af;
     text-transform: uppercase;
-    letter-spacing: 0.6px;
-    margin-bottom: 8px;
+    letter-spacing: .08em;
+    color: #9ca3af;
+    margin-bottom: 10px;
   }
-  .kpi-value {
-    font-size: 56px;
+  .card.warn   .card-label { color: #92400e; }
+  .card.alert  .card-label { color: #9a3412; }
+  .card.danger .card-label { color: #991b1b; }
+
+  .card-value {
+    font-size: 60px;
     font-weight: 800;
     line-height: 1;
-    color: #1a1d23;
-    margin-bottom: 6px;
+    color: #00217E;
+    margin-bottom: 8px;
   }
-  .kpi-card.warn   .kpi-value { color: #92400e; }
-  .kpi-card.alert  .kpi-value { color: #9a3412; }
-  .kpi-card.danger .kpi-value { color: #991b1b; }
+  .card.warn   .card-value { color: #92400e; }
+  .card.alert  .card-value { color: #c2410c; }
+  .card.danger .card-value { color: #b91c1c; }
 
-  .kpi-sub {
+  .card-sub {
     font-size: 12px;
-    color: #9ca3af;
     font-weight: 500;
+    color: #b0b8c4;
   }
+  .card.warn   .card-sub,
+  .card.alert  .card-sub,
+  .card.danger .card-sub { opacity: .6; }
 
-  /* Card ancha (ventas) */
-  .kpi-card.wide {
-    grid-column: span 2;
-  }
-  .kpi-card.wide .kpi-value { font-size: 64px; }
-  .wide-row {
+  /* Card ancha — ventas */
+  .card.wide { grid-column: span 2; }
+  .card.wide .card-value { font-size: 68px; }
+  .ventas-row {
     display: flex;
     align-items: flex-end;
     gap: 20px;
     flex-wrap: wrap;
   }
-  .wide-monto {
-    font-size: 32px;
+  .ventas-monto {
+    font-size: 34px;
     font-weight: 700;
-    color: #00217E;
-    padding-bottom: 4px;
+    color: #FFCA61;
+    padding-bottom: 6px;
+    /* sombra para legibilidad sobre blanco */
+    text-shadow: 0 1px 0 rgba(0,0,0,.08);
   }
+  .card.wide .card-sub { margin-top: 4px; }
 
-  footer {
-    text-align: center;
-    padding: 14px;
-    font-size: 11px;
-    color: #b0b8c4;
-    font-weight: 500;
-    border-top: 1px solid #e5e7eb;
-    background: white;
-  }
-
+  /* Loading / error */
   .loading-msg {
     grid-column: span 4;
     text-align: center;
     padding: 80px;
-    font-size: 16px;
+    font-size: 15px;
+    font-weight: 600;
     color: #9ca3af;
+  }
+
+  /* ── Footer ── */
+  footer {
+    background: white;
+    border-top: 1px solid #e8eaf0;
+    padding: 12px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
     font-weight: 500;
+    color: #c0c7d4;
   }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="header-left">
-    <div class="header-logo-text">MUNDO <span>SHOP</span></div>
+  <div class="header-logo">
+    <!-- Logo fondo oscuro SVG inline -->
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 375 86.95">
+      <defs><style>.l1{fill:#fff}.l2{fill:#ffca61}</style></defs>
+      <g>
+        <path class="l1" d="M0,9.16C0,3.15,1.92,0,9.9,0c6.23,0,9.44,2.31,10.91,9.9l6.05,32h.18l6.05-32c1.47-7.58,4.67-9.9,10.91-9.9,7.97,0,9.9,3.15,9.9,9.16v53.46c0,3.89-2.84,6.38-6.14,6.38s-6.14-2.5-6.14-6.38V14.8h-.18l-10.08,50.13c-.46,2.13-1.19,4.07-4.4,4.07s-3.94-1.94-4.4-4.07L12.46,14.8h-.18v47.82c0,3.89-2.84,6.38-6.14,6.38s-6.14-2.5-6.14-6.38V9.16Z"/>
+        <path class="l1" d="M62.87,23.31c0-4.62,2.2-6.75,5.59-6.75s5.59,2.13,5.59,6.75v30.62c0,3.7,1.56,5.27,4.31,5.27,3.94,0,5.87-2.68,5.87-8.97v-26.92c0-4.62,2.2-6.75,5.59-6.75s5.59,2.13,5.59,6.75v38.94c0,4.62-2.2,6.75-5.59,6.75s-5.59-2.13-5.59-6.48h-.18c-1.83,4.35-6.14,6.48-10.45,6.48-6.23,0-10.72-3.89-10.72-12.4V23.31Z"/>
+        <path class="l1" d="M102.82,23.31c0-4.62,2.2-6.75,5.59-6.75s5.59,2.13,5.59,6.47h.18c1.83-4.35,6.14-6.47,10.45-6.47,6.23,0,10.72,3.88,10.72,12.39v33.3c0,4.62-2.2,6.75-5.59,6.75s-5.59-2.13-5.59-6.75v-30.62c0-3.7-1.92-5.27-4.31-5.27-3.57,0-5.87,2.68-5.87,8.97v26.92c0,4.62-2.2,6.75-5.59,6.75s-5.59-2.13-5.59-6.75V23.31Z"/>
+        <path class="l1" d="M141.68,36.07c0-10.27,1.83-19.52,11.91-19.52,4.12,0,7.88,2.03,9.9,5.83h.18V6.75c0-4.62,2.2-6.75,5.59-6.75s5.59,2.13,5.59,6.75v55.5c0,4.62-2.2,6.75-5.59,6.75s-5.59-2.5-5.59-5.83h-.18c-2.02,3.98-5.68,5.83-9.9,5.83-10.08,0-11.91-9.25-11.91-19.52v-13.41ZM153.41,46.53c0,8.33.55,13.13,4.67,13.13,4.4,0,5.59-5.09,5.59-12.21v-9.44c0-10.08-2.84-12.12-5.5-12.12-3.76,0-4.77,3.05-4.77,14.06v6.57Z"/>
+        <path class="l1" d="M181.27,35.98c0-10.73,3.48-19.42,16.86-19.42s16.86,8.69,16.86,19.42v13.6c0,10.73-3.48,19.42-16.86,19.42s-16.86-8.69-16.86-19.42v-13.6ZM193,48.65c0,9.25,1.47,11.47,5.13,11.47s5.13-2.22,5.13-11.47v-11.93c0-9.06-1.83-11.28-5.13-11.28s-5.13,2.22-5.13,11.28v11.93Z"/>
+        <path class="l2" d="M233.05,43.29c-6.42-4.81-7.51-7.96-7.51-13.23,0-9.06,6.32-13.5,15.3-13.5,11.91,0,15.03,8.23,15.03,12.3,0,3.33-1.37,5.55-5.87,5.55-3.02,0-4.4-1.57-4.58-4.35-.18-3.42-2.02-5.09-4.86-5.09-2.29,0-3.85,1.48-3.85,3.89,0,1.67.64,3.42,2.47,4.81l6.87,5.27c6.96,5.27,10.63,8.6,10.63,15.35,0,9.81-7.06,14.71-16.22,14.71-12.01,0-15.4-7.96-15.4-13.78,0-4.26,2.66-5.64,5.32-5.64,4.12,0,5.5,2.22,5.87,6.94.18,2.13,1.38,4.07,4.86,4.07,2.93,0,4.4-1.67,4.4-4.62,0-2.5-.83-3.88-3.94-6.29l-8.52-6.38Z"/>
+        <path class="l2" d="M262.83,6.75c0-4.62,2.2-6.75,5.59-6.75s5.59,2.13,5.59,6.75v16.28h.18c1.83-4.35,6.14-6.47,10.45-6.47,6.23,0,10.72,3.88,10.72,12.39v33.3c0,4.62-2.2,6.75-5.59,6.75s-5.59-2.13-5.59-6.75v-30.62c0-3.7-1.92-5.27-4.31-5.27-3.57,0-5.87,2.68-5.87,8.97v26.92c0,4.62-2.2,6.75-5.59,6.75s-5.59-2.13-5.59-6.75V6.75Z"/>
+        <path class="l2" d="M302.15,35.98c0-10.73,3.48-19.42,16.86-19.42s16.86,8.69,16.86,19.42v13.6c0,10.73-3.48,19.42-16.86,19.42s-16.86-8.69-16.86-19.42v-13.6ZM313.88,48.65c0,9.25,1.47,11.47,5.13,11.47s5.13-2.22,5.13-11.47v-11.93c0-9.06-1.83-11.28-5.13-11.28s-5.13,2.22-5.13,11.28v11.93Z"/>
+        <path class="l2" d="M341.83,23.31c0-4.62,2.2-6.75,5.59-6.75s5.59,2.13,5.59,6.75h.18c1.92-4.35,6.05-6.75,9.9-6.75,10.08,0,11.91,9.25,11.91,19.52v13.41c0,10.27-1.83,19.52-11.91,19.52-4.22,0-7.88-1.85-9.9-5.64h-.18v16.83c0,4.62-2.2,6.75-5.59,6.75s-5.59-2.13-5.59-6.75V23.31ZM353.01,47.91c0,7.12,1.19,12.21,5.59,12.21,4.12,0,4.67-4.81,4.67-13.13v-7.03c0-11.01-1.01-14.06-4.77-14.06-2.66,0-5.5,2.03-5.5,12.12v9.9Z"/>
+      </g>
+    </svg>
     <div class="header-divider"></div>
-    <div class="header-subtitle">Panel de operaciones</div>
+    <div class="header-label">Panel de operaciones</div>
   </div>
+
   <div class="header-right">
     <div class="header-clock" id="fecha-hora">—</div>
     <div class="refresh-pill">
       <div class="refresh-dot"></div>
-      Actualiza en <strong style="color:white;margin-left:4px;" id="countdown">60</strong>s
+      Actualiza en <strong id="countdown">60</strong>s
     </div>
-    <div id="last-update" style="font-size:12px;">—</div>
+    <div class="last-update" id="last-update">—</div>
   </div>
 </header>
 
@@ -202,91 +226,92 @@
 </main>
 
 <footer>
-  MUNDO SHOP · Dashboard interno · Los datos se actualizan automáticamente cada 60 segundos
+  <span>Mundoshop · Panel interno · Actualización automática cada 60 segundos</span>
+  <span id="footer-status">—</span>
 </footer>
 
 <script>
   const KEY = new URLSearchParams(location.search).get('key') || '';
 
-  function fmt(n)       { return (n || 0).toLocaleString('es-UY'); }
-  function fmtMonto(n)  { return '$\u00a0' + Math.round(n || 0).toLocaleString('es-UY'); }
+  function fmt(n)      { return (n || 0).toLocaleString('es-UY'); }
+  function fmtMonto(n) { return '$ ' + Math.round(n || 0).toLocaleString('es-UY'); }
   function fmtDemora(m) {
     if (!m) return '0m';
     if (m < 60) return `${m}m`;
-    const h = Math.floor(m / 60), rem = m % 60;
-    return rem ? `${h}h ${rem}m` : `${h}h`;
+    const h = Math.floor(m / 60), r = m % 60;
+    return r ? `${h}h ${r}m` : `${h}h`;
   }
-
-  function estado(value, thresholds) {
-    if (value >= thresholds[2]) return 'danger';
-    if (value >= thresholds[1]) return 'alert';
-    if (value >= thresholds[0]) return 'warn';
+  function estado(v, [w, a, d]) {
+    if (v >= d) return 'danger';
+    if (v >= a) return 'alert';
+    if (v >= w) return 'warn';
     return 'ok';
   }
 
   function renderGrid(d) {
-    const ePreg  = estado(d.preguntas_sin_responder, [1, 3, 6]);
-    const eDem   = estado(d.demora_maxima_min,       [15, 60, 120]);
-    const eMsg   = estado(d.mensajes_sin_leer,       [1, 3, 5]);
-    const eRec   = estado(d.reclamos_abiertos,       [1, 2, 4]);
-    const eDesp  = estado(d.pendientes_despacho,     [1, 4, 8]);
+    const eP = estado(d.preguntas_sin_responder, [1, 3, 6]);
+    const eD = estado(d.demora_maxima_min,       [15, 60, 120]);
+    const eM = estado(d.mensajes_sin_leer,       [1, 3, 5]);
+    const eR = estado(d.reclamos_abiertos,       [1, 2, 4]);
+    const eE = estado(d.pendientes_despacho,     [1, 4, 8]);
 
     const upd = d.updated_at
       ? new Date(d.updated_at).toLocaleTimeString('es-UY', { hour:'2-digit', minute:'2-digit', second:'2-digit' })
       : '—';
     document.getElementById('last-update').textContent = `Datos al ${upd}`;
+    document.getElementById('footer-status').textContent = `Última actualización: ${upd}`;
 
     document.getElementById('main-grid').innerHTML = `
-      <div class="kpi-card ${ePreg}">
-        <span class="kpi-icon">💬</span>
-        <div class="kpi-label">Preguntas sin responder</div>
-        <div class="kpi-value">${fmt(d.preguntas_sin_responder)}</div>
-        <div class="kpi-sub">MercadoLibre · sin respuesta</div>
+      <div class="card ${eP}">
+        <span class="card-icon">💬</span>
+        <div class="card-label">Preguntas sin responder</div>
+        <div class="card-value">${fmt(d.preguntas_sin_responder)}</div>
+        <div class="card-sub">MercadoLibre · sin respuesta</div>
       </div>
 
-      <div class="kpi-card ${eDem}">
-        <span class="kpi-icon">⏱️</span>
-        <div class="kpi-label">Demora máxima de respuesta</div>
-        <div class="kpi-value" style="font-size:${d.demora_maxima_min >= 60 ? '42px' : '56px'};">${fmtDemora(d.demora_maxima_min)}</div>
-        <div class="kpi-sub">horas hábiles · peor caso activo</div>
+      <div class="card ${eD}">
+        <span class="card-icon">⏱️</span>
+        <div class="card-label">Demora máxima de respuesta</div>
+        <div class="card-value" style="font-size:${d.demora_maxima_min >= 60 ? '44px' : '60px'};">${fmtDemora(d.demora_maxima_min)}</div>
+        <div class="card-sub">horas hábiles · peor caso activo</div>
       </div>
 
-      <div class="kpi-card ${eMsg}">
-        <span class="kpi-icon">📨</span>
-        <div class="kpi-label">Mensajes post-venta sin leer</div>
-        <div class="kpi-value">${fmt(d.mensajes_sin_leer)}</div>
-        <div class="kpi-sub">conversaciones pendientes</div>
+      <div class="card ${eM}">
+        <span class="card-icon">📨</span>
+        <div class="card-label">Mensajes post-venta sin leer</div>
+        <div class="card-value">${fmt(d.mensajes_sin_leer)}</div>
+        <div class="card-sub">conversaciones pendientes</div>
       </div>
 
-      <div class="kpi-card ${eRec}">
-        <span class="kpi-icon">⚠️</span>
-        <div class="kpi-label">Reclamos abiertos</div>
-        <div class="kpi-value">${fmt(d.reclamos_abiertos)}</div>
-        <div class="kpi-sub">requieren atención</div>
+      <div class="card ${eR}">
+        <span class="card-icon">⚠️</span>
+        <div class="card-label">Reclamos abiertos</div>
+        <div class="card-value">${fmt(d.reclamos_abiertos)}</div>
+        <div class="card-sub">requieren atención</div>
       </div>
 
-      <div class="kpi-card ${eDesp}">
-        <span class="kpi-icon">📦</span>
-        <div class="kpi-label">Pedidos pendientes de despacho</div>
-        <div class="kpi-value">${fmt(d.pendientes_despacho)}</div>
-        <div class="kpi-sub">sin enviar aún</div>
+      <div class="card ${eE}">
+        <span class="card-icon">📦</span>
+        <div class="card-label">Pedidos pendientes de despacho</div>
+        <div class="card-value">${fmt(d.pendientes_despacho)}</div>
+        <div class="card-sub">sin enviar aún</div>
       </div>
 
-      <div class="kpi-card ok">
-        <span class="kpi-icon">🚚</span>
-        <div class="kpi-label">Envíos en camino</div>
-        <div class="kpi-value">${fmt(d.en_camino)}</div>
-        <div class="kpi-sub">DAC · SoyDelivery · Robert</div>
+      <div class="card ok">
+        <span class="card-icon">🚚</span>
+        <div class="card-label">Envíos en camino</div>
+        <div class="card-value">${fmt(d.en_camino)}</div>
+        <div class="card-sub">DAC · SoyDelivery · Robert</div>
       </div>
 
-      <div class="kpi-card ok wide">
-        <span class="kpi-icon">🛒</span>
-        <div class="kpi-label">Ventas de hoy</div>
-        <div class="wide-row">
-          <div class="kpi-value">${fmt(d.ventas_hoy)}</div>
-          <div class="wide-monto">${fmtMonto(d.monto_hoy)}</div>
+      <div class="card ok wide">
+        <span class="card-icon">🛒</span>
+        <div class="card-label">Ventas de hoy</div>
+        <div class="ventas-row">
+          <div class="card-value">${fmt(d.ventas_hoy)}</div>
+          <div class="ventas-monto">${fmtMonto(d.monto_hoy)}</div>
         </div>
-        <div class="kpi-sub">órdenes pagadas hoy · monto total</div>
+        <div class="card-sub">órdenes pagadas hoy · monto total</div>
       </div>
     `;
   }
@@ -305,22 +330,19 @@
     } catch(e) { console.error(e); }
   }
 
-  // Reloj en tiempo real
   function tickClock() {
-    const now = new Date();
     document.getElementById('fecha-hora').textContent =
-      now.toLocaleDateString('es-UY', { weekday:'long', day:'2-digit', month:'2-digit' }) + ' · ' +
-      now.toLocaleTimeString('es-UY', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+      new Date().toLocaleDateString('es-UY', { weekday:'long', day:'2-digit', month:'long' }) + '  ·  ' +
+      new Date().toLocaleTimeString('es-UY', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
   }
   setInterval(tickClock, 1000);
   tickClock();
 
-  // Countdown + refresh
-  let countdown = 60;
+  let cd = 60;
   setInterval(() => {
-    countdown--;
-    document.getElementById('countdown').textContent = countdown;
-    if (countdown <= 0) { countdown = 60; fetchData(); }
+    cd--;
+    document.getElementById('countdown').textContent = cd;
+    if (cd <= 0) { cd = 60; fetchData(); }
   }, 1000);
 
   fetchData();
