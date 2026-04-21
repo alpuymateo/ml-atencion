@@ -525,6 +525,98 @@ app.get('/api/reclamos/scan/status', requireToken, (req, res) => {
   res.json(scanState);
 });
 
+// GET /api/reclamos/:id — Detalle + mensajes de un reclamo desde ML
+app.get('/api/reclamos/:id', requireToken, async (req, res) => {
+  const claimId = req.params.id;
+  const headers = { Authorization: `Bearer ${tokenData.access_token}` };
+  try {
+    const [claimRes, msgsRes] = await Promise.all([
+      axios.get(`${ML_API_URL}/post-purchase/v1/claims/${claimId}`, { headers }),
+      axios.get(`${ML_API_URL}/post-purchase/v1/claims/${claimId}/messages`, { headers }).catch(() => ({ data: { messages: [] } })),
+    ]);
+    res.json({ claim: claimRes.data, messages: msgsRes.data.messages || [] });
+  } catch(e) {
+    res.status(e.response?.status || 500).json({ error: e.message });
+  }
+});
+
+// POST /api/reclamos/:id/simular — Generar respuesta IA para un reclamo
+app.post('/api/reclamos/:id/simular', requireToken, async (req, res) => {
+  if (!anthropic) return res.status(503).json({ error: 'IA no configurada' });
+  const claimId = req.params.id;
+  const headers = { Authorization: `Bearer ${tokenData.access_token}` };
+  try {
+    const [claimRes, msgsRes] = await Promise.all([
+      axios.get(`${ML_API_URL}/post-purchase/v1/claims/${claimId}`, { headers }),
+      axios.get(`${ML_API_URL}/post-purchase/v1/claims/${claimId}/messages`, { headers }).catch(() => ({ data: { messages: [] } })),
+    ]);
+    const claim = claimRes.data;
+    const messages = msgsRes.data.messages || [];
+
+    const reglasText = reglasTexto(filtrarReglasPorContexto(loadReglasNegocio(), 'reclamos'));
+
+    const TIPO_TEXT = {
+      'cancel': 'cancelación de orden',
+      'returns': 'devolución de producto',
+      'claim': 'reclamo',
+      'fulfillment': 'problema con fulfillment',
+    };
+    const MOTIVO_TEXT = {
+      'PRODUCT_NOT_DELIVERED': 'producto no recibido',
+      'PRODUCT_NOT_AS_DESCRIBED': 'producto no es como se describía',
+      'PRODUCT_DAMAGED': 'producto llegó dañado',
+      'SELLER_DIDNT_DISPATCH': 'vendedor no despachó',
+      'BUYER_WANT_TO_CANCEL': 'comprador quiere cancelar',
+      'DELIVERY_ISSUES': 'problemas con el envío',
+    };
+
+    const tipoReclamo  = TIPO_TEXT[claim.type]      || claim.type      || 'reclamo';
+    const motivoReclamo = MOTIVO_TEXT[claim.reason_id] || claim.reason_id || 'motivo no especificado';
+
+    const historial = messages.map(m => {
+      const rol = m.from?.role === 'complainant' ? 'COMPRADOR' : (m.from?.role === 'respondent' ? 'VENDEDOR' : 'MEDIADOR');
+      return `[${rol}]: ${m.message || m.text || ''}`;
+    }).join('\n');
+
+    const r = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 400,
+      messages: [{
+        role: 'user',
+        content: `Sos el equipo de atención al cliente de MUNDO SHOP en Mercado Libre Uruguay.
+Hay un reclamo abierto y necesitás redactar una respuesta profesional y empática.
+Usá lenguaje natural del Río de la Plata (vos, te, etc). Evitá frases corporativas o robóticas.
+${reglasText ? 'REGLAS DEL NEGOCIO:\n' + reglasText : ''}
+
+Tipo de reclamo: ${tipoReclamo}
+Motivo: ${motivoReclamo}
+Estado: ${claim.status}
+
+${historial ? `--- MENSAJES DEL RECLAMO ---\n${historial}\n--- FIN ---\n` : 'No hay mensajes previos en el reclamo.'}
+
+INSTRUCCIONES:
+- Reconocé el inconveniente con empatía antes de proponer la solución
+- Proponé una acción concreta según el tipo (coordinar retiro, reenviar producto, emitir reembolso, etc)
+- Sé breve y directo (máximo 3 oraciones)
+- NUNCA inventes información que no tenés
+- Cerrá con "¡Cualquier cosa nos avisás! MUNDO SHOP"
+Respondé en JSON: {"respuesta":"..."}`
+      }]
+    });
+
+    const text = r.content[0].text.trim();
+    try {
+      const match = text.match(/\{[\s\S]*\}/);
+      res.json(JSON.parse(match[0]));
+    } catch {
+      res.json({ respuesta: text.replace(/```json?/gi,'').replace(/```/g,'').trim() });
+    }
+  } catch(e) {
+    console.error('[reclamos/simular]', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ── GET /api/tareas ───────────────────────────────────────────────
 app.get('/api/tareas', requireToken, async (req, res) => {
   const headers = { Authorization: `Bearer ${tokenData.access_token}` };
@@ -1193,6 +1285,7 @@ function filtrarReglasPorContexto(reglas, contexto) {
     'post-venta': ['post-venta', 'envíos', 'retiros', 'general'],
     'preguntas':  ['preguntas', 'envíos', 'general'],
     'tareas':     ['tareas', 'envíos', 'general'],
+    'reclamos':   ['reclamos', 'post-venta', 'envíos', 'general'],
   };
   const permitidas = MAP[contexto] || null;
   if (!permitidas) return reglas;

@@ -356,7 +356,7 @@
           <span class="nav-icon">📨</span> Post-venta
         </div>
         <div class="nav-item" data-page="reclamos" onclick="showPage('reclamos')">
-          <span class="nav-icon">⚠️</span> Reclamos
+          <span class="nav-icon">⚠️</span> Reclamos <span id="reclamos-badge" style="display:none;background:#ef4444;color:white;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700;margin-left:4px;"></span>
         </div>
         <div class="nav-item" data-page="devoluciones" onclick="showPage('devoluciones')">
           <span class="nav-icon">↩️</span> Devoluciones
@@ -1004,31 +1004,92 @@ function showPage(page) {
 }
 
 // ── Claims ──
+function getClaimUrgency(dateCreated) {
+  const hrs = (Date.now() - new Date(dateCreated).getTime()) / 3600000;
+  if (hrs >= 72) return { bg:'#7f1d1d', border:'#991b1b', text:'#fee2e2', label:'Crítico +3d',  labelBg:'#991b1b' };
+  if (hrs >= 48) return { bg:'#fef2f2', border:'#f87171', text:'#111827', label:'+48 hs',       labelBg:'#ef4444' };
+  if (hrs >= 24) return { bg:'#fff7ed', border:'#fb923c', text:'#111827', label:'+24 hs',       labelBg:'#f97316' };
+  return               { bg:'#fefce8', border:'#fbbf24', text:'#111827', label:'Hoy',           labelBg:'#eab308' };
+}
+
 function buildClaimsTable(claims) {
   if (!claims.length) return '<div class="loading">No hay reclamos recibidos todavía.<br><small style="color:#b0b8c4">Los reclamos aparecerán aquí cuando MercadoLibre envíe notificaciones.</small></div>';
-  const rows = claims.map(c => {
+  return claims.map(c => {
     const complainant = c.players?.find(p => p.role === 'complainant');
     const buyerLabel  = complainant ? `#${complainant.user_id}` : '—';
     const typeLabel   = CLAIM_TYPE_LABELS[c.type] || c.type || '—';
     const reasonLabel = CLAIM_REASON_LABELS[c.reason_id] || c.reason_id || '—';
-    const statusCls   = 'badge badge-' + (c.status === 'opened' ? 'opened' : 'closed');
-    const stage       = c.stage && c.stage !== 'none' ? `<small style="color:#9ca3af">(${c.stage})</small>` : '';
-    return `<tr>
-      <td style="font-family:monospace;font-size:12px;color:#6b7280;">#${c.id}</td>
-      <td style="font-family:monospace;font-size:12px;color:#6b7280;">#${c.resource_id || '—'}</td>
-      <td>${typeLabel}</td>
-      <td>${reasonLabel}</td>
-      <td style="font-weight:500;">${buyerLabel}</td>
-      <td><span class="${statusCls}">${CLAIM_STATUS_LABELS[c.status] || c.status}</span> ${stage}</td>
-      <td>${fmtDate(c.date_created)}</td>
-    </tr>`;
+    const isOpen      = c.status === 'opened';
+    const urg         = isOpen ? getClaimUrgency(c.date_created) : null;
+    const cardBg      = urg ? urg.bg : '#f9fafb';
+    const cardBorder  = urg ? urg.border : '#e5e7eb';
+    const cardText    = urg ? urg.text : '#374151';
+    const stage       = c.stage && c.stage !== 'none' ? ` · ${c.stage}` : '';
+    const mlUrl       = `https://www.mercadolibre.com.uy/ventas/${c.resource_id}/reclamo`;
+    return `<div id="claim-card-${c.id}" style="background:${cardBg};border:1.5px solid ${cardBorder};border-radius:10px;padding:14px 18px;margin-bottom:10px;color:${cardText};">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          ${urg ? `<span style="background:${urg.labelBg};color:white;border-radius:6px;padding:2px 9px;font-size:11px;font-weight:700;">${urg.label}</span>` : `<span style="background:#6b7280;color:white;border-radius:6px;padding:2px 9px;font-size:11px;font-weight:700;">Cerrado</span>`}
+          <span style="font-size:13px;font-weight:600;">${typeLabel}</span>
+          <span style="font-size:12px;opacity:.75;">${reasonLabel}${stage}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:11px;opacity:.7;">${fmtDate(c.date_created)} · Comprador ${buyerLabel} · Orden #${c.resource_id || '—'}</span>
+          ${isOpen ? `<button onclick="toggleClaimDetail(${c.id})" style="padding:4px 12px;background:#00217E;color:white;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">Ver detalle</button>` : ''}
+          <a href="${mlUrl}" target="_blank" style="padding:4px 12px;background:white;color:#00217E;border:1.5px solid #00217E;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;">Ir a ML →</a>
+        </div>
+      </div>
+      <div id="claim-detail-${c.id}" style="display:none;margin-top:14px;border-top:1px solid ${cardBorder};padding-top:12px;">
+        <div id="claim-detail-content-${c.id}"><span class="spinner"></span> Cargando...</div>
+      </div>
+    </div>`;
   }).join('');
-  return `<table>
-    <thead><tr>
-      <th>ID Reclamo</th><th>ID Orden</th><th>Tipo</th><th>Motivo</th><th>Comprador</th><th>Estado</th><th>Fecha</th>
-    </tr></thead>
-    <tbody>${rows}</tbody>
-  </table>`;
+}
+
+async function toggleClaimDetail(claimId) {
+  const detail = document.getElementById(`claim-detail-${claimId}`);
+  if (!detail) return;
+  if (detail.style.display !== 'none') { detail.style.display = 'none'; return; }
+  detail.style.display = 'block';
+  const content = document.getElementById(`claim-detail-content-${claimId}`);
+  content.innerHTML = '<span class="spinner"></span> Cargando...';
+  try {
+    const r = await fetch(`/api/reclamos/${claimId}`, { headers: authHeaders() });
+    const d = await r.json();
+    const msgs = d.messages || [];
+    const msgsHtml = msgs.length
+      ? msgs.map(m => {
+          const rol = m.from?.role === 'complainant' ? '🧑 Comprador' : (m.from?.role === 'respondent' ? '🏪 Vendedor' : '⚖️ ML');
+          return `<div style="margin-bottom:8px;"><span style="font-size:11px;font-weight:700;color:#6b7280;">${rol}</span><br><span style="font-size:13px;">${m.message || m.text || '—'}</span></div>`;
+        }).join('')
+      : '<p style="font-size:13px;color:#9ca3af;">Sin mensajes en el reclamo.</p>';
+    content.innerHTML = `
+      <div style="margin-bottom:12px;">${msgsHtml}</div>
+      <div id="claim-ia-${claimId}">
+        <button onclick="simularReclamo(${claimId})" style="padding:6px 14px;background:#7c3aed;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">✨ Sugerir respuesta IA</button>
+      </div>`;
+  } catch(e) {
+    content.innerHTML = `<p style="color:#ef4444;">Error al cargar detalle.</p>`;
+  }
+}
+
+async function simularReclamo(claimId) {
+  const box = document.getElementById(`claim-ia-${claimId}`);
+  if (!box) return;
+  box.innerHTML = '<span class="spinner"></span> Generando respuesta...';
+  try {
+    const r = await fetch(`/api/reclamos/${claimId}/simular`, { method: 'POST', headers: authHeaders() });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    box.innerHTML = `
+      <div style="background:#f5f3ff;border:1px solid #c4b5fd;border-radius:8px;padding:12px 14px;margin-bottom:10px;">
+        <div style="font-size:11px;font-weight:700;color:#7c3aed;margin-bottom:6px;">✨ Respuesta sugerida por IA</div>
+        <div id="claim-ia-text-${claimId}" style="font-size:13px;color:#1a1d23;">${d.respuesta}</div>
+      </div>
+      <button onclick="simularReclamo(${claimId})" style="padding:4px 10px;background:#ede9fe;color:#7c3aed;border:none;border-radius:6px;font-size:12px;cursor:pointer;">↺ Regenerar</button>`;
+  } catch(e) {
+    box.innerHTML = `<p style="color:#ef4444;font-size:13px;">Error: ${e.message}</p><button onclick="simularReclamo(${claimId})" style="padding:4px 10px;background:#ede9fe;color:#7c3aed;border:none;border-radius:6px;font-size:12px;cursor:pointer;">Reintentar</button>`;
+  }
 }
 
 function filterClaims() {
@@ -1381,7 +1442,7 @@ async function analizarProducto(itemId) {
   }
 }
 
-// Actualizar badge de alertas en background cada 3 minutos
+// Actualizar badges de alertas y reclamos en background
 async function refreshAlertasBadge() {
   try {
     const r = await fetch('/api/ml/preguntas/pendientes?limit=100', { headers: authHeaders() });
@@ -1390,6 +1451,13 @@ async function refreshAlertasBadge() {
     const ahora = Date.now();
     const count = preguntas.filter(q => Math.floor((ahora - new Date(q.date_created).getTime()) / 60000) >= 15).length;
     const badge = document.getElementById('alertas-badge');
+    if (badge) { badge.textContent = count; badge.style.display = count ? '' : 'none'; }
+  } catch(_) {}
+  try {
+    const r = await fetch('/api/reclamos/stats', { headers: authHeaders() });
+    const d = await r.json();
+    const count = d.by_status?.opened || 0;
+    const badge = document.getElementById('reclamos-badge');
     if (badge) { badge.textContent = count; badge.style.display = count ? '' : 'none'; }
   } catch(_) {}
 }
