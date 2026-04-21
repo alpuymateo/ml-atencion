@@ -1004,12 +1004,38 @@ function showPage(page) {
 }
 
 // ── Claims ──
+// Calcula minutos hábiles transcurridos desde una fecha
+// Lunes-Viernes 9-18, Sábado 9-13
+function businessMinutesSince(dateCreated) {
+  const SCHEDULE = [null, [9,18], [9,18], [9,18], [9,18], [9,18], [9,13]]; // 0=dom,1=lun,...,6=sab
+  let mins = 0;
+  let cursor = new Date(dateCreated);
+  const now = new Date();
+  if (cursor >= now) return 0;
+  while (cursor < now) {
+    const dow = cursor.getDay();
+    const range = SCHEDULE[dow];
+    if (range) {
+      const dayStart = new Date(cursor); dayStart.setHours(range[0], 0, 0, 0);
+      const dayEnd   = new Date(cursor); dayEnd.setHours(range[1], 0, 0, 0);
+      const from = cursor < dayStart ? dayStart : cursor;
+      const to   = now < dayEnd ? now : dayEnd;
+      if (to > from) mins += (to - from) / 60000;
+    }
+    // Avanzar al inicio del próximo día hábil
+    cursor.setDate(cursor.getDate() + 1);
+    cursor.setHours(0, 0, 0, 0);
+  }
+  return Math.floor(mins);
+}
+
 function getClaimUrgency(dateCreated) {
-  const hrs = (Date.now() - new Date(dateCreated).getTime()) / 3600000;
-  if (hrs >= 72) return { bg:'#7f1d1d', border:'#991b1b', text:'#fee2e2', label:'Crítico +3d',  labelBg:'#991b1b' };
-  if (hrs >= 48) return { bg:'#fef2f2', border:'#f87171', text:'#111827', label:'+48 hs',       labelBg:'#ef4444' };
-  if (hrs >= 24) return { bg:'#fff7ed', border:'#fb923c', text:'#111827', label:'+24 hs',       labelBg:'#f97316' };
-  return               { bg:'#fefce8', border:'#fbbf24', text:'#111827', label:'Hoy',           labelBg:'#eab308' };
+  const mins = businessMinutesSince(dateCreated);
+  if (mins >= 120) return { bg:'#7f1d1d', border:'#991b1b', text:'#fee2e2', label:'Crítico +2hs', labelBg:'#991b1b' };
+  if (mins >= 60)  return { bg:'#fef2f2', border:'#f87171', text:'#111827', label:'+1 hora',      labelBg:'#ef4444' };
+  if (mins >= 30)  return { bg:'#fff7ed', border:'#fb923c', text:'#111827', label:'+30 min',      labelBg:'#f97316' };
+  if (mins >= 15)  return { bg:'#fefce8', border:'#fbbf24', text:'#111827', label:'+15 min',      labelBg:'#eab308' };
+  return                  { bg:'#f0fdf4', border:'#86efac', text:'#111827', label:'Reciente',      labelBg:'#22c55e' };
 }
 
 function buildClaimsTable(claims) {
