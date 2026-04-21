@@ -1943,11 +1943,13 @@ app.get('/api/envios/deri', requireToken, async (req, res) => {
 app.post('/webhook/dac', (req, res) => {
   console.log('[dac/webhook]:', JSON.stringify(req.body).slice(0, 500));
   res.json({ ok: true });
+  actualizarRetiros().catch(e => console.error('[dac/webhook] refresh:', e.message));
 });
 
 app.post('/webhook/deri', (req, res) => {
   console.log('[deri/webhook]:', JSON.stringify(req.body).slice(0, 500));
   res.json({ ok: true });
+  actualizarRetiros().catch(e => console.error('[deri/webhook] refresh:', e.message));
 });
 
 // ── SoyDelivery Webhooks ──
@@ -1967,6 +1969,7 @@ app.post('/webhook/soydelivery/:event', (req, res) => {
   }
 
   res.json({ ok: true });
+  actualizarRetiros().catch(e => console.error('[soydelivery/webhook] refresh:', e.message));
 });
 
 // Endpoint genérico para cualquier webhook de SoyDelivery
@@ -1983,6 +1986,7 @@ app.post('/webhook/soydelivery', (req, res) => {
   }
 
   res.json({ ok: true });
+  actualizarRetiros().catch(e => console.error('[soydelivery/webhook] refresh:', e.message));
 });
 
 // GET /api/ml/preguntas/pendientes
