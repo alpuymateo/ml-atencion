@@ -370,7 +370,7 @@
       </div>
       <div class="nav-group-items" id="nav-envios" style="display:none;">
         <div class="nav-item" data-page="cola-envios" onclick="showPage('cola-envios')">
-          <span class="nav-icon">📋</span> Cola de Env&iacute;os
+          <span class="nav-icon">📋</span> Cola de Env&iacute;os <span id="cola-envios-badge" style="display:none;background:#ef4444;color:white;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700;margin-left:4px;"></span>
         </div>
         <div class="nav-item" data-page="retiros" onclick="showPage('retiros')">
           <span class="nav-icon">📦</span> Retiros
@@ -1503,6 +1503,17 @@ async function refreshAlertasBadge() {
     const count = d.by_status?.opened || 0;
     const badge = document.getElementById('reclamos-badge');
     if (badge) { badge.textContent = count; badge.style.display = count ? '' : 'none'; }
+  } catch(_) {}
+  try {
+    const r = await fetch('/api/ml/retiros', { headers: authHeaders() });
+    const d = await r.json();
+    const ahora = Date.now();
+    // Solo muestra badge si hay pendientes con más de 2hs (urgentes)
+    const urgentes = (d.pendientes || []).filter(e =>
+      Math.floor((ahora - new Date(e.date_created).getTime()) / 60000) >= 120
+    ).length;
+    const badge = document.getElementById('cola-envios-badge');
+    if (badge) { badge.textContent = urgentes; badge.style.display = urgentes ? '' : 'none'; }
   } catch(_) {}
 }
 
