@@ -4,195 +4,388 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mundoshop — Panel de Operaciones</title>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: 'Montserrat', sans-serif;
-    background: #f5f6fa;
-    color: #000;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
+:root {
+  --bg:       #03091a;
+  --surface:  #07112b;
+  --card:     #0c1c3f;
+  --border:   rgba(255,255,255,0.07);
+  --blue:     #00217E;
+  --yellow:   #FFCA61;
+  --text:     #ffffff;
+  --muted:    rgba(255,255,255,0.4);
+  --ok:       #10b981;
+  --warn:     #FFCA61;
+  --alert:    #f97316;
+  --danger:   #ef4444;
+}
 
-  /* ── Header ── */
-  header {
-    background: #00217E;
-    padding: 18px 40px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .header-logo {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-  }
-  .header-logo svg { height: 38px; width: auto; }
-  .header-divider {
-    width: 1px; height: 32px;
-    background: rgba(255,255,255,0.25);
-  }
-  .header-label {
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: .1em;
-    text-transform: uppercase;
-    color: rgba(255,255,255,0.5);
-  }
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: 32px;
-  }
-  .header-clock {
-    font-size: 15px;
-    font-weight: 700;
-    color: white;
-    letter-spacing: .02em;
-  }
-  .refresh-pill {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 20px;
-    padding: 7px 16px;
-    font-size: 12px;
-    font-weight: 600;
-    color: rgba(255,255,255,0.75);
-  }
-  .refresh-dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: #FFCA61;
-    animation: pulse 2s infinite;
-  }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
-  .refresh-pill strong { color: #FFCA61; }
-  .last-update {
-    font-size: 11px;
-    font-weight: 500;
-    color: rgba(255,255,255,0.4);
-  }
+* { margin:0; padding:0; box-sizing:border-box; }
 
-  /* ── Grid ── */
-  main {
-    flex: 1;
-    padding: 32px 40px;
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
-    align-content: start;
-  }
+body {
+  font-family: 'Montserrat', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
 
-  /* ── Cards ── */
-  .card {
-    background: white;
-    border-radius: 12px;
-    padding: 28px 28px 24px;
-    border: 1.5px solid #e8eaf0;
-    position: relative;
-    overflow: hidden;
-  }
-  .card::after {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 5px;
-    background: var(--top, #00217E);
-    border-radius: 12px 12px 0 0;
-  }
+/* ─── HEADER ─── */
+header {
+  background: var(--blue);
+  padding: 0 40px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  border-bottom: 3px solid var(--yellow);
+  position: relative;
+  z-index: 10;
+}
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.header-left svg { height: 36px; width: auto; }
+.header-sep {
+  width: 1px; height: 28px;
+  background: rgba(255,255,255,0.2);
+}
+.header-tag {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.45);
+}
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+.header-clock {
+  font-size: 17px;
+  font-weight: 700;
+  color: white;
+  letter-spacing: .02em;
+  text-align: right;
+}
+.header-clock small {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.45);
+  letter-spacing: .06em;
+  margin-top: 2px;
+}
+.refresh-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 99px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.6);
+}
+.pulse-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--yellow);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.8)} }
+.refresh-badge strong { color: var(--yellow); }
 
-  /* Estados */
-  .card.ok     { --top: #00217E; }
-  .card.warn   { --top: #FFCA61; background: #fffdf0; border-color: #fde68a; }
-  .card.alert  { --top: #f97316; background: #fff8f5; border-color: #fed7aa; }
-  .card.danger { --top: #dc2626; background: #fff5f5; border-color: #fecaca; }
+/* ─── MAIN ─── */
+main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1.45fr .95fr;
+  gap: 18px;
+  padding: 18px 24px;
+  overflow: hidden;
+  min-height: 0;
+}
 
-  .card-icon { font-size: 24px; margin-bottom: 16px; display: block; }
-  .card-label {
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .08em;
-    color: #9ca3af;
-    margin-bottom: 10px;
-  }
-  .card.warn   .card-label { color: #92400e; }
-  .card.alert  .card-label { color: #9a3412; }
-  .card.danger .card-label { color: #991b1b; }
+/* ─── MODULE ─── */
+.module {
+  background: var(--surface);
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+.mod-header {
+  padding: 13px 22px;
+  background: rgba(0,33,126,0.5);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.mod-icon { font-size: 17px; }
+.mod-title {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .14em;
+  color: var(--yellow);
+}
+.mod-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  gap: 12px;
+  min-height: 0;
+  overflow: hidden;
+}
 
-  .card-value {
-    font-size: 60px;
-    font-weight: 800;
-    line-height: 1;
-    color: #00217E;
-    margin-bottom: 8px;
-  }
-  .card.warn   .card-value { color: #92400e; }
-  .card.alert  .card-value { color: #c2410c; }
-  .card.danger .card-value { color: #b91c1c; }
+/* ─── KPI CARD ─── */
+.kpi {
+  background: var(--card);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--sc, var(--ok));
+  padding: 15px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-height: 0;
+}
+.kpi.warn   { --sc: var(--warn); }
+.kpi.alert  { --sc: var(--alert); }
+.kpi.danger { --sc: var(--danger); }
 
-  .card-sub {
-    font-size: 12px;
-    font-weight: 500;
-    color: #b0b8c4;
-  }
-  .card.warn   .card-sub,
-  .card.alert  .card-sub,
-  .card.danger .card-sub { opacity: .6; }
+.kpi-icon { font-size: 26px; flex-shrink: 0; }
+.kpi-body { flex:1; min-width:0; }
+.kpi-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  color: var(--muted);
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.kpi-value {
+  font-size: 52px;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--sc, var(--ok));
+  letter-spacing: -.02em;
+}
+.kpi-value.sm { font-size: 36px; }
+.kpi-sub {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.kpi-delta {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+}
 
-  /* Card ancha — ventas */
-  .card.wide { grid-column: span 2; }
-  .card.wide .card-value { font-size: 68px; }
-  .ventas-row {
-    display: flex;
-    align-items: flex-end;
-    gap: 20px;
-    flex-wrap: wrap;
-  }
-  .ventas-monto {
-    font-size: 34px;
-    font-weight: 700;
-    color: #FFCA61;
-    padding-bottom: 6px;
-    /* sombra para legibilidad sobre blanco */
-    text-shadow: 0 1px 0 rgba(0,0,0,.08);
-  }
-  .card.wide .card-sub { margin-top: 4px; }
+/* ─── VENTAS MODULE ─── */
+.ventas-hero {
+  background: var(--card);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  padding: 20px 24px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.ventas-left {}
+.v-sup {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.v-count {
+  font-size: 88px;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--yellow);
+  letter-spacing: -.04em;
+}
+.v-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.ventas-right {
+  text-align: right;
+}
+.v-monto {
+  font-size: 30px;
+  font-weight: 800;
+  color: white;
+  letter-spacing: -.01em;
+}
+.v-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 700;
+  margin-top: 6px;
+  padding: 4px 10px;
+  border-radius: 99px;
+}
+.v-delta.up   { background: rgba(16,185,129,.15); color: #10b981; }
+.v-delta.down { background: rgba(239,68,68,.15);  color: #ef4444; }
+.v-delta.flat { background: rgba(255,255,255,.06); color: var(--muted); }
+.v-ayer {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--muted);
+  margin-top: 6px;
+}
 
-  /* Loading / error */
-  .loading-msg {
-    grid-column: span 4;
-    text-align: center;
-    padding: 80px;
-    font-size: 15px;
-    font-weight: 600;
-    color: #9ca3af;
-  }
+/* ─── BAR CHART ─── */
+.chart-wrap {
+  flex: 1;
+  background: var(--card);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  padding: 16px 18px 12px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.chart-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--muted);
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+.chart-inner {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  min-height: 0;
+}
+.bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+}
+.bar-wrap {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+.bar {
+  width: 100%;
+  border-radius: 4px 4px 0 0;
+  min-height: 3px;
+  transition: height .6s ease;
+  background: rgba(255,202,97,.3);
+}
+.bar.active { background: var(--yellow); }
+.bar.past   { background: rgba(255,202,97,.6); }
+.bar-val {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 3px;
+  opacity: 0;
+  min-height: 14px;
+}
+.bar-val.show { opacity: 1; }
+.bar-lbl {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-top: 4px;
+  white-space: nowrap;
+}
+.bar-lbl.active { color: var(--yellow); font-weight: 800; }
 
-  /* ── Footer ── */
-  footer {
-    background: white;
-    border-top: 1px solid #e8eaf0;
-    padding: 12px 40px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 11px;
-    font-weight: 500;
-    color: #c0c7d4;
-  }
+/* extra KPI row in ventas */
+.v-extras {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.mini-kpi {
+  background: var(--card);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.mini-icon { font-size: 20px; }
+.mini-body {}
+.mini-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--muted);
+}
+.mini-val {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1;
+  margin-top: 2px;
+}
+.mini-sub {
+  font-size: 9px;
+  color: var(--muted);
+  margin-top: 1px;
+}
+
+/* ─── LOADING / ERROR ─── */
+.full-msg {
+  grid-column: span 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--muted);
+}
 </style>
 </head>
 <body>
 
 <header>
-  <div class="header-logo">
-    <!-- Logo fondo oscuro SVG inline -->
+  <div class="header-left">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 375 86.95">
       <defs><style>.l1{fill:#fff}.l2{fill:#ffca61}</style></defs>
       <g>
@@ -207,145 +400,258 @@
         <path class="l2" d="M341.83,23.31c0-4.62,2.2-6.75,5.59-6.75s5.59,2.13,5.59,6.75h.18c1.92-4.35,6.05-6.75,9.9-6.75,10.08,0,11.91,9.25,11.91,19.52v13.41c0,10.27-1.83,19.52-11.91,19.52-4.22,0-7.88-1.85-9.9-5.64h-.18v16.83c0,4.62-2.2,6.75-5.59,6.75s-5.59-2.13-5.59-6.75V23.31ZM353.01,47.91c0,7.12,1.19,12.21,5.59,12.21,4.12,0,4.67-4.81,4.67-13.13v-7.03c0-11.01-1.01-14.06-4.77-14.06-2.66,0-5.5,2.03-5.5,12.12v9.9Z"/>
       </g>
     </svg>
-    <div class="header-divider"></div>
-    <div class="header-label">Panel de operaciones</div>
+    <div class="header-sep"></div>
+    <div class="header-tag">Panel de operaciones</div>
   </div>
-
   <div class="header-right">
-    <div class="header-clock" id="fecha-hora">—</div>
-    <div class="refresh-pill">
-      <div class="refresh-dot"></div>
+    <div class="header-clock" id="hdr-clock">
+      <span id="hdr-time">—</span>
+      <small id="hdr-date">—</small>
+    </div>
+    <div class="refresh-badge">
+      <div class="pulse-dot"></div>
       Actualiza en <strong id="countdown">60</strong>s
     </div>
-    <div class="last-update" id="last-update">—</div>
   </div>
 </header>
 
 <main id="main-grid">
-  <div class="loading-msg">Cargando datos...</div>
+  <div class="full-msg">Cargando datos…</div>
 </main>
 
-<footer>
-  <span>Mundoshop · Panel interno · Actualización automática cada 60 segundos</span>
-  <span id="footer-status">—</span>
-</footer>
-
 <script>
-  const KEY = new URLSearchParams(location.search).get('key') || '';
+const KEY = new URLSearchParams(location.search).get('key') || '';
 
-  function fmt(n)      { return (n || 0).toLocaleString('es-UY'); }
-  function fmtMonto(n) { return '$ ' + Math.round(n || 0).toLocaleString('es-UY'); }
-  function fmtDemora(m) {
-    if (!m) return '0m';
-    if (m < 60) return `${m}m`;
-    const h = Math.floor(m / 60), r = m % 60;
-    return r ? `${h}h ${r}m` : `${h}h`;
-  }
-  function estado(v, [w, a, d]) {
-    if (v >= d) return 'danger';
-    if (v >= a) return 'alert';
-    if (v >= w) return 'warn';
-    return 'ok';
-  }
+/* ── helpers ── */
+function fmt(n)      { return (n || 0).toLocaleString('es-UY'); }
+function fmtM(n)     { return '$ ' + Math.round(n || 0).toLocaleString('es-UY'); }
+function fmtMin(m) {
+  if (!m) return '0m';
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m/60), r = m%60;
+  return r ? `${h}h ${r}m` : `${h}h`;
+}
+function st(v, [w,a,d]) {
+  if (v >= d) return 'danger';
+  if (v >= a) return 'alert';
+  if (v >= w) return 'warn';
+  return '';
+}
 
-  function renderGrid(d) {
-    const eP = estado(d.preguntas_sin_responder, [1, 3, 6]);
-    const eD = estado(d.demora_maxima_min,       [15, 60, 120]);
-    const eM = estado(d.mensajes_sin_leer,       [1, 3, 5]);
-    const eR = estado(d.reclamos_abiertos,       [1, 2, 4]);
-    const eE = estado(d.pendientes_despacho,     [1, 4, 8]);
+/* ── clock ── */
+function tickClock() {
+  const now = new Date();
+  document.getElementById('hdr-time').textContent =
+    now.toLocaleTimeString('es-UY', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  document.getElementById('hdr-date').textContent =
+    now.toLocaleDateString('es-UY', { weekday:'long', day:'2-digit', month:'long' });
+}
+setInterval(tickClock, 1000);
+tickClock();
 
-    const upd = d.updated_at
-      ? new Date(d.updated_at).toLocaleTimeString('es-UY', { hour:'2-digit', minute:'2-digit', second:'2-digit' })
-      : '—';
-    document.getElementById('last-update').textContent = `Datos al ${upd}`;
-    document.getElementById('footer-status').textContent = `Última actualización: ${upd}`;
+/* ── render ── */
+function renderDashboard(d) {
+  const sP  = st(d.preguntas_sin_responder, [1, 3, 6]);
+  const sD  = st(d.demora_maxima_min,       [15, 60, 120]);
+  const sM  = st(d.mensajes_sin_leer,       [1, 3, 5]);
+  const sR  = st(d.reclamos_abiertos,       [1, 2, 4]);
+  const sE  = st(d.pendientes_despacho,     [1, 4, 8]);
 
-    document.getElementById('main-grid').innerHTML = `
-      <div class="card ${eP}">
-        <span class="card-icon">💬</span>
-        <div class="card-label">Preguntas sin responder</div>
-        <div class="card-value">${fmt(d.preguntas_sin_responder)}</div>
-        <div class="card-sub">MercadoLibre · sin respuesta</div>
+  /* delta ventas */
+  const delta = d.delta_ventas || 0;
+  let deltaClass = 'flat', deltaIcon = '—', deltaText = 'igual que ayer';
+  if (delta > 0)  { deltaClass='up';   deltaIcon='▲'; deltaText=`+${fmt(delta)} vs ayer`; }
+  if (delta < 0)  { deltaClass='down'; deltaIcon='▼'; deltaText=`${fmt(delta)} vs ayer`; }
+
+  /* ventas por hora chart */
+  const vph   = d.ventas_por_hora || Array(10).fill(0);
+  const maxV  = Math.max(...vph, 1);
+  const curHr = new Date().getHours(); // 0-23
+  const curIdx = curHr - 9; // index 0..9 for hours 9-18
+
+  const barsHtml = vph.map((v, i) => {
+    const hr   = 9 + i;
+    const pct  = Math.round((v / maxV) * 100);
+    const past = hr < curHr;
+    const act  = i === curIdx;
+    const cls  = act ? 'active' : past ? 'past' : '';
+    const showVal = v > 0;
+    return `
+      <div class="bar-col">
+        <div class="bar-val ${showVal?'show':''}">${v||''}</div>
+        <div class="bar-wrap"><div class="bar ${cls}" style="height:${Math.max(pct,3)}%"></div></div>
+        <div class="bar-lbl ${act?'active':''}">${hr}h</div>
+      </div>`;
+  }).join('');
+
+  /* demora promedio */
+  const dpSub = d.demora_promedio_min
+    ? `promedio: ${fmtMin(d.demora_promedio_min)}`
+    : 'sin demoras activas';
+
+  document.getElementById('main-grid').innerHTML = `
+
+    <!-- ── MÓDULO: ATENCIÓN AL CLIENTE ── -->
+    <div class="module">
+      <div class="mod-header">
+        <span class="mod-icon">🎧</span>
+        <span class="mod-title">Atención al cliente</span>
       </div>
+      <div class="mod-body">
 
-      <div class="card ${eD}">
-        <span class="card-icon">⏱️</span>
-        <div class="card-label">Demora máxima de respuesta</div>
-        <div class="card-value" style="font-size:${d.demora_maxima_min >= 60 ? '44px' : '60px'};">${fmtDemora(d.demora_maxima_min)}</div>
-        <div class="card-sub">horas hábiles · peor caso activo</div>
-      </div>
-
-      <div class="card ${eM}">
-        <span class="card-icon">📨</span>
-        <div class="card-label">Mensajes post-venta sin leer</div>
-        <div class="card-value">${fmt(d.mensajes_sin_leer)}</div>
-        <div class="card-sub">conversaciones pendientes</div>
-      </div>
-
-      <div class="card ${eR}">
-        <span class="card-icon">⚠️</span>
-        <div class="card-label">Reclamos abiertos</div>
-        <div class="card-value">${fmt(d.reclamos_abiertos)}</div>
-        <div class="card-sub">requieren atención</div>
-      </div>
-
-      <div class="card ${eE}">
-        <span class="card-icon">📦</span>
-        <div class="card-label">Pedidos pendientes de despacho</div>
-        <div class="card-value">${fmt(d.pendientes_despacho)}</div>
-        <div class="card-sub">sin enviar aún</div>
-      </div>
-
-      <div class="card ok">
-        <span class="card-icon">🚚</span>
-        <div class="card-label">Envíos en camino</div>
-        <div class="card-value">${fmt(d.en_camino)}</div>
-        <div class="card-sub">DAC · SoyDelivery · Robert</div>
-      </div>
-
-      <div class="card ok wide">
-        <span class="card-icon">🛒</span>
-        <div class="card-label">Ventas de hoy</div>
-        <div class="ventas-row">
-          <div class="card-value">${fmt(d.ventas_hoy)}</div>
-          <div class="ventas-monto">${fmtMonto(d.monto_hoy)}</div>
+        <div class="kpi ${sP}">
+          <div class="kpi-icon">💬</div>
+          <div class="kpi-body">
+            <div class="kpi-label">Preguntas sin responder</div>
+            <div class="kpi-value">${fmt(d.preguntas_sin_responder)}</div>
+            <div class="kpi-sub">MercadoLibre</div>
+          </div>
         </div>
-        <div class="card-sub">órdenes pagadas hoy · monto total</div>
+
+        <div class="kpi ${sD}">
+          <div class="kpi-icon">⏱️</div>
+          <div class="kpi-body">
+            <div class="kpi-label">Demora máxima de respuesta</div>
+            <div class="kpi-value ${d.demora_maxima_min >= 60 ? 'sm' : ''}">${fmtMin(d.demora_maxima_min)}</div>
+            <div class="kpi-sub">${dpSub}</div>
+          </div>
+        </div>
+
+        <div class="kpi ${sM}">
+          <div class="kpi-icon">📨</div>
+          <div class="kpi-body">
+            <div class="kpi-label">Mensajes post-venta sin leer</div>
+            <div class="kpi-value">${fmt(d.mensajes_sin_leer)}</div>
+            <div class="kpi-sub">conversaciones pendientes</div>
+          </div>
+        </div>
+
+        <div class="kpi ${sR}">
+          <div class="kpi-icon">⚠️</div>
+          <div class="kpi-body">
+            <div class="kpi-label">Reclamos abiertos</div>
+            <div class="kpi-value">${fmt(d.reclamos_abiertos)}</div>
+            <div class="kpi-sub">requieren atención</div>
+          </div>
+        </div>
+
       </div>
-    `;
-  }
+    </div>
 
-  async function fetchData() {
-    try {
-      const r = await fetch(`/api/dashboard-data?key=${encodeURIComponent(KEY)}`);
-      if (!r.ok) {
-        document.getElementById('main-grid').innerHTML =
-          '<div class="loading-msg" style="color:#dc2626;">Sin acceso — verificá la clave en la URL (?key=...)</div>';
-        return;
-      }
-      const d = await r.json();
-      if (d.loading) return;
-      renderGrid(d);
-    } catch(e) { console.error(e); }
-  }
+    <!-- ── MÓDULO: VENTAS ── -->
+    <div class="module">
+      <div class="mod-header">
+        <span class="mod-icon">🛒</span>
+        <span class="mod-title">Ventas del día</span>
+      </div>
+      <div class="mod-body">
 
-  function tickClock() {
-    document.getElementById('fecha-hora').textContent =
-      new Date().toLocaleDateString('es-UY', { weekday:'long', day:'2-digit', month:'long' }) + '  ·  ' +
-      new Date().toLocaleTimeString('es-UY', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
-  }
-  setInterval(tickClock, 1000);
-  tickClock();
+        <div class="ventas-hero">
+          <div class="ventas-left">
+            <div class="v-sup">Órdenes pagadas hoy</div>
+            <div class="v-count">${fmt(d.ventas_hoy)}</div>
+            <div class="v-label">ventas · ${new Date().toLocaleDateString('es-UY',{day:'2-digit',month:'long'})}</div>
+          </div>
+          <div class="ventas-right">
+            <div class="v-monto">${fmtM(d.monto_hoy)}</div>
+            <div>
+              <span class="v-delta ${deltaClass}">${deltaIcon} ${deltaText}</span>
+            </div>
+            <div class="v-ayer">Ayer: ${fmt(d.ventas_ayer)} ventas · ${fmtM((d.monto_hoy||0)-(delta||0))}</div>
+          </div>
+        </div>
 
-  let cd = 60;
-  setInterval(() => {
-    cd--;
-    document.getElementById('countdown').textContent = cd;
-    if (cd <= 0) { cd = 60; fetchData(); }
-  }, 1000);
+        <div class="v-extras">
+          <div class="mini-kpi">
+            <div class="mini-icon">✅</div>
+            <div class="mini-body">
+              <div class="mini-label">Entregados hoy</div>
+              <div class="mini-val">${fmt(d.entregados_hoy)}</div>
+              <div class="mini-sub">envíos completados</div>
+            </div>
+          </div>
+          <div class="mini-kpi">
+            <div class="mini-icon">📊</div>
+            <div class="mini-body">
+              <div class="mini-label">Promedio por hora</div>
+              <div class="mini-val">${d.ventas_hoy && curIdx > 0 ? (d.ventas_hoy / Math.max(curIdx,1)).toFixed(1) : '—'}</div>
+              <div class="mini-sub">ventas / hora hábil</div>
+            </div>
+          </div>
+        </div>
 
-  fetchData();
+        <div class="chart-wrap">
+          <div class="chart-label">Ventas por hora — hoy</div>
+          <div class="chart-inner" id="chart-bars">${barsHtml}</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── MÓDULO: LOGÍSTICA ── -->
+    <div class="module">
+      <div class="mod-header">
+        <span class="mod-icon">🚚</span>
+        <span class="mod-title">Logística</span>
+      </div>
+      <div class="mod-body">
+
+        <div class="kpi ${sE}">
+          <div class="kpi-icon">📦</div>
+          <div class="kpi-body">
+            <div class="kpi-label">Pendientes de despacho</div>
+            <div class="kpi-value">${fmt(d.pendientes_despacho)}</div>
+            <div class="kpi-sub">sin enviar aún</div>
+          </div>
+        </div>
+
+        <div class="kpi">
+          <div class="kpi-icon">🛵</div>
+          <div class="kpi-body">
+            <div class="kpi-label">En camino</div>
+            <div class="kpi-value">${fmt(d.en_camino)}</div>
+            <div class="kpi-sub">DAC · SoyDelivery · Robert</div>
+          </div>
+        </div>
+
+        <div class="kpi">
+          <div class="kpi-icon">✅</div>
+          <div class="kpi-body">
+            <div class="kpi-label">Entregados hoy</div>
+            <div class="kpi-value">${fmt(d.entregados_hoy)}</div>
+            <div class="kpi-sub">completados</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  `;
+}
+
+/* ── fetch ── */
+async function fetchData() {
+  try {
+    const r = await fetch(`/api/dashboard-data?key=${encodeURIComponent(KEY)}`);
+    if (!r.ok) {
+      document.getElementById('main-grid').innerHTML =
+        '<div class="full-msg" style="color:#ef4444;">Sin acceso — verificá la clave en la URL (?key=…)</div>';
+      return;
+    }
+    const d = await r.json();
+    if (d.loading) return;
+    renderDashboard(d);
+  } catch(e) { console.error(e); }
+}
+
+/* ── countdown ── */
+let cd = 60;
+setInterval(() => {
+  cd--;
+  document.getElementById('countdown').textContent = cd;
+  if (cd <= 0) { cd = 60; fetchData(); }
+}, 1000);
+
+fetchData();
 </script>
 </body>
 </html>
