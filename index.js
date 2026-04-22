@@ -379,7 +379,7 @@ app.post('/api/auth/logout', (req, res) => {
 
 app.get('/api/auth/me', requireUser, (req, res) => {
   const { id, username, name, role } = req.user;
-  res.json({ id, username, name, role });
+  res.json({ id, username, name, role, dashboard_key: process.env.DASHBOARD_KEY || null });
 });
 
 // ── User CRUD (admin) ─────────────────────────────────────────────

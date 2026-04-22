@@ -406,7 +406,7 @@
     </nav>
 
     <div style="padding: 10px 14px 6px;">
-      <a href="/dashboard" target="_blank" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#FFCA61;color:#00217E;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;transition:opacity .15s;" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+      <a id="btn-dashboard" href="/dashboard" target="_blank" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#FFCA61;color:#00217E;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;transition:opacity .15s;" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
         <span style="font-size:16px;">📊</span> Ver Dashboard
       </a>
     </div>
@@ -1797,6 +1797,9 @@ async function afterUserLogin() {
   document.getElementById('user-name').textContent = u.name || u.username;
   document.getElementById('user-role').textContent = u.role === 'admin' ? 'Administrador' : 'Usuario';
   document.getElementById('user-avatar').textContent = (u.name || u.username).charAt(0).toUpperCase();
+  if (u.dashboard_key) {
+    document.getElementById('btn-dashboard').href = `/dashboard?key=${encodeURIComponent(u.dashboard_key)}`;
+  }
 
   if (u.role === 'admin') {
     document.querySelectorAll('.admin-only').forEach(el => el.style.display = '');
