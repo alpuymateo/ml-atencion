@@ -2872,21 +2872,54 @@ async function actualizarDashboard() {
     const demoraMins = preguntas.length
       ? Math.max(...preguntas.map(q => businessMinutesSinceNode(q.date_created)))
       : 0;
+    const demoraPromMins = preguntas.length
+      ? Math.round(preguntas.reduce((s, q) => s + businessMinutesSinceNode(q.date_created), 0) / preguntas.length)
+      : 0;
 
     const ventasHoy  = ventasRes.data.results || [];
     const totalVentas = ventasRes.data.paging?.total || ventasHoy.length;
     const montoHoy   = ventasHoy.reduce((s, o) => s + (o.total_amount || 0), 0);
     const mensajesSinLeer = mensajesRes.data.total || 0;
 
+    // Ventas de ayer para delta
+    const ayerStart = new Date(hoyStart); ayerStart.setDate(ayerStart.getDate() - 1);
+    const ayerEnd   = new Date(hoyStart);
+    const ventasAyerRes = await axios.get(`${ML_API_URL}/orders/search`, {
+      params: { seller: sellerId, sort: 'date_desc', limit: 1, 'order.status': 'paid',
+        'order.date_created.from': ayerStart.toISOString(),
+        'order.date_created.to':   ayerEnd.toISOString() },
+      headers
+    }).catch(() => ({ data: { paging: { total: 0 } } }));
+    const totalAyer  = ventasAyerRes.data.paging?.total || 0;
+    const deltaVentas = totalVentas - totalAyer;
+
+    // Ventas por hora del día de hoy (para mini gráfico)
+    const ventasPorHora = Array(10).fill(0); // índices 0..9 → horas 9..18
+    ventasHoy.forEach(o => {
+      const h = new Date(o.date_created).getHours();
+      if (h >= 9 && h <= 18) ventasPorHora[h - 9]++;
+    });
+
+    // Entregas completadas hoy
+    const entregadosHoy = (retirosCache?.entregados || []).filter(e => {
+      const fecha = e.fecha_retiro || e.updated_at || e.date_created;
+      return fecha && new Date(fecha) >= hoyStart;
+    }).length;
+
     dashboardCache = {
       preguntas_sin_responder: preguntas.length,
       demora_maxima_min: demoraMins,
+      demora_promedio_min: demoraPromMins,
       mensajes_sin_leer: mensajesSinLeer,
       reclamos_abiertos: cachedClaims.filter(c => c.status === 'opened').length,
       pendientes_despacho: retirosCache?.pendientes?.length || 0,
       en_camino: (retirosCache?.en_camino?.length || 0) + (retirosCache?.en_camino_sin_escaneo?.length || 0),
+      entregados_hoy: entregadosHoy,
       ventas_hoy: totalVentas,
+      ventas_ayer: totalAyer,
+      delta_ventas: deltaVentas,
       monto_hoy: montoHoy,
+      ventas_por_hora: ventasPorHora,
       updated_at: new Date().toISOString(),
     };
   } catch(e) {
