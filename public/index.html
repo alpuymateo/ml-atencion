@@ -1482,9 +1482,20 @@ async function refreshAlertasBadge() {
     const d = await r.json();
     const preguntas = (d.questions || d.results || []).filter(q => !q.answer);
     const ahora = Date.now();
-    const count = preguntas.filter(q => Math.floor((ahora - new Date(q.date_created).getTime()) / 60000) >= 15).length;
+    const urgentes = preguntas.filter(q => Math.floor((ahora - new Date(q.date_created).getTime()) / 60000) >= 15);
+    const count = urgentes.length;
     const badge = document.getElementById('alertas-badge');
     if (badge) { badge.textContent = count; badge.style.display = count ? '' : 'none'; }
+
+    // Notificación del navegador cuando llegan preguntas nuevas
+    if (_prevPreguntasCount !== null && preguntas.length > _prevPreguntasCount) {
+      const nuevas = preguntas.length - _prevPreguntasCount;
+      enviarNotificacion(
+        `${nuevas === 1 ? 'Nueva pregunta' : `${nuevas} nuevas preguntas`} en MercadoLibre`,
+        nuevas === 1 ? preguntas[0]?.text?.slice(0, 80) || 'Sin texto' : `Tenés ${preguntas.length} preguntas sin responder`
+      );
+    }
+    _prevPreguntasCount = preguntas.length;
   } catch(_) {}
   try {
     const r = await fetch('/api/reclamos/stats', { headers: authHeaders() });
@@ -1492,6 +1503,18 @@ async function refreshAlertasBadge() {
     const count = d.by_status?.opened || 0;
     const badge = document.getElementById('reclamos-badge');
     if (badge) { badge.textContent = count; badge.style.display = count ? '' : 'none'; }
+  } catch(_) {}
+}
+
+function enviarNotificacion(titulo, cuerpo) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  try {
+    const n = new Notification(titulo, {
+      body: cuerpo,
+      icon: '/favicon.ico',
+      tag: 'ml-atencion-preguntas', // reemplaza la anterior en vez de apilar
+    });
+    setTimeout(() => n.close(), 8000);
   } catch(_) {}
 }
 
@@ -1748,6 +1771,7 @@ function toggleSidebar() {
 // ── Auth ──
 let sessionToken = localStorage.getItem('session_token');
 let currentUser  = null;
+let _prevPreguntasCount = null; // para detectar nuevas preguntas y notificar
 
 function authHeaders() {
   return sessionToken ? { 'x-session-token': sessionToken } : {};
@@ -1823,10 +1847,20 @@ function showApp() {
   document.getElementById('app').style.display = 'block';
   const savedPage = localStorage.getItem('currentPage') || 'tareas';
   showPage(savedPage);
+  // Pedir permiso para notificaciones del navegador
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+
   // Actualizar badge de alertas al iniciar, cada minuto, y al volver a la pestaña
   refreshAlertasBadge();
   setInterval(refreshAlertasBadge, 60 * 1000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshAlertasBadge(); });
+
+  // Auto-refresh Cola de Envíos cada 3 minutos si está activa
+  setInterval(() => {
+    if (localStorage.getItem('currentPage') === 'cola-envios') loadColaEnvios();
+  }, 3 * 60 * 1000);
 }
 
 async function init() {
