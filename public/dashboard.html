@@ -499,7 +499,8 @@ main {
 </div>
 
 <script>
-const KEY = new URLSearchParams(location.search).get('key') || '';
+const KEY   = new URLSearchParams(location.search).get('key') || '';
+const TOKEN = new URLSearchParams(location.search).get('token') || localStorage.getItem('session_token') || '';
 
 /* ── helpers ── */
 function fmt(n)  { return (n || 0).toLocaleString('es-UY'); }
@@ -682,7 +683,8 @@ function renderDashboard(d) {
 /* ── fetch ── */
 async function fetchData() {
   try {
-    const r = await fetch(`/api/dashboard-data?key=${encodeURIComponent(KEY)}`);
+    const headers = TOKEN ? { 'Authorization': `Bearer ${TOKEN}` } : {};
+    const r = await fetch(`/api/dashboard-data?key=${encodeURIComponent(KEY)}`, { headers });
     if (!r.ok) {
       document.getElementById('main-grid').innerHTML =
         '<div class="full-msg" style="color:#ef4444;">Sin acceso — verificá la clave en la URL (?key=…)</div>';

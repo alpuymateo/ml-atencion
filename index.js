@@ -2965,9 +2965,15 @@ setTimeout(() => actualizarDashboard(), 15000);
 setInterval(() => actualizarDashboard(), 2 * 60 * 1000);
 
 app.get('/api/dashboard-data', (req, res) => {
+  // Acepta clave de dashboard (para TV/bookmark) o sesión activa del panel
   const key = req.query.key || req.headers['x-dashboard-key'];
   const DASHBOARD_KEY = process.env.DASHBOARD_KEY;
-  if (!DASHBOARD_KEY || key !== DASHBOARD_KEY) return res.status(401).json({ error: 'No autorizado' });
+  const keyOk = DASHBOARD_KEY && key === DASHBOARD_KEY;
+
+  const token = req.headers['authorization']?.replace('Bearer ', '') || req.query.token;
+  const sessionOk = token && !!getSession(token);
+
+  if (!keyOk && !sessionOk) return res.status(401).json({ error: 'No autorizado' });
   if (!dashboardCache) return res.json({ loading: true });
   res.json(dashboardCache);
 });
