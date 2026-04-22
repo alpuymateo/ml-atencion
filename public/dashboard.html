@@ -370,6 +370,53 @@ main {
   margin-top: 1px;
 }
 
+/* ─── WEBHOOKS STRIP ─── */
+.webhooks-strip {
+  flex-shrink: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.wh-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--muted);
+  margin-right: 8px;
+  white-space: nowrap;
+}
+.wh-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  padding: 5px 13px;
+}
+.wh-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.wh-dot.ok     { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+.wh-dot.warn   { background: var(--warn); }
+.wh-dot.dead   { background: #4b5563; }
+.wh-name {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.7);
+}
+.wh-time {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
 /* ─── LOADING / ERROR ─── */
 .full-msg {
   grid-column: span 3;
@@ -419,6 +466,30 @@ main {
   <div class="full-msg">Cargando datos…</div>
 </main>
 
+<div class="webhooks-strip" id="webhooks-strip" style="display:none">
+  <span class="wh-label">Webhooks</span>
+  <div class="wh-item" id="wh-mercadolibre">
+    <div class="wh-dot dead"></div>
+    <span class="wh-name">MercadoLibre</span>
+    <span class="wh-time">—</span>
+  </div>
+  <div class="wh-item" id="wh-dac">
+    <div class="wh-dot dead"></div>
+    <span class="wh-name">DAC</span>
+    <span class="wh-time">—</span>
+  </div>
+  <div class="wh-item" id="wh-deri">
+    <div class="wh-dot dead"></div>
+    <span class="wh-name">Deri</span>
+    <span class="wh-time">—</span>
+  </div>
+  <div class="wh-item" id="wh-soydelivery">
+    <div class="wh-dot dead"></div>
+    <span class="wh-name">SoyDelivery</span>
+    <span class="wh-time">—</span>
+  </div>
+</div>
+
 <script>
 const KEY = new URLSearchParams(location.search).get('key') || '';
 
@@ -431,11 +502,40 @@ function fmtMin(m) {
   const h = Math.floor(m/60), r = m%60;
   return r ? `${h}h ${r}m` : `${h}h`;
 }
-function st(v, [w,a,d]) {
+function st(v, thresh) {
+  const [w,a,d] = thresh;
   if (v >= d) return 'danger';
   if (v >= a) return 'alert';
   if (v >= w) return 'warn';
   return '';
+}
+
+/* ── webhooks strip ── */
+function renderWebhooks(wh) {
+  if (!wh) return;
+  document.getElementById('webhooks-strip').style.display = '';
+  const ahora = Date.now();
+  const items = [
+    { id: 'wh-mercadolibre', ts: wh.mercadolibre },
+    { id: 'wh-dac',          ts: wh.dac },
+    { id: 'wh-deri',         ts: wh.deri },
+    { id: 'wh-soydelivery',  ts: wh.soydelivery },
+  ];
+  items.forEach(({ id, ts }) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const dot  = el.querySelector('.wh-dot');
+    const time = el.querySelector('.wh-time');
+    if (!ts) {
+      dot.className = 'wh-dot dead';
+      time.textContent = 'sin eventos';
+      return;
+    }
+    const mins = Math.floor((ahora - new Date(ts).getTime()) / 60000);
+    const label = mins < 1 ? 'ahora' : mins < 60 ? `hace ${mins}m` : `hace ${Math.floor(mins/60)}h ${mins%60}m`;
+    dot.className = 'wh-dot ' + (mins < 30 ? 'ok' : mins < 120 ? 'warn' : 'dead');
+    time.textContent = label;
+  });
 }
 
 /* ── clock ── */
@@ -451,11 +551,14 @@ tickClock();
 
 /* ── render ── */
 function renderDashboard(d) {
-  const sP  = st(d.preguntas_sin_responder, [1, 3, 6]);
-  const sD  = st(d.demora_maxima_min,       [15, 60, 120]);
-  const sM  = st(d.mensajes_sin_leer,       [1, 3, 5]);
-  const sR  = st(d.reclamos_abiertos,       [1, 2, 4]);
-  const sE  = st(d.pendientes_despacho,     [1, 4, 8]);
+  const T   = d.thresholds || {};
+  const sP  = st(d.preguntas_sin_responder, T.preguntas || [1, 3, 6]);
+  const sD  = st(d.demora_maxima_min,       T.demora    || [15, 60, 120]);
+  const sM  = st(d.mensajes_sin_leer,       T.mensajes  || [1, 3, 5]);
+  const sR  = st(d.reclamos_abiertos,       T.reclamos  || [1, 2, 4]);
+  const sE  = st(d.pendientes_despacho,     T.despacho  || [1, 4, 8]);
+
+  renderWebhooks(d.webhooks);
 
   /* delta ventas */
   const delta = d.delta_ventas || 0;

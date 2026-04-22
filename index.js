@@ -427,6 +427,7 @@ app.delete('/api/users/:id', requireAdmin, (req, res) => {
 // ── POST /notifications — webhook de MercadoLibre (claims) ───────
 app.post('/notifications', async (req, res) => {
   res.sendStatus(200);
+  webhookLastSeen.mercadolibre = new Date().toISOString();
   const { topic, resource } = req.body || {};
   if (!resource || !tokenData?.access_token) return;
   if (topic !== 'claims' && topic !== 'claims_actions') return;
@@ -2035,12 +2036,14 @@ app.get('/api/envios/deri', requireToken, async (req, res) => {
 // ── DAC Webhook ──
 app.post('/webhook/dac', (req, res) => {
   console.log('[dac/webhook]:', JSON.stringify(req.body).slice(0, 500));
+  webhookLastSeen.dac = new Date().toISOString();
   res.json({ ok: true });
   actualizarRetiros().catch(e => console.error('[dac/webhook] refresh:', e.message));
 });
 
 app.post('/webhook/deri', (req, res) => {
   console.log('[deri/webhook]:', JSON.stringify(req.body).slice(0, 500));
+  webhookLastSeen.deri = new Date().toISOString();
   res.json({ ok: true });
   actualizarRetiros().catch(e => console.error('[deri/webhook] refresh:', e.message));
 });
@@ -2050,6 +2053,7 @@ app.post('/webhook/deri', (req, res) => {
 app.post('/webhook/soydelivery/:event', (req, res) => {
   const event = req.params.event;
   const data = req.body;
+  webhookLastSeen.soydelivery = new Date().toISOString();
   console.log(`[soydelivery/webhook] ${event}:`, JSON.stringify(data).slice(0, 300));
 
   const pedidoId = data.Pedido_id || data.pedido_id;
@@ -2068,6 +2072,7 @@ app.post('/webhook/soydelivery/:event', (req, res) => {
 // Endpoint genérico para cualquier webhook de SoyDelivery
 app.post('/webhook/soydelivery', (req, res) => {
   const data = req.body;
+  webhookLastSeen.soydelivery = new Date().toISOString();
   console.log('[soydelivery/webhook]:', JSON.stringify(data).slice(0, 300));
 
   const pedidoId = data.Pedido_id || data.pedido_id;
@@ -2847,6 +2852,30 @@ function businessMinutesSinceNode(dateCreated) {
 let dashboardCache = null;
 let dashboardUpdating = false;
 
+// ── Umbrales de alerta (configurables por env var) ────────────────
+// Formato: "warn,alert,danger"  Ej: THRESH_PREGUNTAS=1,3,6
+function parseThresh(envKey, defaults) {
+  const v = process.env[envKey];
+  if (!v) return defaults;
+  const parts = v.split(',').map(Number);
+  return parts.length === 3 && parts.every(n => !isNaN(n)) ? parts : defaults;
+}
+const THRESH = {
+  preguntas: parseThresh('THRESH_PREGUNTAS', [1, 3, 6]),
+  demora:    parseThresh('THRESH_DEMORA',    [15, 60, 120]),
+  mensajes:  parseThresh('THRESH_MENSAJES',  [1, 3, 5]),
+  reclamos:  parseThresh('THRESH_RECLAMOS',  [1, 2, 4]),
+  despacho:  parseThresh('THRESH_DESPACHO',  [1, 4, 8]),
+};
+
+// ── Tracking de webhooks ──────────────────────────────────────────
+const webhookLastSeen = {
+  mercadolibre: null,
+  dac:          null,
+  deri:         null,
+  soydelivery:  null,
+};
+
 async function actualizarDashboard() {
   if (dashboardUpdating || !tokenData?.access_token) return;
   dashboardUpdating = true;
@@ -2920,6 +2949,8 @@ async function actualizarDashboard() {
       delta_ventas: deltaVentas,
       monto_hoy: montoHoy,
       ventas_por_hora: ventasPorHora,
+      thresholds: THRESH,
+      webhooks: { ...webhookLastSeen },
       updated_at: new Date().toISOString(),
     };
   } catch(e) {
