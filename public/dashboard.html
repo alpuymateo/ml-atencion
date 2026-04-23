@@ -143,6 +143,120 @@ main {
   overflow: hidden;
 }
 
+/* ─── ATENCIÓN HERO ─── */
+.atencion-hero {
+  background: var(--card);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  padding: 16px 18px;
+  flex-shrink: 0;
+  transition: background 0.2s, border-color 0.2s;
+}
+.atencion-hero.warn   { background: rgba(245,158,11,.08);  border-color: rgba(245,158,11,.28); }
+.atencion-hero.alert  { background: rgba(249,115,22,.10);  border-color: rgba(249,115,22,.35); }
+.atencion-hero.danger { background: rgba(239,68,68,.12);   border-color: rgba(239,68,68,.40); }
+.ah-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.ah-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--muted);
+}
+.ah-sla-badge {
+  font-size: 8px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: rgba(255,255,255,.07);
+  color: rgba(255,255,255,.3);
+}
+.ah-value {
+  font-size: 52px;
+  font-weight: 900;
+  line-height: 1;
+  color: #ffffff;
+  letter-spacing: -.03em;
+  margin-bottom: 4px;
+}
+.atencion-hero.danger .ah-value { color: #fca5a5; }
+.atencion-hero.alert  .ah-value { color: #fdba74; }
+.ah-sub {
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.38);
+  margin-bottom: 12px;
+}
+.ah-bar-track {
+  height: 4px;
+  background: rgba(255,255,255,.08);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 5px;
+}
+.ah-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: var(--ok);
+  transition: width 0.6s ease;
+}
+.atencion-hero.warn   .ah-bar-fill { background: var(--warn); }
+.atencion-hero.alert  .ah-bar-fill { background: var(--alert); }
+.atencion-hero.danger .ah-bar-fill { background: var(--danger); }
+.ah-bar-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 8px;
+  color: rgba(255,255,255,.2);
+  font-weight: 600;
+}
+
+/* ─── COMPACT KPIs ─── */
+.atencion-compact {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  flex: 1;
+}
+.compact-kpi {
+  background: var(--card);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  transition: background 0.2s, border-color 0.2s;
+}
+.compact-kpi.warn   { background: rgba(245,158,11,.08);  border-color: rgba(245,158,11,.28); }
+.compact-kpi.alert  { background: rgba(249,115,22,.10);  border-color: rgba(249,115,22,.35); }
+.compact-kpi.danger { background: rgba(239,68,68,.12);   border-color: rgba(239,68,68,.40); }
+.ck-val {
+  font-size: 36px;
+  font-weight: 900;
+  line-height: 1;
+  color: #ffffff;
+  letter-spacing: -.02em;
+}
+.compact-kpi.danger .ck-val { color: #fca5a5; }
+.compact-kpi.alert  .ck-val { color: #fdba74; }
+.ck-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--muted);
+  line-height: 1.3;
+}
+
 /* ─── KPI CARD ─── */
 .kpi {
   background: var(--card);
@@ -578,6 +692,7 @@ function renderDashboard(d) {
   }).join('');
 
   const dpSub = d.demora_promedio_min ? `promedio ${fmtMin(d.demora_promedio_min)}` : 'sin demoras activas';
+  const slaPct = Math.min(Math.round(((d.demora_maxima_min || 0) / 1440) * 100), 100);
   const pph   = d.ventas_hoy && curIdx > 0 ? (d.ventas_hoy / Math.max(curIdx, 1)).toFixed(1) : '—';
   const montoAyer = fmtM((d.monto_hoy || 0) - (delta || 0));
 
@@ -598,14 +713,33 @@ function renderDashboard(d) {
     <!-- ATENCIÓN -->
     <div class="module">
       <div class="mod-header">
-
         <span class="mod-title">Atención al cliente</span>
       </div>
       <div class="mod-body">
-        ${kpi(sP, 'Preguntas sin responder',    fmt(d.preguntas_sin_responder), 'MercadoLibre')}
-        ${kpi(sD, 'Demora máxima de respuesta', fmtMin(d.demora_maxima_min),    dpSub, d.demora_maxima_min >= 60)}
-        ${kpi(sM, 'Mensajes post-venta sin leer', fmt(d.mensajes_sin_leer),     'conversaciones pendientes')}
-        ${kpi(sR, 'Reclamos abiertos',           fmt(d.reclamos_abiertos),      'requieren atención')}
+        <div class="atencion-hero ${sD}">
+          <div class="ah-top">
+            <div class="ah-label">Demora máxima de respuesta</div>
+            <div class="ah-sla-badge">SLA 24h · MercadoLibre</div>
+          </div>
+          <div class="ah-value">${fmtMin(d.demora_maxima_min)}</div>
+          <div class="ah-sub">${dpSub}</div>
+          <div class="ah-bar-track"><div class="ah-bar-fill" style="width:${slaPct}%"></div></div>
+          <div class="ah-bar-labels"><span>0h</span><span>6h</span><span>12h</span><span>18h</span><span>24h</span></div>
+        </div>
+        <div class="atencion-compact">
+          <div class="compact-kpi ${sP}">
+            <div class="ck-val">${fmt(d.preguntas_sin_responder)}</div>
+            <div class="ck-label">Preguntas sin responder</div>
+          </div>
+          <div class="compact-kpi ${sM}">
+            <div class="ck-val">${fmt(d.mensajes_sin_leer)}</div>
+            <div class="ck-label">Mensajes post-venta</div>
+          </div>
+          <div class="compact-kpi ${sR}">
+            <div class="ck-val">${fmt(d.reclamos_abiertos)}</div>
+            <div class="ck-label">Reclamos abiertos</div>
+          </div>
+        </div>
       </div>
     </div>
 
