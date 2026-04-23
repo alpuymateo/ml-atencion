@@ -2876,6 +2876,18 @@ const webhookLastSeen = {
   soydelivery:  null,
 };
 
+function lastNBusinessDays(n, fromDate = new Date()) {
+  const days = [];
+  const d = new Date(fromDate);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - 1); // empezar desde ayer
+  while (days.length < n) {
+    if (d.getDay() !== 0) days.push(new Date(d)); // excluir domingos
+    d.setDate(d.getDate() - 1);
+  }
+  return days;
+}
+
 async function actualizarDashboard() {
   if (dashboardUpdating || !tokenData?.access_token) return;
   dashboardUpdating = true;
@@ -2909,6 +2921,37 @@ async function actualizarDashboard() {
     const totalVentas = ventasRes.data.paging?.total || ventasHoy.length;
     const montoHoy   = ventasHoy.reduce((s, o) => s + (o.total_amount || 0), 0);
     const mensajesSinLeer = mensajesRes.data.total || 0;
+
+    // Promedio de ventas por hora — últimos 7 días hábiles
+    const businessDays7 = lastNBusinessDays(7, hoyStart);
+    const oldest7d = businessDays7[businessDays7.length - 1];
+    const historico7dRes = await axios.get(`${ML_API_URL}/orders/search`, {
+      params: {
+        seller: sellerId, sort: 'date_desc', limit: 200, 'order.status': 'paid',
+        'order.date_created.from': oldest7d.toISOString(),
+        'order.date_created.to':   hoyStart.toISOString(),
+      },
+      headers,
+    }).catch(() => ({ data: { results: [] } }));
+
+    const dayHourMap = {};
+    (historico7dRes.data.results || []).forEach(o => {
+      const date = new Date(o.date_created);
+      const dayKey = date.toISOString().slice(0, 10);
+      const h = date.getHours();
+      if (h >= 9 && h <= 18) {
+        if (!dayHourMap[dayKey]) dayHourMap[dayKey] = Array(10).fill(0);
+        dayHourMap[dayKey][h - 9]++;
+      }
+    });
+    const validDays = Object.values(dayHourMap);
+    const ventas7dPromedio = Array(10).fill(0);
+    if (validDays.length > 0) {
+      validDays.forEach(hours => hours.forEach((v, i) => { ventas7dPromedio[i] += v; }));
+      ventas7dPromedio.forEach((_, i) => {
+        ventas7dPromedio[i] = Math.round((ventas7dPromedio[i] / validDays.length) * 10) / 10;
+      });
+    }
 
     // Ventas de ayer para delta
     const ayerStart = new Date(hoyStart); ayerStart.setDate(ayerStart.getDate() - 1);
@@ -2952,6 +2995,7 @@ async function actualizarDashboard() {
       delta_ventas: deltaVentas,
       monto_hoy: montoHoy,
       ventas_por_hora: ventasPorHora,
+      ventas_7d_promedio: ventas7dPromedio,
       thresholds: THRESH,
       webhooks: { ...webhookLastSeen },
       updated_at: new Date().toISOString(),
