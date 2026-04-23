@@ -88,6 +88,41 @@ header {
   font-weight: 600;
   color: rgba(255,255,255,0.5);
 }
+.ml-hdr-badge {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 13px;
+  border-radius: 99px;
+  border: 1px solid rgba(255,255,255,.1);
+  background: rgba(0,0,0,.2);
+  transition: background 0.3s, border-color 0.3s;
+}
+.ml-hdr-badge.warn { border-color: rgba(245,158,11,.35); background: rgba(245,158,11,.08); }
+.ml-hdr-badge.dead { border-color: rgba(239,68,68,.45); background: rgba(239,68,68,.12); }
+.ml-hdr-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.2);
+  flex-shrink: 0;
+}
+.ml-hdr-dot.ok   { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+.ml-hdr-dot.warn { background: var(--warn); }
+.ml-hdr-dot.dead { background: var(--danger); animation: pulse 1.5s infinite; }
+.ml-hdr-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  color: rgba(255,255,255,.45);
+}
+.ml-hdr-badge.warn .ml-hdr-label { color: #f59e0b; }
+.ml-hdr-badge.dead .ml-hdr-label { color: #fca5a5; }
+.ml-hdr-time {
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(255,255,255,.25);
+}
+.ml-hdr-badge.dead .ml-hdr-time { color: rgba(239,68,68,.6); }
 .pulse-dot {
   width: 7px; height: 7px;
   border-radius: 50%;
@@ -635,6 +670,11 @@ main {
 
   </div>
   <div class="header-right">
+    <div id="ml-hdr-badge" class="ml-hdr-badge">
+      <div id="ml-hdr-dot" class="ml-hdr-dot"></div>
+      <span class="ml-hdr-label">MercadoLibre</span>
+      <span id="ml-hdr-time" class="ml-hdr-time">—</span>
+    </div>
     <div class="header-clock">
       <span id="hdr-time">—</span>
       <span id="hdr-date">—</span>
@@ -703,6 +743,26 @@ function renderWebhooks(wh) {
   if (!wh) return;
   document.getElementById('webhooks-strip').style.display = '';
   const ahora = Date.now();
+
+  // Badge ML en el header
+  const mlBadge = document.getElementById('ml-hdr-badge');
+  const mlDot   = document.getElementById('ml-hdr-dot');
+  const mlTime  = document.getElementById('ml-hdr-time');
+  if (mlBadge && mlDot && mlTime) {
+    if (!wh.mercadolibre) {
+      mlDot.className  = 'ml-hdr-dot dead';
+      mlTime.textContent = 'sin datos';
+      mlBadge.className = 'ml-hdr-badge dead';
+    } else {
+      const mins  = Math.floor((ahora - new Date(wh.mercadolibre).getTime()) / 60000);
+      const state = mins < 30 ? 'ok' : mins < 120 ? 'warn' : 'dead';
+      const label = mins < 1 ? 'ahora' : mins < 60 ? `hace ${mins}m` : `hace ${Math.floor(mins/60)}h`;
+      mlDot.className   = `ml-hdr-dot ${state}`;
+      mlTime.textContent = label;
+      mlBadge.className  = `ml-hdr-badge ${state !== 'ok' ? state : ''}`;
+    }
+  }
+
   [
     { id: 'wh-mercadolibre', ts: wh.mercadolibre },
     { id: 'wh-dac',          ts: wh.dac },
