@@ -2962,8 +2962,20 @@ async function actualizarDashboard() {
         'order.date_created.to':   ayerEnd.toISOString() },
       headers
     }).catch(() => ({ data: { paging: { total: 0 } } }));
-    const totalAyer  = ventasAyerRes.data.paging?.total || 0;
+    const totalAyer   = ventasAyerRes.data.paging?.total || 0;
     const deltaVentas = totalVentas - totalAyer;
+
+    // Ventas del mismo día hace 7 días
+    const semanaStart = new Date(hoyStart); semanaStart.setDate(semanaStart.getDate() - 7);
+    const semanaEnd   = new Date(hoyStart); semanaEnd.setDate(semanaEnd.getDate() - 6);
+    const ventasSemanaPasadaRes = await axios.get(`${ML_API_URL}/orders/search`, {
+      params: { seller: sellerId, sort: 'date_desc', limit: 1, 'order.status': 'paid',
+        'order.date_created.from': semanaStart.toISOString(),
+        'order.date_created.to':   semanaEnd.toISOString() },
+      headers
+    }).catch(() => ({ data: { paging: { total: 0 } } }));
+    const totalSemanaPasada = ventasSemanaPasadaRes.data.paging?.total || 0;
+    const deltaSemanaPasada = totalVentas - totalSemanaPasada;
 
     // Ventas por hora del día de hoy (para mini gráfico)
     const ventasPorHora = Array(10).fill(0); // índices 0..9 → horas 9..18
@@ -2993,6 +3005,8 @@ async function actualizarDashboard() {
       ventas_hoy: totalVentas,
       ventas_ayer: totalAyer,
       delta_ventas: deltaVentas,
+      ventas_semana_pasada: totalSemanaPasada,
+      delta_semana: deltaSemanaPasada,
       monto_hoy: montoHoy,
       ventas_por_hora: ventasPorHora,
       ventas_7d_promedio: ventas7dPromedio,

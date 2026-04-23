@@ -185,6 +185,7 @@ main {
   color: #ffffff;
   letter-spacing: -.03em;
   margin-bottom: 4px;
+  font-variant-numeric: tabular-nums lining-nums;
 }
 .atencion-hero.danger .ah-value { color: #fca5a5; }
 .atencion-hero.alert  .ah-value { color: #fdba74; }
@@ -245,6 +246,7 @@ main {
   line-height: 1;
   color: #ffffff;
   letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums lining-nums;
 }
 .compact-kpi.danger .ck-val { color: #fca5a5; }
 .compact-kpi.alert  .ck-val { color: #fdba74; }
@@ -307,6 +309,7 @@ main {
   line-height: 1;
   color: #ffffff;
   letter-spacing: -.03em;
+  font-variant-numeric: tabular-nums lining-nums;
 }
 .kpi.danger .kpi-value { color: #fca5a5; }
 .kpi-value.sm { font-size: 38px; letter-spacing: -.02em; }
@@ -344,6 +347,7 @@ main {
   line-height: 1;
   color: var(--yellow);
   letter-spacing: -.04em;
+  font-variant-numeric: tabular-nums lining-nums;
 }
 .v-date {
   font-size: 10px;
@@ -358,6 +362,7 @@ main {
   color: white;
   letter-spacing: -.01em;
   line-height: 1;
+  font-variant-numeric: tabular-nums lining-nums;
 }
 .v-delta {
   display: inline-flex;
@@ -406,6 +411,7 @@ main {
   color: white;
   line-height: 1;
   letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums lining-nums;
 }
 .mini-sub {
   font-size: 10px;
@@ -570,6 +576,7 @@ main {
   letter-spacing: -.03em;
   flex-shrink: 0;
   min-width: 54px;
+  font-variant-numeric: tabular-nums lining-nums;
 }
 .log-step.danger .ls-val { color: #fca5a5; }
 .log-step.alert  .ls-val { color: #fdba74; }
@@ -736,11 +743,17 @@ function renderDashboard(d) {
 
   renderWebhooks(d.webhooks);
 
-  /* delta */
+  /* delta ayer */
   const delta = d.delta_ventas || 0;
   let deltaClass = 'flat', deltaIcon = '—', deltaText = 'igual que ayer';
   if (delta > 0) { deltaClass='up';   deltaIcon='▲'; deltaText=`+${fmt(delta)} vs ayer`; }
   if (delta < 0) { deltaClass='down'; deltaIcon='▼'; deltaText=`${fmt(delta)} vs ayer`; }
+
+  /* delta semana pasada */
+  const delta7d = d.delta_semana || 0;
+  let delta7dClass = 'flat', delta7dIcon = '—', delta7dText = 'igual que hace 7d';
+  if (delta7d > 0) { delta7dClass='up';   delta7dIcon='▲'; delta7dText=`+${fmt(delta7d)} vs hace 7d`; }
+  if (delta7d < 0) { delta7dClass='down'; delta7dIcon='▼'; delta7dText=`${fmt(delta7d)} vs hace 7d`; }
 
   /* chart */
   const vph    = d.ventas_por_hora  || Array(10).fill(0);
@@ -841,8 +854,11 @@ function renderDashboard(d) {
           </div>
           <div class="ventas-right">
             <div class="v-monto">${fmtM(d.monto_hoy)}</div>
-            <span class="v-delta ${deltaClass}">${deltaIcon} ${deltaText}</span>
-            <span class="v-ayer">Ayer: ${fmt(d.ventas_ayer)} · ${montoAyer}</span>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;margin-top:8px;">
+              <span class="v-delta ${deltaClass}">${deltaIcon} ${deltaText}</span>
+              <span class="v-delta ${delta7dClass}">${delta7dIcon} ${delta7dText}</span>
+            </div>
+            <span class="v-ayer">Ayer ${fmt(d.ventas_ayer)} · Hace 7d ${fmt(d.ventas_semana_pasada)}</span>
           </div>
         </div>
 
