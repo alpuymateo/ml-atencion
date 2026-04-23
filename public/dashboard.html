@@ -257,9 +257,9 @@ main {
 /* ─── COMPACT KPIs ─── */
 .atencion-compact {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
-  flex: 1;
+  flex-shrink: 0;
 }
 .compact-kpi {
   background: var(--card);
@@ -268,7 +268,6 @@ main {
   padding: 12px 14px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   gap: 4px;
   transition: background 0.2s, border-color 0.2s;
 }
@@ -900,6 +899,10 @@ function renderDashboard(d) {
           <div class="compact-kpi ${sR}">
             <div class="ck-val">${fmt(d.reclamos_abiertos)}</div>
             <div class="ck-label">Reclamos abiertos</div>
+          </div>
+          <div class="compact-kpi">
+            <div class="ck-val" style="font-size:28px;">${d.respuesta_promedio_min ? fmtMin(d.respuesta_promedio_min) : '—'}</div>
+            <div class="ck-label">Respuesta promedio<br><span style="font-size:8px;font-weight:500;text-transform:none;letter-spacing:0;color:rgba(255,255,255,.2);">${d.respuesta_muestra || 0} preguntas · 7 días hábiles</span></div>
           </div>
         </div>
       </div>
