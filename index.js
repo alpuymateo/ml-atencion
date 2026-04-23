@@ -2909,9 +2909,10 @@ async function actualizarDashboard() {
         .catch(() => ({ data: { total: 0 } })),
     ]);
 
-    const preguntas = preguntasRes.data.questions || [];
+    const todasPreguntas = preguntasRes.data.questions || [];
     const corte7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const preguntasAntiguas = preguntas.filter(q => new Date(q.date_created) < corte7d).length;
+    const preguntas         = todasPreguntas.filter(q => new Date(q.date_created) >= corte7d);
+    const preguntasAntiguas = todasPreguntas.length - preguntas.length;
 
     const demoraMins = preguntas.length
       ? Math.max(...preguntas.map(q => businessMinutesSinceNode(q.date_created)))
