@@ -50,14 +50,7 @@ header {
   gap: 20px;
 }
 .header-left svg { height: 34px; width: auto; }
-.header-sep { width: 1px; height: 26px; background: rgba(255,255,255,0.2); }
-.header-tag {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.4);
-}
+
 .header-right {
   display: flex;
   align-items: center;
@@ -133,13 +126,6 @@ main {
   align-items: center;
   gap: 10px;
 }
-.mod-accent {
-  width: 3px;
-  height: 16px;
-  border-radius: 99px;
-  background: var(--yellow);
-  flex-shrink: 0;
-}
 .mod-title {
   font-size: 13px;
   font-weight: 800;
@@ -162,7 +148,6 @@ main {
   background: var(--card);
   border-radius: 10px;
   border: 1px solid var(--border);
-  border-left: 3px solid var(--sc, rgba(255,255,255,0.15));
   padding: 14px 18px;
   flex: 1;
   min-height: 0;
@@ -170,10 +155,11 @@ main {
   flex-direction: column;
   justify-content: center;
   gap: 2px;
+  transition: background 0.2s, border-color 0.2s;
 }
-.kpi.warn   { --sc: var(--warn); }
-.kpi.alert  { --sc: var(--alert); }
-.kpi.danger { --sc: var(--danger); }
+.kpi.warn   { background: rgba(245,158,11,.08);  border-color: rgba(245,158,11,.28); }
+.kpi.alert  { background: rgba(249,115,22,.10);  border-color: rgba(249,115,22,.35); }
+.kpi.danger { background: rgba(239,68,68,.12);   border-color: rgba(239,68,68,.40); }
 
 .kpi-top {
   display: flex;
@@ -197,9 +183,9 @@ main {
   border-radius: 99px;
   display: none;
 }
-.kpi.warn  .kpi-state { display:inline; background: rgba(245,158,11,.18); color: #f59e0b; }
-.kpi.alert .kpi-state { display:inline; background: rgba(249,115,22,.18); color: #f97316; }
-.kpi.danger .kpi-state { display:inline; background: rgba(239,68,68,.18); color: #ef4444; }
+.kpi.warn  .kpi-state { display:inline; background: rgba(245,158,11,.22); color: #f59e0b; }
+.kpi.alert .kpi-state { display:inline; background: rgba(249,115,22,.22); color: #f97316; }
+.kpi.danger .kpi-state { display:inline; background: rgba(239,68,68,.22); color: #ef4444; }
 
 .kpi-value {
   font-size: 54px;
@@ -208,6 +194,7 @@ main {
   color: #ffffff;
   letter-spacing: -.03em;
 }
+.kpi.danger .kpi-value { color: #fca5a5; }
 .kpi-value.sm { font-size: 38px; letter-spacing: -.02em; }
 
 .kpi-sub {
@@ -455,8 +442,7 @@ main {
         <path class="l2" d="M341.83,23.31c0-4.62,2.2-6.75,5.59-6.75s5.59,2.13,5.59,6.75h.18c1.92-4.35,6.05-6.75,9.9-6.75,10.08,0,11.91,9.25,11.91,19.52v13.41c0,10.27-1.83,19.52-11.91,19.52-4.22,0-7.88-1.85-9.9-5.64h-.18v16.83c0,4.62-2.2,6.75-5.59,6.75s-5.59-2.13-5.59-6.75V23.31ZM353.01,47.91c0,7.12,1.19,12.21,5.59,12.21,4.12,0,4.67-4.81,4.67-13.13v-7.03c0-11.01-1.01-14.06-4.77-14.06-2.66,0-5.5,2.03-5.5,12.12v9.9Z"/>
       </g>
     </svg>
-    <div class="header-sep"></div>
-    <div class="header-tag">Panel de operaciones</div>
+
   </div>
   <div class="header-right">
     <div class="header-clock">
@@ -612,7 +598,7 @@ function renderDashboard(d) {
     <!-- ATENCIÓN -->
     <div class="module">
       <div class="mod-header">
-        <div class="mod-accent"></div>
+
         <span class="mod-title">Atención al cliente</span>
       </div>
       <div class="mod-body">
@@ -626,7 +612,7 @@ function renderDashboard(d) {
     <!-- VENTAS -->
     <div class="module">
       <div class="mod-header">
-        <div class="mod-accent"></div>
+
         <span class="mod-title">Ventas del día</span>
       </div>
       <div class="mod-body">
@@ -646,9 +632,9 @@ function renderDashboard(d) {
 
         <div class="v-extras">
           <div class="mini-kpi">
-            <div class="mini-label">Entregados hoy</div>
-            <div class="mini-val">${fmt(d.entregados_hoy)}</div>
-            <div class="mini-sub">envíos completados</div>
+            <div class="mini-label">Ticket promedio</div>
+            <div class="mini-val">${d.ventas_hoy > 0 ? fmtM(Math.round((d.monto_hoy||0) / d.ventas_hoy)) : '—'}</div>
+            <div class="mini-sub">por orden pagada</div>
           </div>
           <div class="mini-kpi">
             <div class="mini-label">Promedio por hora</div>
@@ -668,7 +654,7 @@ function renderDashboard(d) {
     <!-- LOGÍSTICA -->
     <div class="module">
       <div class="mod-header">
-        <div class="mod-accent"></div>
+
         <span class="mod-title">Logística</span>
       </div>
       <div class="mod-body">
