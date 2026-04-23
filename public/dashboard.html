@@ -526,6 +526,62 @@ main {
   color: rgba(255,255,255,0.3);
 }
 
+/* ─── LOGÍSTICA PIPELINE ─── */
+.log-pipeline {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-height: 0;
+}
+.log-step {
+  background: var(--card);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-height: 0;
+  transition: background 0.2s, border-color 0.2s;
+}
+.log-step.warn   { background: rgba(245,158,11,.08);  border-color: rgba(245,158,11,.28); }
+.log-step.alert  { background: rgba(249,115,22,.10);  border-color: rgba(249,115,22,.35); }
+.log-step.danger { background: rgba(239,68,68,.12);   border-color: rgba(239,68,68,.40); }
+.ls-val {
+  font-size: 42px;
+  font-weight: 900;
+  line-height: 1;
+  color: #ffffff;
+  letter-spacing: -.03em;
+  flex-shrink: 0;
+  min-width: 54px;
+}
+.log-step.danger .ls-val { color: #fca5a5; }
+.log-step.alert  .ls-val { color: #fdba74; }
+.ls-info { flex: 1; }
+.ls-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+.ls-sub {
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.3);
+}
+.log-connector {
+  width: 1px;
+  height: 7px;
+  background: rgba(255,255,255,.1);
+  margin-left: 40px;
+  flex-shrink: 0;
+}
+
 /* ─── LOADING / ERROR ─── */
 .full-msg {
   grid-column: span 3;
@@ -693,6 +749,14 @@ function renderDashboard(d) {
 
   const dpSub = d.demora_promedio_min ? `promedio ${fmtMin(d.demora_promedio_min)}` : 'sin demoras activas';
   const slaPct = Math.min(Math.round(((d.demora_maxima_min || 0) / 1440) * 100), 100);
+
+  const deliveryRate = d.ventas_hoy > 0 ? Math.round((d.entregados_hoy / d.ventas_hoy) * 100) : 0;
+  const courierParts = [
+    d.courier_dac        > 0 ? `DAC ${d.courier_dac}`              : null,
+    d.courier_soydelivery > 0 ? `SoyDel. ${d.courier_soydelivery}` : null,
+    d.courier_robert     > 0 ? `Robert ${d.courier_robert}`        : null,
+  ].filter(Boolean);
+  const courierSub = courierParts.length ? courierParts.join(' · ') : 'sin datos de courier';
   const pph   = d.ventas_hoy && curIdx > 0 ? (d.ventas_hoy / Math.max(curIdx, 1)).toFixed(1) : '—';
   const montoAyer = fmtM((d.monto_hoy || 0) - (delta || 0));
 
@@ -788,13 +852,42 @@ function renderDashboard(d) {
     <!-- LOGÍSTICA -->
     <div class="module">
       <div class="mod-header">
-
         <span class="mod-title">Logística</span>
       </div>
       <div class="mod-body">
-        ${kpi(sE, 'Pendientes de despacho', fmt(d.pendientes_despacho), 'sin enviar aún')}
-        ${kpi('',  'En camino',             fmt(d.en_camino),           'DAC · SoyDelivery · Robert')}
-        ${kpi('',  'Entregados hoy',        fmt(d.entregados_hoy),      'completados')}
+        <div class="log-pipeline">
+          <div class="log-step">
+            <div class="ls-val">${fmt(d.ventas_hoy)}</div>
+            <div class="ls-info">
+              <div class="ls-label">Vendidas hoy</div>
+              <div class="ls-sub">órdenes pagadas</div>
+            </div>
+          </div>
+          <div class="log-connector"></div>
+          <div class="log-step ${sE}">
+            <div class="ls-val">${fmt(d.pendientes_despacho)}</div>
+            <div class="ls-info">
+              <div class="ls-label">Pendientes despacho</div>
+              <div class="ls-sub">sin enviar aún</div>
+            </div>
+          </div>
+          <div class="log-connector"></div>
+          <div class="log-step">
+            <div class="ls-val">${fmt(d.en_camino)}</div>
+            <div class="ls-info">
+              <div class="ls-label">En camino</div>
+              <div class="ls-sub">${courierSub}</div>
+            </div>
+          </div>
+          <div class="log-connector"></div>
+          <div class="log-step">
+            <div class="ls-val">${fmt(d.entregados_hoy)}</div>
+            <div class="ls-info">
+              <div class="ls-label">Entregados hoy</div>
+              <div class="ls-sub">${deliveryRate}% tasa de entrega</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   `;
