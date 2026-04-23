@@ -2911,8 +2911,7 @@ async function actualizarDashboard() {
 
     const todasPreguntas = preguntasRes.data.questions || [];
     const corte7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const preguntas         = todasPreguntas.filter(q => new Date(q.date_created) >= corte7d);
-    const preguntasAntiguas = todasPreguntas.length - preguntas.length;
+    const preguntas = todasPreguntas.filter(q => new Date(q.date_created) >= corte7d);
 
     const demoraMins = preguntas.length
       ? Math.max(...preguntas.map(q => businessMinutesSinceNode(q.date_created)))
@@ -2996,7 +2995,6 @@ async function actualizarDashboard() {
 
     dashboardCache = {
       preguntas_sin_responder: preguntas.length,
-      preguntas_antiguas: preguntasAntiguas,
       demora_maxima_min: demoraMins,
       demora_promedio_min: demoraPromMins,
       mensajes_sin_leer: mensajesSinLeer,
