@@ -2829,6 +2829,19 @@ Sé directo y específico. Máximo 600 palabras.`;
 // Horas hábiles transcurridas desde una fecha (L-V 9-18, S 9-13)
 const BUSINESS_SCHEDULE = [null, [9,18], [9,18], [9,18], [9,18], [9,18], [9,13]];
 
+// Uruguay = UTC-3 fijo (sin DST desde 2015)
+const UY_OFFSET_MS = -3 * 60 * 60 * 1000;
+function uyHour(dateStr) {
+  return new Date(new Date(dateStr).getTime() + UY_OFFSET_MS).getUTCHours();
+}
+function uyDateKey(dateStr) {
+  return new Date(new Date(dateStr).getTime() + UY_OFFSET_MS).toISOString().slice(0, 10);
+}
+function uyMidnightToday() {
+  const uyNow = new Date(Date.now() + UY_OFFSET_MS);
+  return new Date(Date.UTC(uyNow.getUTCFullYear(), uyNow.getUTCMonth(), uyNow.getUTCDate(), 3, 0, 0, 0));
+}
+
 function businessMinutesBetween(from, to) {
   let mins = 0;
   let cursor = new Date(from);
@@ -2898,7 +2911,7 @@ async function actualizarDashboard() {
   try {
     const headers = { Authorization: `Bearer ${tokenData.access_token}` };
     const sellerId = tokenData.user_id;
-    const hoyStart = new Date(); hoyStart.setHours(0, 0, 0, 0);
+    const hoyStart = uyMidnightToday();
 
     const [preguntasRes, ventasRes, mensajesRes] = await Promise.all([
       axios.get(`${ML_API_URL}/my/received_questions/search`, {
@@ -2962,9 +2975,8 @@ async function actualizarDashboard() {
 
     const dayHourMap = {};
     (historico7dRes.data.results || []).forEach(o => {
-      const date = new Date(o.date_created);
-      const dayKey = date.toISOString().slice(0, 10);
-      const h = date.getHours();
+      const dayKey = uyDateKey(o.date_created);
+      const h = uyHour(o.date_created);
       if (h >= 9 && h <= 18) {
         if (!dayHourMap[dayKey]) dayHourMap[dayKey] = Array(10).fill(0);
         dayHourMap[dayKey][h - 9]++;
@@ -3003,10 +3015,10 @@ async function actualizarDashboard() {
     const totalSemanaPasada = ventasSemanaPasadaRes.data.paging?.total || 0;
     const deltaSemanaPasada = totalVentas - totalSemanaPasada;
 
-    // Ventas por hora del día de hoy (para mini gráfico)
+    // Ventas por hora del día de hoy (hora Uruguay)
     const ventasPorHora = Array(10).fill(0); // índices 0..9 → horas 9..18
     ventasHoy.forEach(o => {
-      const h = new Date(o.date_created).getHours();
+      const h = uyHour(o.date_created);
       if (h >= 9 && h <= 18) ventasPorHora[h - 9]++;
     });
 

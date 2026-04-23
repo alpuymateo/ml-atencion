@@ -493,25 +493,20 @@ main {
   width: 100%;
   display: flex;
   align-items: flex-end;
-  position: relative;
-}
-.bar-ref {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  border-radius: 3px 3px 0 0;
-  min-height: 2px;
-  background: rgba(255,255,255,.06);
-  border-top: 1px dashed rgba(255,255,255,.2);
 }
 .bar {
   width: 100%;
   border-radius: 3px 3px 0 0;
   min-height: 3px;
   background: rgba(255,202,97,.25);
-  position: relative;
-  z-index: 1;
+}
+.chart-svg-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
 }
 .bar.past   { background: rgba(255,202,97,.55); }
 .bar.active { background: var(--yellow); }
@@ -823,20 +818,46 @@ function renderDashboard(d) {
   const curIdx = curHr - 9;
 
   const barsHtml = vph.map((v, i) => {
-    const hr     = 9 + i;
-    const pct    = Math.round((v / maxV) * 100);
-    const refPct = Math.round((v7d[i] / maxV) * 100);
-    const cls    = i === curIdx ? 'active' : hr < curHr ? 'past' : '';
+    const hr  = 9 + i;
+    const pct = Math.round((v / maxV) * 100);
+    const cls = i === curIdx ? 'active' : hr < curHr ? 'past' : '';
     return `
       <div class="bar-col">
         <div class="bar-val ${v > 0 ? 'show' : ''}">${v || ''}</div>
         <div class="bar-wrap">
-          <div class="bar-ref" style="height:${Math.max(refPct,2)}%"></div>
           <div class="bar ${cls}" style="height:${Math.max(pct,3)}%"></div>
         </div>
         <div class="bar-lbl ${i === curIdx ? 'active' : ''}">${hr}h</div>
       </div>`;
   }).join('');
+
+  // Línea SVG del promedio 7d — coordenadas relativas al área de barras
+  // Y: 14px labels top + flex:1 bar area + 20px labels bottom → aproximamos bar area como 70% del total
+  const n = vph.length;
+  const svgPoints = v7d.map((v, i) => {
+    const x = ((i + 0.5) / n * 100).toFixed(1);
+    const barAreaPct = 0.68; // proporción del chart-inner que ocupan las barras
+    const topOffset  = 0.14; // proporción que ocupan los labels de valor arriba
+    const y = (topOffset + barAreaPct * (1 - v / maxV)) * 100;
+    return `${x},${y.toFixed(1)}`;
+  }).join(' ');
+
+  const svgDots = v7d.map((v, i) => {
+    const x = ((i + 0.5) / n * 100).toFixed(1);
+    const barAreaPct = 0.68;
+    const topOffset  = 0.14;
+    const y = (topOffset + barAreaPct * (1 - v / maxV)) * 100;
+    return `<circle cx="${x}" cy="${y.toFixed(1)}" r="1.2" fill="rgba(255,255,255,.35)" vector-effect="non-scaling-stroke"/>`;
+  }).join('');
+
+  const svgOverlay = `
+    <svg class="chart-svg-overlay" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <polyline points="${svgPoints}" fill="none"
+        stroke="rgba(255,255,255,.22)" stroke-width="1.2"
+        stroke-dasharray="3,2.5" stroke-linecap="round" stroke-linejoin="round"
+        vector-effect="non-scaling-stroke"/>
+      ${svgDots}
+    </svg>`;
 
   const respSub = d.respuesta_promedio_min
     ? `respondiste en ${fmtMin(d.respuesta_promedio_min)} promedio · ${d.respuesta_muestra} preguntas (7d)`
@@ -950,7 +971,7 @@ function renderDashboard(d) {
             <span>Ventas por hora — hoy</span>
             <span style="font-weight:500;color:rgba(255,255,255,.2);font-size:8px;letter-spacing:.06em;">— prom. 7d hábiles</span>
           </div>
-          <div class="chart-inner">${barsHtml}</div>
+          <div class="chart-inner" style="position:relative;">${barsHtml}${svgOverlay}</div>
         </div>
 
       </div>
