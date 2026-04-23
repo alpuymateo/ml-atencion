@@ -838,7 +838,9 @@ function renderDashboard(d) {
       </div>`;
   }).join('');
 
-  const dpSub = d.demora_promedio_min ? `promedio ${fmtMin(d.demora_promedio_min)}` : 'sin demoras activas';
+  const dpSub = d.demora_promedio_min
+    ? `promedio ${fmtMin(d.demora_promedio_min)} · últimos 7 días`
+    : 'sin preguntas recientes pendientes';
   const slaPct = Math.min(Math.round(((d.demora_maxima_min || 0) / 1440) * 100), 100);
 
   const deliveryRate = d.ventas_hoy > 0 ? Math.round((d.entregados_hoy / d.ventas_hoy) * 100) : 0;
@@ -884,7 +886,7 @@ function renderDashboard(d) {
         <div class="atencion-compact">
           <div class="compact-kpi ${sP}">
             <div class="ck-val">${fmt(d.preguntas_sin_responder)}</div>
-            <div class="ck-label">Preguntas sin responder</div>
+            <div class="ck-label">Preguntas sin responder${d.preguntas_antiguas > 0 ? `<br><span style="font-size:8px;color:rgba(255,255,255,.25);font-weight:500;text-transform:none;letter-spacing:0">+${d.preguntas_antiguas} antiguas &gt;7d</span>` : ''}</div>
           </div>
           <div class="compact-kpi ${sM}">
             <div class="ck-val">${fmt(d.mensajes_sin_leer)}</div>
