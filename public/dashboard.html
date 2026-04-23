@@ -724,8 +724,9 @@ function fmtM(n) { return '$ ' + Math.round(n || 0).toLocaleString('es-UY'); }
 function fmtMin(m) {
   if (!m) return '0m';
   if (m < 60) return `${m}m`;
-  const h = Math.floor(m/60), r = m%60;
-  return r ? `${h}h ${r}m` : `${h}h`;
+  if (m < 1440) { const h = Math.floor(m/60), r = m%60; return r ? `${h}h ${r}m` : `${h}h`; }
+  const d = Math.floor(m/1440), h = Math.floor((m%1440)/60);
+  return h ? `${d}d ${h}h` : `${d}d`;
 }
 function st(v, thresh) {
   const [w,a,d] = thresh;
@@ -838,9 +839,11 @@ function renderDashboard(d) {
       </div>`;
   }).join('');
 
-  const dpSub = d.demora_promedio_min
-    ? `promedio ${fmtMin(d.demora_promedio_min)} · últimos 7 días`
-    : 'sin preguntas recientes pendientes';
+  const dpSub = d.demora_maxima_min > 1440
+    ? `SLA excedido · promedio ${fmtMin(d.demora_promedio_min)}`
+    : d.demora_promedio_min
+      ? `promedio ${fmtMin(d.demora_promedio_min)}`
+      : 'sin preguntas pendientes';
   const slaPct = Math.min(Math.round(((d.demora_maxima_min || 0) / 1440) * 100), 100);
 
   const deliveryRate = d.ventas_hoy > 0 ? Math.round((d.entregados_hoy / d.ventas_hoy) * 100) : 0;
