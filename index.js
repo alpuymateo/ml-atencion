@@ -2827,26 +2827,30 @@ Sé directo y específico. Máximo 600 palabras.`;
 // ── Dashboard de oficina ──────────────────────────────────────────
 
 // Horas hábiles transcurridas desde una fecha (L-V 9-18, S 9-13)
-function businessMinutesSinceNode(dateCreated) {
-  const SCHEDULE = [null, [9,18], [9,18], [9,18], [9,18], [9,18], [9,13]];
+const BUSINESS_SCHEDULE = [null, [9,18], [9,18], [9,18], [9,18], [9,18], [9,13]];
+
+function businessMinutesBetween(from, to) {
   let mins = 0;
-  let cursor = new Date(dateCreated);
-  const now = new Date();
-  if (cursor >= now) return 0;
-  while (cursor < now) {
-    const dow = cursor.getDay();
-    const range = SCHEDULE[dow];
+  let cursor = new Date(from);
+  const end = new Date(to);
+  if (cursor >= end) return 0;
+  while (cursor < end) {
+    const range = BUSINESS_SCHEDULE[cursor.getDay()];
     if (range) {
       const dayStart = new Date(cursor); dayStart.setHours(range[0], 0, 0, 0);
       const dayEnd   = new Date(cursor); dayEnd.setHours(range[1], 0, 0, 0);
-      const from = cursor < dayStart ? dayStart : cursor;
-      const to   = now < dayEnd ? now : dayEnd;
-      if (to > from) mins += (to - from) / 60000;
+      const f = cursor < dayStart ? dayStart : cursor;
+      const t = end < dayEnd ? end : dayEnd;
+      if (t > f) mins += (t - f) / 60000;
     }
     cursor.setDate(cursor.getDate() + 1);
     cursor.setHours(0, 0, 0, 0);
   }
   return Math.floor(mins);
+}
+
+function businessMinutesSinceNode(dateCreated) {
+  return businessMinutesBetween(dateCreated, new Date());
 }
 
 let dashboardCache = null;
@@ -2925,6 +2929,25 @@ async function actualizarDashboard() {
     const montoHoy   = ventasHoy.reduce((s, o) => s + (o.total_amount || 0), 0);
     const mensajesSinLeer = mensajesRes.data.total || 0;
 
+    // Tiempo real de respuesta — preguntas respondidas en los últimos 7 días
+    const respondidasRes = await axios.get(`${ML_API_URL}/my/received_questions/search`, {
+      params: { status: 'ANSWERED', limit: 50, sort_fields: 'date_created', sort_types: 'DESC' },
+      headers
+    }).catch(() => ({ data: { questions: [] } }));
+
+    const corte7dR = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const tiemposRespuesta = (respondidasRes.data.questions || [])
+      .filter(q => q.answer?.date_created && new Date(q.answer.date_created) >= corte7dR)
+      .map(q => businessMinutesBetween(q.date_created, q.answer.date_created))
+      .filter(t => t >= 0);
+
+    const respuestaPromedio = tiemposRespuesta.length
+      ? Math.round(tiemposRespuesta.reduce((a, b) => a + b, 0) / tiemposRespuesta.length)
+      : 0;
+    const respuestaMaxima = tiemposRespuesta.length
+      ? Math.max(...tiemposRespuesta)
+      : 0;
+
     // Promedio de ventas por hora — últimos 7 días hábiles
     const businessDays7 = lastNBusinessDays(7, hoyStart);
     const oldest7d = businessDays7[businessDays7.length - 1];
@@ -2995,6 +3018,9 @@ async function actualizarDashboard() {
 
     dashboardCache = {
       preguntas_sin_responder: preguntas.length,
+      respuesta_promedio_min: respuestaPromedio,
+      respuesta_maxima_min: respuestaMaxima,
+      respuesta_muestra: tiemposRespuesta.length,
       demora_maxima_min: demoraMins,
       demora_promedio_min: demoraPromMins,
       mensajes_sin_leer: mensajesSinLeer,

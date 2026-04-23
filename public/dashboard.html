@@ -839,11 +839,12 @@ function renderDashboard(d) {
       </div>`;
   }).join('');
 
-  const dpSub = d.demora_maxima_min > 1440
-    ? `SLA excedido · promedio ${fmtMin(d.demora_promedio_min)}`
-    : d.demora_promedio_min
-      ? `promedio ${fmtMin(d.demora_promedio_min)}`
-      : 'sin preguntas pendientes';
+  const respSub = d.respuesta_promedio_min
+    ? `respondiste en ${fmtMin(d.respuesta_promedio_min)} promedio · ${d.respuesta_muestra} preguntas (7d)`
+    : 'sin respuestas registradas esta semana';
+  const dpSub = d.demora_maxima_min > 0
+    ? `pendiente hace ${fmtMin(d.demora_promedio_min)} en promedio`
+    : respSub;
   const slaPct = Math.min(Math.round(((d.demora_maxima_min || 0) / 1440) * 100), 100);
 
   const deliveryRate = d.ventas_hoy > 0 ? Math.round((d.entregados_hoy / d.ventas_hoy) * 100) : 0;
@@ -883,6 +884,7 @@ function renderDashboard(d) {
           </div>
           <div class="ah-value">${fmtMin(d.demora_maxima_min)}</div>
           <div class="ah-sub">${dpSub}</div>
+          ${d.demora_maxima_min > 0 && d.respuesta_promedio_min ? `<div style="font-size:9px;color:rgba(255,255,255,.25);margin-bottom:8px;">respondiste en ${fmtMin(d.respuesta_promedio_min)} promedio esta semana</div>` : ''}
           <div class="ah-bar-track"><div class="ah-bar-fill" style="width:${slaPct}%"></div></div>
           <div class="ah-bar-labels"><span>0h</span><span>6h</span><span>12h</span><span>18h</span><span>24h</span></div>
         </div>
