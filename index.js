@@ -2990,6 +2990,11 @@ async function actualizarDashboard() {
         ventas7dPromedio[i] = Math.round((ventas7dPromedio[i] / validDays.length) * 10) / 10;
       });
     }
+    // Datos por día (para gráfica multi-serie), de más antiguo a más reciente
+    const ventas_dias_semana = [...businessDays7].reverse().map(d => {
+      const dk = d.toISOString().slice(0, 10);
+      return { date: dk, vph: dayHourMap[dk] || Array(10).fill(0) };
+    });
 
     // Ventas de ayer para delta
     const ayerStart = new Date(hoyStart); ayerStart.setDate(ayerStart.getDate() - 1);
@@ -3051,6 +3056,7 @@ async function actualizarDashboard() {
       monto_hoy: montoHoy,
       ventas_por_hora: ventasPorHora,
       ventas_7d_promedio: ventas7dPromedio,
+      ventas_dias_semana,
       thresholds: THRESH,
       webhooks: { ...webhookLastSeen },
       updated_at: new Date().toISOString(),

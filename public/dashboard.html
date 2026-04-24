@@ -453,7 +453,7 @@ main {
   margin-top: 3px;
 }
 
-/* ─── BAR CHART ─── */
+/* ─── LINE CHART ─── */
 .chart-wrap {
   flex: 1;
   background: var(--card);
@@ -471,61 +471,64 @@ main {
   text-transform: uppercase;
   letter-spacing: .1em;
   color: var(--muted);
-  margin-bottom: 10px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.chart-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.chart-leg-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 8px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.3);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.chart-leg-hoy { color: rgba(255,202,97,0.85); }
+.chart-leg-dot {
+  width: 10px;
+  height: 2px;
+  border-radius: 1px;
   flex-shrink: 0;
 }
 .chart-inner {
   flex: 1;
-  display: flex;
-  align-items: flex-end;
-  gap: 4px;
   min-height: 0;
+  position: relative;
 }
-.bar-col {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  height: 100%;
-}
-.bar-wrap {
-  flex: 1;
-  width: 100%;
-  display: flex;
-  align-items: flex-end;
-}
-.bar {
-  width: 100%;
-  border-radius: 3px 3px 0 0;
-  min-height: 3px;
-  background: rgba(255,202,97,.25);
-}
-.chart-svg-overlay {
-  position: absolute;
-  inset: 0;
+.chart-svg {
   width: 100%;
   height: 100%;
-  pointer-events: none;
   overflow: visible;
 }
-.bar.past   { background: rgba(255,202,97,.55); }
-.bar.active { background: var(--yellow); }
-.bar-val {
-  font-size: 10px;
-  font-weight: 700;
-  color: white;
-  margin-bottom: 3px;
-  min-height: 14px;
+.chart-today-line {
+  animation: chartDraw 1.5s cubic-bezier(0.22,1,0.36,1) forwards;
+}
+.chart-today-area {
   opacity: 0;
+  animation: chartFade 1.8s ease-out forwards 0.2s;
 }
-.bar-val.show { opacity: 1; }
-.bar-lbl {
-  font-size: 9px;
-  font-weight: 600;
-  color: rgba(255,255,255,0.3);
-  margin-top: 4px;
+.chart-today-dot {
+  opacity: 0;
+  animation: chartFade 0.4s ease-out forwards 1.4s;
 }
-.bar-lbl.active { color: var(--yellow); font-weight: 800; }
+@keyframes chartDraw {
+  from { stroke-dashoffset: 1; }
+  to   { stroke-dashoffset: 0; }
+}
+@keyframes chartFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
 
 /* ─── WEBHOOKS STRIP ─── */
 .webhooks-strip {
@@ -810,54 +813,80 @@ function renderDashboard(d) {
   if (delta7d > 0) { delta7dClass='up';   delta7dIcon='▲'; delta7dText=`+${fmt(delta7d)} vs hace 7d`; }
   if (delta7d < 0) { delta7dClass='down'; delta7dIcon='▼'; delta7dText=`${fmt(delta7d)} vs hace 7d`; }
 
-  /* chart */
-  const vph    = d.ventas_por_hora  || Array(10).fill(0);
-  const v7d    = d.ventas_7d_promedio || Array(10).fill(0);
-  const maxV   = Math.max(...vph, ...v7d, 1);
-  const curHr  = new Date().getHours();
-  const curIdx = curHr - 9;
+  /* chart multi-serie */
+  const vph  = d.ventas_por_hora      || Array(10).fill(0);
+  const dias = d.ventas_dias_semana   || [];
+  const DIAS_ES = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 
-  const barsHtml = vph.map((v, i) => {
-    const hr  = 9 + i;
-    const pct = Math.round((v / maxV) * 100);
-    const cls = i === curIdx ? 'active' : hr < curHr ? 'past' : '';
-    return `
-      <div class="bar-col">
-        <div class="bar-val ${v > 0 ? 'show' : ''}">${v || ''}</div>
-        <div class="bar-wrap">
-          <div class="bar ${cls}" style="height:${Math.max(pct,3)}%"></div>
-        </div>
-        <div class="bar-lbl ${i === curIdx ? 'active' : ''}">${hr}h</div>
-      </div>`;
+  // hora actual en UY (UTC-3)
+  const nowUY   = new Date(Date.now() - 3 * 60 * 60 * 1000);
+  const curHrUY = nowUY.getUTCHours();
+  const curIdx  = Math.min(Math.max(curHrUY - 9, 0), 9);
+
+  const allVals = [...vph, ...dias.flatMap(day => day.vph)];
+  const maxV    = Math.max(...allVals, 1);
+
+  // coordenadas SVG — viewBox="0 0 100 58"
+  const PX0 = 4, PX1 = 98, PY0 = 2, PY1 = 46, YBOT = 48;
+  const xs  = Array(10).fill(0).map((_, i) => PX0 + (i / 9) * (PX1 - PX0));
+  const fy  = v => PY0 + (1 - Math.min(v, maxV) / maxV) * (PY1 - PY0);
+
+  function makeSvgPath(vphArr, upTo) {
+    const pts = vphArr.slice(0, upTo + 1);
+    if (pts.every(v => v === 0)) return { line: '', area: '' };
+    const coords = pts.map((v, i) => `${xs[i].toFixed(1)},${fy(v).toFixed(1)}`);
+    const line   = `M ${coords.join(' L ')}`;
+    const area   = `${line} L ${xs[upTo].toFixed(1)},${YBOT} L ${xs[0].toFixed(1)},${YBOT} Z`;
+    return { line, area };
+  }
+
+  const pastColors = [
+    ['rgba(99,179,237,0.55)',  'rgba(99,179,237,0.07)' ],
+    ['rgba(72,187,120,0.55)',  'rgba(72,187,120,0.07)' ],
+    ['rgba(246,173,85,0.55)',  'rgba(246,173,85,0.07)' ],
+    ['rgba(154,117,234,0.55)', 'rgba(154,117,234,0.07)'],
+    ['rgba(237,100,166,0.55)', 'rgba(237,100,166,0.07)'],
+    ['rgba(56,178,172,0.55)',  'rgba(56,178,172,0.07)' ],
+  ];
+
+  let svgLayers = '';
+  dias.forEach((day, idx) => {
+    const [lc, ac] = pastColors[idx % pastColors.length];
+    const { line, area } = makeSvgPath(day.vph, 9);
+    if (!line) return;
+    svgLayers += `<path d="${area}" fill="${ac}"/>`;
+    svgLayers += `<path d="${line}" fill="none" stroke="${lc}" stroke-width="0.7" stroke-linecap="round" stroke-linejoin="round"/>`;
+  });
+
+  const { line: todayLine, area: todayArea } = makeSvgPath(vph, curIdx);
+  if (todayLine) {
+    svgLayers += `<path d="${todayArea}" fill="rgba(255,202,97,0.13)" class="chart-today-area"/>`;
+    svgLayers += `<path d="${todayLine}" fill="none" stroke="#FFCA61" stroke-width="1.8"
+      stroke-linecap="round" stroke-linejoin="round"
+      pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"
+      class="chart-today-line"/>`;
+    svgLayers += `<circle cx="${xs[curIdx].toFixed(1)}" cy="${fy(vph[curIdx]).toFixed(1)}" r="2" fill="#FFCA61" class="chart-today-dot"/>`;
+  }
+
+  const xLabels = [9,10,11,12,13,14,15,16,17,18].map((h, i) => {
+    const isNow = i === curIdx;
+    return `<text x="${xs[i].toFixed(1)}" y="56" text-anchor="middle" font-size="4.5"
+      fill="${isNow ? '#FFCA61' : 'rgba(255,255,255,0.22)'}"
+      font-weight="${isNow ? '700' : '400'}" font-family="sans-serif">${h}h</text>`;
   }).join('');
 
-  // Línea SVG del promedio 7d — coordenadas relativas al área de barras
-  // Y: 14px labels top + flex:1 bar area + 20px labels bottom → aproximamos bar area como 70% del total
-  const n = vph.length;
-  const svgPoints = v7d.map((v, i) => {
-    const x = ((i + 0.5) / n * 100).toFixed(1);
-    const barAreaPct = 0.68; // proporción del chart-inner que ocupan las barras
-    const topOffset  = 0.14; // proporción que ocupan los labels de valor arriba
-    const y = (topOffset + barAreaPct * (1 - v / maxV)) * 100;
-    return `${x},${y.toFixed(1)}`;
-  }).join(' ');
+  const chartSvg = `<svg viewBox="0 0 100 58" class="chart-svg" xmlns="http://www.w3.org/2000/svg">
+    <line x1="${PX0}" y1="${YBOT}" x2="${PX1}" y2="${YBOT}" stroke="rgba(255,255,255,0.07)" stroke-width="0.5"/>
+    ${svgLayers}
+    ${xLabels}
+  </svg>`;
 
-  const svgDots = v7d.map((v, i) => {
-    const x = ((i + 0.5) / n * 100).toFixed(1);
-    const barAreaPct = 0.68;
-    const topOffset  = 0.14;
-    const y = (topOffset + barAreaPct * (1 - v / maxV)) * 100;
-    return `<circle cx="${x}" cy="${y.toFixed(1)}" r="1.2" fill="rgba(255,255,255,.35)" vector-effect="non-scaling-stroke"/>`;
+  const legendDias = dias.map((day, idx) => {
+    const [lc] = pastColors[idx % pastColors.length];
+    const dn = DIAS_ES[new Date(day.date + 'T12:00:00Z').getDay()];
+    return `<span class="chart-leg-item"><span class="chart-leg-dot" style="background:${lc}"></span>${dn}</span>`;
   }).join('');
-
-  const svgOverlay = `
-    <svg class="chart-svg-overlay" viewBox="0 0 100 100" preserveAspectRatio="none">
-      <polyline points="${svgPoints}" fill="none"
-        stroke="rgba(255,255,255,.22)" stroke-width="1.2"
-        stroke-dasharray="3,2.5" stroke-linecap="round" stroke-linejoin="round"
-        vector-effect="non-scaling-stroke"/>
-      ${svgDots}
-    </svg>`;
+  const legendHtml = `<div class="chart-legend">${legendDias}<span class="chart-leg-item chart-leg-hoy"><span class="chart-leg-dot" style="background:#FFCA61"></span>Hoy</span></div>`;
 
   const respSub = d.respuesta_promedio_min
     ? `respondiste en ${fmtMin(d.respuesta_promedio_min)} promedio · ${d.respuesta_muestra} preguntas (7d)`
@@ -967,11 +996,11 @@ function renderDashboard(d) {
         </div>
 
         <div class="chart-wrap">
-          <div class="chart-label" style="display:flex;align-items:center;justify-content:space-between;">
-            <span>Ventas por hora — hoy</span>
-            <span style="font-weight:500;color:rgba(255,255,255,.2);font-size:8px;letter-spacing:.06em;">— prom. 7d hábiles</span>
+          <div class="chart-label">
+            <span>Ventas por hora</span>
+            ${legendHtml}
           </div>
-          <div class="chart-inner" style="position:relative;">${barsHtml}${svgOverlay}</div>
+          <div class="chart-inner">${chartSvg}</div>
         </div>
 
       </div>
