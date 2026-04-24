@@ -2918,10 +2918,22 @@ async function actualizarDashboard() {
         params: { status: 'UNANSWERED', limit: 50, sort_fields: 'date_created', sort_types: 'DESC' },
         headers
       }).catch(() => ({ data: { questions: [] } })),
-      axios.get(`${ML_API_URL}/orders/search`, {
-        params: { seller: sellerId, sort: 'date_desc', limit: 50, 'order.status': 'paid', 'order.date_created.from': hoyStart.toISOString() },
-        headers
-      }).catch(() => ({ data: { results: [], paging: { total: 0 } } })),
+      (async () => {
+        // Paginar todas las órdenes de hoy (ML puede tener >50)
+        let all = [], offset = 0;
+        while (true) {
+          const r = await axios.get(`${ML_API_URL}/orders/search`, {
+            params: { seller: sellerId, sort: 'date_desc', limit: 50, offset, 'order.status': 'paid', 'order.date_created.from': hoyStart.toISOString() },
+            headers
+          }).catch(() => ({ data: { results: [] } }));
+          const batch = r.data.results || [];
+          all = all.concat(batch);
+          if (batch.length < 50) break;
+          offset += 50;
+          if (offset >= 300) break; // tope de seguridad
+        }
+        return { data: { results: all } };
+      })(),
       axios.get(`${ML_API_URL}/messages/unread`, { headers })
         .catch(() => ({ data: { total: 0 } })),
     ]);
@@ -2937,9 +2949,16 @@ async function actualizarDashboard() {
       ? Math.round(preguntas.reduce((s, q) => s + businessMinutesSinceNode(q.date_created), 0) / preguntas.length)
       : 0;
 
-    const ventasHoy  = ventasRes.data.results || [];
-    const totalVentas = ventasRes.data.paging?.total || ventasHoy.length;
-    const montoHoy   = ventasHoy.reduce((s, o) => s + (o.total_amount || 0), 0);
+    const ventasHoy = ventasRes.data.results || [];
+    // Deduplicar por pack_id igual que hace el panel de ML
+    const seenPacks = new Set();
+    const ventasDeduplicadas = ventasHoy.filter(o => {
+      const key = o.pack_id || o.id;
+      if (seenPacks.has(key)) return false;
+      seenPacks.add(key); return true;
+    });
+    const totalVentas = ventasDeduplicadas.length;
+    const montoHoy = ventasDeduplicadas.reduce((s, o) => s + (o.total_amount || 0), 0);
     const mensajesSinLeer = mensajesRes.data.total || 0;
 
     // Tiempo real de respuesta — preguntas respondidas en los últimos 7 días
@@ -3020,9 +3039,9 @@ async function actualizarDashboard() {
     const totalSemanaPasada = ventasSemanaPasadaRes.data.paging?.total || 0;
     const deltaSemanaPasada = totalVentas - totalSemanaPasada;
 
-    // Ventas por hora del día de hoy (hora Uruguay)
+    // Ventas por hora del día de hoy (hora Uruguay) — usando órdenes deduplicadas
     const ventasPorHora = Array(10).fill(0); // índices 0..9 → horas 9..18
-    ventasHoy.forEach(o => {
+    ventasDeduplicadas.forEach(o => {
       const h = uyHour(o.date_created);
       if (h >= 9 && h <= 18) ventasPorHora[h - 9]++;
     });
