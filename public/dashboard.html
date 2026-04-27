@@ -817,6 +817,7 @@ function renderDashboard(d) {
   const vph  = d.ventas_por_hora      || Array(10).fill(0);
   const dias = d.ventas_dias_semana   || [];
   const DIAS_ES = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  console.log('[chart] dias recibidos:', dias.length, dias.map(x => x.date + ':' + x.vph.reduce((a,b)=>a+b,0)));
 
   // hora actual en UY (UTC-3)
   const nowUY   = new Date(Date.now() - 3 * 60 * 60 * 1000);
