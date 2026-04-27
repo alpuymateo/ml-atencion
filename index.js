@@ -2983,17 +2983,32 @@ async function actualizarDashboard() {
     // Promedio de ventas por hora — últimos 7 días hábiles
     const businessDays7 = lastNBusinessDays(7, hoyStart);
     const oldest7d = businessDays7[businessDays7.length - 1];
-    const historico7dRes = await axios.get(`${ML_API_URL}/orders/search`, {
-      params: {
-        seller: sellerId, sort: 'date_desc', limit: 200, 'order.status': 'paid',
-        'order.date_created.from': oldest7d.toISOString(),
-        'order.date_created.to':   hoyStart.toISOString(),
-      },
-      headers,
-    }).catch(() => ({ data: { results: [] } }));
+
+    // Paginar órdenes históricas (puede haber >200 en 7 días)
+    let historico7d = [];
+    {
+      let offset = 0;
+      while (true) {
+        const r = await axios.get(`${ML_API_URL}/orders/search`, {
+          params: {
+            seller: sellerId, sort: 'date_desc', limit: 50, offset,
+            'order.status': 'paid',
+            'order.date_created.from': oldest7d.toISOString(),
+            'order.date_created.to':   hoyStart.toISOString(),
+          },
+          headers,
+        }).catch(e => { console.error('[dashboard] historico error:', e.message); return { data: { results: [] } }; });
+        const batch = r.data.results || [];
+        historico7d = historico7d.concat(batch);
+        if (batch.length < 50) break;
+        offset += 50;
+        if (offset >= 500) break;
+      }
+    }
+    console.log('[dashboard] historico7d total:', historico7d.length, 'businessDays7:', businessDays7.map(d => d.toISOString().slice(0,10)));
 
     const dayHourMap = {};
-    (historico7dRes.data.results || []).forEach(o => {
+    historico7d.forEach(o => {
       const dayKey = uyDateKey(o.date_created);
       const h = uyHour(o.date_created);
       if (h >= 9 && h <= 18) {
@@ -3001,6 +3016,8 @@ async function actualizarDashboard() {
         dayHourMap[dayKey][h - 9]++;
       }
     });
+    console.log('[dashboard] dayHourMap keys:', Object.keys(dayHourMap));
+
     const validDays = Object.values(dayHourMap);
     const ventas7dPromedio = Array(10).fill(0);
     if (validDays.length > 0) {
@@ -3014,6 +3031,7 @@ async function actualizarDashboard() {
       const dk = d.toISOString().slice(0, 10);
       return { date: dk, vph: dayHourMap[dk] || Array(10).fill(0) };
     });
+    console.log('[dashboard] ventas_dias_semana dates:', ventas_dias_semana.map(d => d.date), 'non-zero days:', ventas_dias_semana.filter(d => d.vph.some(v => v > 0)).length);
 
     // Ventas de ayer para delta
     const ayerStart = new Date(hoyStart); ayerStart.setDate(ayerStart.getDate() - 1);
