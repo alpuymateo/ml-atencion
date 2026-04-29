@@ -3147,8 +3147,6 @@ async function actualizarDashboard() {
         if (offset >= 500) break;
       }
     }
-    console.log('[dashboard] historico7d total:', historico7d.length, 'businessDays7:', businessDays7.map(d => d.toISOString().slice(0,10)));
-
     const dayHourMap = {};
     historico7d.forEach(o => {
       const dayKey = uyDateKey(o.date_created);
@@ -3158,7 +3156,6 @@ async function actualizarDashboard() {
         dayHourMap[dayKey][h - 9]++;
       }
     });
-    console.log('[dashboard] dayHourMap keys:', Object.keys(dayHourMap));
 
     const validDays = Object.values(dayHourMap);
     const ventas7dPromedio = Array(10).fill(0);
@@ -3173,7 +3170,6 @@ async function actualizarDashboard() {
       const dk = d.toISOString().slice(0, 10);
       return { date: dk, vph: dayHourMap[dk] || Array(10).fill(0) };
     });
-    console.log('[dashboard] ventas_dias_semana dates:', ventas_dias_semana.map(d => d.date), 'non-zero days:', ventas_dias_semana.filter(d => d.vph.some(v => v > 0)).length);
 
     // Ventas de ayer para delta
     const ayerStart = new Date(hoyStart); ayerStart.setDate(ayerStart.getDate() - 1);
