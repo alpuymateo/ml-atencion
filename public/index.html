@@ -2271,7 +2271,12 @@ async function enviarRespuesta(questionId) {
       document.getElementById('pendientes-count').textContent = `${pendientesData.length} sin responder`;
     }, 1500);
   } else {
-    status.innerHTML = `<span style="color:#ef4444;">Error: ${JSON.stringify(d.error)?.slice(0,100)}</span>`;
+    const err = d.error || {};
+    const errorCode = err.error || err.cause?.[0]?.code || '';
+    let errorMsg = JSON.stringify(err).slice(0, 120);
+    if (errorCode === 'not_active_item' || err.message === 'Item must be active')
+      errorMsg = 'La publicación está pausada o inactiva en ML. Reactivala antes de responder.';
+    status.innerHTML = `<span style="color:#ef4444;">${errorMsg}</span>`;
     btn.textContent = '✉️ Publicar en ML';
     btn.disabled = false;
   }
