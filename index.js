@@ -2190,7 +2190,8 @@ async function fetchItemContext(itemId) {
       shipping: shippingInfo,
       variations,
       attrs,
-      description: desc.slice(0, 800)
+      description: desc.slice(0, 800),
+      pictures: (item.pictures || []).slice(0, 4).map(p => p.secure_url || p.url).filter(Boolean),
     };
     itemDetailCache[itemId] = ctx;
     saveItemCache();
@@ -2240,51 +2241,64 @@ ${kb.reglas_generales.slice(0, 10).map(r => '- ' + r).join('\n')}` : '';
     try { preguntasData = JSON.parse(fs.readFileSync(PREGUNTAS_FILE, 'utf8')); } catch(e) {}
   }
 
+  // Cargar respuestas malas para contexto negativo
+  let malasCtx = '';
+  if (fs.existsSync(BAD_RESP_FILE)) {
+    try {
+      const malas = JSON.parse(fs.readFileSync(BAD_RESP_FILE, 'utf8')).slice(-15);
+      const malasPreg = malas.filter(m => m.pregunta);
+      if (malasPreg.length) {
+        malasCtx = '\nERRORES A EVITAR (respuestas que se marcaron como malas):\n' +
+          malasPreg.slice(-8).map(m =>
+            `P: ${m.pregunta}\nMala: ${m.respuesta_mala || ''}${m.motivo ? `\nMotivo: ${m.motivo}` : ''}${m.correccion ? `\nCorrección correcta: ${m.correccion}` : ''}`
+          ).join('\n---\n');
+      }
+    } catch(e) {}
+  }
+
   const results = [];
   for (const q of questions) {
     try {
       const itemCtx = await fetchItemContext(q.item_id);
       const itemText = buildItemContextText(itemCtx);
+      const pictures = itemCtx.pictures || [];
 
       let ejemplos = '';
       if (preguntasData && q.item_id && preguntasData.byPub[q.item_id]) {
-        const prevQA = preguntasData.byPub[q.item_id].qa.slice(-8);
+        const prevQA = preguntasData.byPub[q.item_id].qa.slice(-10);
         if (prevQA.length) {
-          ejemplos = '\nEjemplos anteriores de esta publicación:\n' +
+          ejemplos = '\nEjemplos anteriores de esta publicación (cómo respondemos realmente):\n' +
             prevQA.map(e => `P: ${e.q}\nR: ${e.a}`).join('\n---\n');
         }
       }
-      const similares = buscarSimilares(q.text, 6);
+      const similares = buscarSimilares(q.text, 10);
       if (similares.length) {
-        ejemplos += '\nRespuestas validadas similares:\n' +
+        ejemplos += '\nRespuestas validadas a preguntas similares:\n' +
           similares.map(e => `P: ${e.pregunta}\nR: ${e.respuesta}`).join('\n---\n');
       }
-      // Detectar si la pregunta es un cierre o agradecimiento
+
+      // Detectar cierre o agradecimiento
       const qTextLower = q.text?.trim().toLowerCase() || '';
       const cierresPre = ['gracias', 'ok', 'dale', 'listo', 'perfecto', 'buenísimo', 'buenisimo', 'entendido', 'de acuerdo'];
       const esCierrePre = cierresPre.some(c => qTextLower === c || qTextLower === c + '.' || qTextLower === c + '!');
-
       if (esCierrePre) {
         results.push({ id: q.id, respuesta: '¡Con gusto! Quedamos a las órdenes 😊 MUNDO SHOP' });
         continue;
       }
 
-      const r = await anthropic.messages.create({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 250,
-        messages: [{
-          role: 'user',
-          content: `Sos el equipo de atención al cliente de MUNDO SHOP en Mercado Libre Uruguay.
+      const promptText = `Sos el equipo de atención al cliente de MUNDO SHOP en Mercado Libre Uruguay.
 Soná como una persona real: cercana, amigable y profesional. Usá lenguaje rioplatense natural (vos, te, etc).
 ${kbText}
-${reglasText ? 'REGLAS DEL NEGOCIO (tienen prioridad, usá estos datos exactos):' + reglasText : ''}
+${reglasText ? 'REGLAS DEL NEGOCIO (tienen prioridad absoluta, usá estos datos exactos):\n' + reglasText : ''}
+${malasCtx}
 ${ejemplos}
-${itemText}
-Pregunta: "${q.text}"
+${itemText}${pictures.length ? '\n(Se adjuntan imágenes del producto para que puedas ver exactamente qué es y qué incluye)' : ''}
+Pregunta del comprador: "${q.text}"
 
 Instrucciones:
 - Respondé SOLO con el texto final, sin explicaciones ni comillas
 - Saludá con "¡Hola!" y respondé directo — sin frases de relleno como "Buena pregunta", "Claro que sí", "Por supuesto"
+- Analizá las imágenes si las hay para entender exactamente qué incluye el producto antes de responder
 - Usá emojis SOLO si el contexto es informal o positivo. En preguntas técnicas, de medidas o reclamos NO uses emojis
 - Cerrá con "¡Cualquier otra consulta nos avisás! MUNDO SHOP"
 - MUNDO SHOP aparece UNA SOLA VEZ, al cerrar
@@ -2293,11 +2307,22 @@ Instrucciones:
 - Respondé ÚNICAMENTE lo que preguntó el comprador, sin agregar info extra que no pidió
 - Para referirte al producto usá el tipo genérico ("este sillón", "esta mesa", "este mueble"), NUNCA el nombre comercial completo
 - Sé breve y directo, máximo 2-3 oraciones
-- Si no tenés el dato exacto que pide el comprador, usá tu conocimiento general para dar una medida o referencia estándar del rubro, aclarando que es aproximada. NUNCA derives al cliente a otro lado ni prometas gestiones internas
-- No inventes datos específicos del producto, pero sí podés dar referencias estándar cuando aplica`
-        }]
+- Si no tenés el dato exacto, usá tu conocimiento general con una referencia estándar del rubro aclarando que es aproximada. NUNCA derives al cliente a otro lado
+- No inventes datos específicos, pero sí podés dar referencias estándar cuando aplica`;
+
+      // Construir content con imágenes si las hay
+      const userContent = [];
+      pictures.slice(0, 3).forEach(url => {
+        userContent.push({ type: 'image', source: { type: 'url', url } });
       });
-      results.push({ id: q.id, respuesta: r.content[0].text.trim() });
+      userContent.push({ type: 'text', text: promptText });
+
+      const r = await anthropic.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 250,
+        messages: [{ role: 'user', content: userContent }]
+      });
+      results.push({ id: q.id, respuesta: r.content[0].text.trim(), analizo_imagenes: pictures.length > 0 });
     } catch(e) {
       results.push({ id: q.id, error: e.message });
     }
@@ -2357,6 +2382,123 @@ Respondé ÚNICAMENTE con el texto de la regla, sin explicaciones.`
 
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/ml/preguntas/feedback-malo — corrección de respuesta mala
+app.post('/api/ml/preguntas/feedback-malo', requireToken, async (req, res) => {
+  const { pregunta, respuesta_mala, correccion, motivo, item_id, item_title } = req.body;
+  if (!pregunta) return res.status(400).json({ error: 'pregunta requerida' });
+  try {
+    // Guardar como mala
+    let malas = fs.existsSync(BAD_RESP_FILE) ? JSON.parse(fs.readFileSync(BAD_RESP_FILE, 'utf8')) : [];
+    malas.push({ pregunta, respuesta_mala: respuesta_mala || '', correccion: correccion || '', motivo: motivo || '', item_id: item_id || null, item_title: item_title || null, fecha: new Date().toISOString() });
+    if (malas.length > 500) malas = malas.slice(-500);
+    fs.writeFileSync(BAD_RESP_FILE, JSON.stringify(malas, null, 2));
+
+    // Si hay corrección, guardarla como respuesta aprendida con alta prioridad
+    if (correccion) {
+      let learned = fs.existsSync(LEARNED_FILE) ? JSON.parse(fs.readFileSync(LEARNED_FILE, 'utf8')) : [];
+      learned.push({ pregunta, respuesta: correccion, item_id: item_id || null, item_title: item_title || null, tipo: 'correccion', fecha: new Date().toISOString() });
+      if (learned.length > 3000) learned = learned.slice(-3000);
+      fs.writeFileSync(LEARNED_FILE, JSON.stringify(learned, null, 2));
+      if (item_id && fs.existsSync(PREGUNTAS_FILE)) {
+        const data = JSON.parse(fs.readFileSync(PREGUNTAS_FILE, 'utf8'));
+        if (!data.byPub[item_id]) data.byPub[item_id] = { titulo: item_title || '', qa: [] };
+        data.byPub[item_id].qa.push({ q: pregunta, a: correccion, aprendida: true, correccion: true });
+        fs.writeFileSync(PREGUNTAS_FILE, JSON.stringify(data));
+      }
+    }
+
+    // Generar regla automática si hay motivo o corrección
+    const contextoRegla = motivo || correccion;
+    if (contextoRegla && anthropic) {
+      (async () => {
+        try {
+          const r = await anthropic.messages.create({
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 150,
+            messages: [{ role: 'user', content: `Sos un asistente que genera reglas para el chatbot de atención al cliente de MUNDO SHOP.
+Pregunta: "${pregunta?.slice(0, 150)}"
+Respuesta mala: "${respuesta_mala?.slice(0, 200) || ''}"
+${correccion ? `Corrección correcta: "${correccion.slice(0, 200)}"` : ''}
+${motivo ? `Motivo: "${motivo}"` : ''}
+
+Generá UNA regla corta y concreta (máx 20 palabras) para que el chatbot no cometa este error.
+Empezá con verbo en infinitivo. Respondé ÚNICAMENTE con el texto de la regla.` }]
+          });
+          const reglaTexto = r.content[0].text.trim();
+          if (reglaTexto) {
+            const reglas = loadReglasNegocio();
+            const yaExiste = reglas.some(reg => reg.texto.toLowerCase().includes(reglaTexto.slice(0, 30).toLowerCase()));
+            if (!yaExiste) {
+              reglas.push({ id: Date.now(), categoria: 'respuestas', texto: reglaTexto, auto: true });
+              fs.writeFileSync(REGLAS_NEGOCIO_FILE, JSON.stringify(reglas, null, 2));
+              console.log(`[feedback-preguntas] regla auto-generada: "${reglaTexto}"`);
+            }
+          }
+        } catch(e) { console.error('[feedback-preguntas] error regla:', e.message); }
+      })();
+    }
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/ml/preguntas/historial/sync — sincroniza preguntas respondidas de ML al KB local
+async function syncHistorialRespondidas() {
+  if (!tokenData?.access_token) return 0;
+  try {
+    let all = [], offset = 0;
+    while (offset <= 450) {
+      const r = await axios.get(`${ML_API_URL}/my/received_questions/search`, {
+        params: { status: 'ANSWERED', limit: 50, offset, sort_fields: 'date_created', sort_types: 'DESC' },
+        headers: { Authorization: `Bearer ${tokenData.access_token}` }
+      }).catch(() => ({ data: { questions: [] } }));
+      const batch = r.data.questions || [];
+      if (!batch.length) break;
+      all = all.concat(batch);
+      if (batch.length < 50) break;
+      offset += 50;
+    }
+
+    let learned = fs.existsSync(LEARNED_FILE) ? JSON.parse(fs.readFileSync(LEARNED_FILE, 'utf8')) : [];
+    const existingKeys = new Set(learned.map(e => `${e.pregunta}|${e.item_id}`));
+
+    let pregData = { byPub: {} };
+    if (fs.existsSync(PREGUNTAS_FILE)) {
+      try { pregData = JSON.parse(fs.readFileSync(PREGUNTAS_FILE, 'utf8')); } catch(e) {}
+    }
+
+    let added = 0;
+    for (const q of all) {
+      if (!q.answer?.text || !q.text) continue;
+      const key = `${q.text}|${q.item_id}`;
+      if (existingKeys.has(key)) continue;
+      learned.push({ pregunta: q.text, respuesta: q.answer.text, item_id: q.item_id || null, item_title: null, tipo: 'historial', fecha: q.date_created || new Date().toISOString() });
+      existingKeys.add(key);
+      if (q.item_id) {
+        if (!pregData.byPub[q.item_id]) pregData.byPub[q.item_id] = { titulo: '', qa: [] };
+        if (!pregData.byPub[q.item_id].qa.some(e => e.q === q.text))
+          pregData.byPub[q.item_id].qa.push({ q: q.text, a: q.answer.text });
+      }
+      added++;
+    }
+
+    if (added > 0) {
+      if (learned.length > 5000) learned = learned.slice(-5000);
+      fs.writeFileSync(LEARNED_FILE, JSON.stringify(learned, null, 2));
+      fs.writeFileSync(PREGUNTAS_FILE, JSON.stringify(pregData));
+    }
+    console.log(`[historial-sync] +${added} preguntas (total KB: ${learned.length})`);
+    return added;
+  } catch(e) {
+    console.error('[historial-sync] error:', e.message);
+    return 0;
+  }
+}
+
+app.post('/api/ml/preguntas/historial/sync', requireToken, async (req, res) => {
+  const added = await syncHistorialRespondidas();
+  res.json({ ok: true, added, mensaje: added > 0 ? `${added} nuevas preguntas agregadas al conocimiento` : 'Ya estaba al día' });
 });
 
 // POST /api/ml/preguntas/feedback

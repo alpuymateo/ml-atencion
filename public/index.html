@@ -609,6 +609,7 @@
           </div>
           <div style="display:flex;gap:8px;">
             <button onclick="loadPendientes()" style="padding:8px 14px;background:#e5e7eb;color:#374151;border:none;border-radius:6px;font-size:13px;cursor:pointer;">↺ Actualizar</button>
+            <button onclick="sincronizarHistorial()" id="btn-sync-historial" style="padding:8px 14px;background:#f3f4f6;color:#374151;border:1px solid #d1d5db;border-radius:6px;font-size:13px;cursor:pointer;" title="Importa el historial de preguntas respondidas de ML para mejorar las respuestas IA">📚 Sync historial</button>
             <button onclick="simularTodas()" id="btn-simular-todas" style="padding:8px 16px;background:#00217E;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">🤖 Generar todas con IA</button>
           </div>
         </div>
@@ -2166,10 +2167,13 @@ async function feedbackRespuesta(questionId, tipo) {
     const actual = document.getElementById(txtId)?.value || '';
     fbDiv.innerHTML = `
       <div style="width:100%;">
-        <span style="font-size:12px;color:#991b1b;font-weight:600;">👎 Mala — ¿cómo la escribirías vos?</span>
+        <span style="font-size:12px;color:#991b1b;font-weight:600;">👎 Mala — corregila para que aprenda</span>
         <textarea id="fb-correccion-${questionId}" rows="2"
           style="width:100%;margin-top:4px;padding:6px 8px;border:1px solid #fca5a5;border-radius:5px;font-size:12px;font-family:inherit;resize:vertical;box-sizing:border-box;"
           placeholder="Escribí la respuesta correcta...">${actual}</textarea>
+        <input id="fb-motivo-${questionId}" type="text"
+          style="width:100%;margin-top:4px;padding:5px 8px;border:1px solid #e5e7eb;border-radius:5px;font-size:11px;font-family:inherit;box-sizing:border-box;"
+          placeholder="¿Qué estaba mal? (opcional — ayuda a generar una regla automática)">
         <div style="display:flex;gap:6px;margin-top:4px;">
           <button onclick="guardarCorreccion(${questionId})"
             style="padding:4px 10px;background:#991b1b;color:white;border:none;border-radius:4px;font-size:11px;cursor:pointer;">
@@ -2185,15 +2189,47 @@ async function feedbackRespuesta(questionId, tipo) {
   actualizarResumenFeedback();
 }
 
-function guardarCorreccion(questionId) {
+async function guardarCorreccion(questionId) {
   const correccion = document.getElementById(`fb-correccion-${questionId}`)?.value?.trim();
+  const motivo = document.getElementById(`fb-motivo-${questionId}`)?.value?.trim() || '';
   const fbDiv = document.getElementById(`pend-feedback-${questionId}`);
   if (!correccion) { fbDiv.innerHTML = '<span style="font-size:12px;color:#991b1b;font-weight:600;">👎 Marcada como mala</span>'; return; }
   const txt = document.getElementById(`pend-txt-${questionId}`);
   if (txt) txt.value = correccion;
-  fbDiv.innerHTML = '<span style="font-size:12px;color:#166534;font-weight:600;">✓ Corrección guardada — podés publicarla</span>';
   const btnEnv = document.getElementById(`btn-enviar-${questionId}`);
   if (btnEnv) btnEnv.style.display = '';
+
+  // Enviar corrección al backend para aprendizaje
+  const q = pendientesData.find(p => p.id === questionId);
+  if (q) {
+    fetch('/api/ml/preguntas/feedback-malo', {
+      method: 'POST',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pregunta: q.text,
+        respuesta_mala: document.getElementById(`pend-txt-${questionId}`)?.defaultValue || '',
+        correccion,
+        motivo,
+        item_id: q.item_id,
+        item_title: q.item_title
+      })
+    }).catch(() => {});
+  }
+  fbDiv.innerHTML = '<span style="font-size:12px;color:#166534;font-weight:600;">✓ Corrección guardada — podés publicarla</span>' +
+    (motivo ? ' <span style="font-size:11px;color:#6b7280;">· Regla en proceso...</span>' : '');
+}
+
+async function sincronizarHistorial() {
+  const btn = document.getElementById('btn-sync-historial');
+  if (btn) { btn.textContent = '⏳ Sincronizando...'; btn.disabled = true; }
+  try {
+    const r = await fetch('/api/ml/preguntas/historial/sync', { method: 'POST', headers: authHeaders() });
+    const d = await r.json();
+    if (btn) btn.textContent = d.added > 0 ? `✓ +${d.added} aprendidas` : '✓ Al día';
+    setTimeout(() => { if (btn) { btn.textContent = '📚 Sync historial'; btn.disabled = false; } }, 3000);
+  } catch(e) {
+    if (btn) { btn.textContent = '📚 Sync historial'; btn.disabled = false; }
+  }
 }
 
 function actualizarResumenFeedback() {
