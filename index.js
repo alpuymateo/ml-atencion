@@ -2292,13 +2292,12 @@ ${kbText}
 ${reglasText ? 'REGLAS DEL NEGOCIO (tienen prioridad absoluta, usá estos datos exactos):\n' + reglasText : ''}
 ${malasCtx}
 ${ejemplos}
-${itemText}${pictures.length ? '\n(Se adjuntan imágenes del producto para que puedas ver exactamente qué es y qué incluye)' : ''}
+${itemText}
 Pregunta del comprador: "${q.text}"
 
 Instrucciones:
 - Respondé SOLO con el texto final, sin explicaciones ni comillas
 - Saludá con "¡Hola!" y respondé directo — sin frases de relleno como "Buena pregunta", "Claro que sí", "Por supuesto"
-- Analizá las imágenes si las hay para entender exactamente qué incluye el producto antes de responder
 - Usá emojis SOLO si el contexto es informal o positivo. En preguntas técnicas, de medidas o reclamos NO uses emojis
 - Cerrá con "¡Cualquier otra consulta nos avisás! MUNDO SHOP"
 - MUNDO SHOP aparece UNA SOLA VEZ, al cerrar
@@ -2310,31 +2309,11 @@ Instrucciones:
 - Si no tenés el dato exacto, usá tu conocimiento general con una referencia estándar del rubro aclarando que es aproximada. NUNCA derives al cliente a otro lado
 - No inventes datos específicos, pero sí podés dar referencias estándar cuando aplica`;
 
-      // Intentar con imágenes; si falla por URL inaccesible, reintentar sin imágenes
-      const buildContent = (pics) => {
-        const content = [];
-        pics.forEach(url => content.push({ type: 'image', source: { type: 'url', url } }));
-        content.push({ type: 'text', text: promptText });
-        return content;
-      };
-
-      let r;
-      try {
-        r = await anthropic.messages.create({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 250,
-          messages: [{ role: 'user', content: buildContent(pictures.slice(0, 3)) }]
-        });
-      } catch(imgErr) {
-        if (imgErr.message?.includes('download') || imgErr.message?.includes('URL') || imgErr.status === 400) {
-          // Reintentar sin imágenes
-          r = await anthropic.messages.create({
-            model: 'claude-sonnet-4-6',
-            max_tokens: 250,
-            messages: [{ role: 'user', content: buildContent([]) }]
-          });
-        } else throw imgErr;
-      }
+      const r = await anthropic.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 250,
+        messages: [{ role: 'user', content: promptText }]
+      });
       results.push({ id: q.id, respuesta: r.content[0].text.trim() });
     } catch(e) {
       results.push({ id: q.id, error: e.message });
