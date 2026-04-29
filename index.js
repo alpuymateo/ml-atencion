@@ -2310,19 +2310,32 @@ Instrucciones:
 - Si no tenés el dato exacto, usá tu conocimiento general con una referencia estándar del rubro aclarando que es aproximada. NUNCA derives al cliente a otro lado
 - No inventes datos específicos, pero sí podés dar referencias estándar cuando aplica`;
 
-      // Construir content con imágenes si las hay
-      const userContent = [];
-      pictures.slice(0, 3).forEach(url => {
-        userContent.push({ type: 'image', source: { type: 'url', url } });
-      });
-      userContent.push({ type: 'text', text: promptText });
+      // Intentar con imágenes; si falla por URL inaccesible, reintentar sin imágenes
+      const buildContent = (pics) => {
+        const content = [];
+        pics.forEach(url => content.push({ type: 'image', source: { type: 'url', url } }));
+        content.push({ type: 'text', text: promptText });
+        return content;
+      };
 
-      const r = await anthropic.messages.create({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 250,
-        messages: [{ role: 'user', content: userContent }]
-      });
-      results.push({ id: q.id, respuesta: r.content[0].text.trim(), analizo_imagenes: pictures.length > 0 });
+      let r;
+      try {
+        r = await anthropic.messages.create({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 250,
+          messages: [{ role: 'user', content: buildContent(pictures.slice(0, 3)) }]
+        });
+      } catch(imgErr) {
+        if (imgErr.message?.includes('download') || imgErr.message?.includes('URL') || imgErr.status === 400) {
+          // Reintentar sin imágenes
+          r = await anthropic.messages.create({
+            model: 'claude-sonnet-4-6',
+            max_tokens: 250,
+            messages: [{ role: 'user', content: buildContent([]) }]
+          });
+        } else throw imgErr;
+      }
+      results.push({ id: q.id, respuesta: r.content[0].text.trim() });
     } catch(e) {
       results.push({ id: q.id, error: e.message });
     }
