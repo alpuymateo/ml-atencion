@@ -369,14 +369,8 @@
         <span class="arrow" id="arrow-nav-envios">▶</span>
       </div>
       <div class="nav-group-items" id="nav-envios" style="display:none;">
-        <div class="nav-item" data-page="cola-envios" onclick="showPage('cola-envios')">
-          <span class="nav-icon">📋</span> Cola de Env&iacute;os <span id="cola-envios-badge" style="display:none;background:#ef4444;color:white;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700;margin-left:4px;"></span>
-        </div>
-        <div class="nav-item" data-page="retiros" onclick="showPage('retiros')">
-          <span class="nav-icon">📦</span> Retiros
-        </div>
-        <div class="nav-item" data-page="retira-local" onclick="showPage('retira-local')">
-          <span class="nav-icon">🏪</span> Retira en local
+        <div class="nav-item" data-page="logistica" onclick="showPage('logistica')">
+          <span class="nav-icon">📦</span> Log&iacute;stica <span id="cola-envios-badge" style="display:none;background:#ef4444;color:white;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700;margin-left:4px;"></span>
         </div>
         <div class="nav-item" data-page="envios-dac" onclick="showPage('envios-dac')">
           <span class="nav-icon">🟢</span> ME1 / DAC
@@ -712,17 +706,46 @@
     </div>
 
     <!-- Usuarios -->
-    <div id="page-retiros" style="display:none">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-        <h2 style="font-size:20px;font-weight:700;margin:0;">Retiros del d&iacute;a</h2>
+    <div id="page-logistica" style="display:none">
+      <!-- Header unificado -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+        <div>
+          <h2 style="font-size:20px;font-weight:700;margin:0 0 10px;">Env&iacute;os y Log&iacute;stica</h2>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button id="log-tab-btn-cola" onclick="showLogTab('cola')"
+              style="padding:7px 14px;border-radius:6px;border:none;background:#00217E;color:white;font-size:13px;font-weight:600;cursor:pointer;">📋 Cola</button>
+            <button id="log-tab-btn-encamino" onclick="showLogTab('encamino')"
+              style="padding:7px 14px;border-radius:6px;border:none;background:#e5e7eb;color:#374151;font-size:13px;font-weight:600;cursor:pointer;">📦 En camino</button>
+            <button id="log-tab-btn-retiralocal" onclick="showLogTab('retiralocal')"
+              style="padding:7px 14px;border-radius:6px;border:none;background:#e5e7eb;color:#374151;font-size:13px;font-weight:600;cursor:pointer;">🏪 Retira en local</button>
+          </div>
+        </div>
         <div style="display:flex;gap:8px;align-items:center;">
-          <span id="retiros-updated" style="font-size:11px;color:#9ca3af;"></span>
-          <button onclick="loadRetiros()" style="padding:8px 14px;background:#e5e7eb;color:#374151;border:none;border-radius:6px;font-size:13px;cursor:pointer;">Recargar</button>
+          <span id="log-updated" style="font-size:11px;color:#9ca3af;"></span>
+          <button onclick="refreshLogTabActivo()" style="padding:8px 14px;background:#e5e7eb;color:#374151;border:none;border-radius:6px;font-size:13px;cursor:pointer;">Recargar</button>
           <button onclick="loadRetiros(true)" style="padding:8px 14px;background:#00217E;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">Forzar refresh</button>
         </div>
       </div>
-      <div id="retiros-resumen"></div>
-      <div id="retiros-list"></div>
+
+      <!-- Tab: Cola de Envíos -->
+      <div id="log-tab-cola">
+        <div id="cola-envios-resumen"></div>
+        <div id="cola-envios-filtros" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;"></div>
+        <div id="cola-envios-content"></div>
+        <span id="cola-envios-updated" style="display:none;"></span>
+      </div>
+
+      <!-- Tab: En camino (Retiros) -->
+      <div id="log-tab-encamino" style="display:none">
+        <span id="retiros-updated" style="font-size:11px;color:#9ca3af;display:block;margin-bottom:8px;"></span>
+        <div id="retiros-resumen"></div>
+        <div id="retiros-list"></div>
+      </div>
+
+      <!-- Tab: Retira en local -->
+      <div id="log-tab-retiralocal" style="display:none">
+        <div id="retira-local-list"></div>
+      </div>
     </div>
 
     <!-- ── Envíos DAC ── -->
@@ -794,30 +817,6 @@
       <div id="envios-deri-list"></div>
     </div>
 
-    <div id="page-retira-local" style="display:none">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-        <h2 style="font-size:20px;font-weight:700;margin:0;">🏪 Retira en local</h2>
-        <button onclick="loadRetiraLocal()" style="padding:8px 14px;background:#00217E;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">Actualizar</button>
-      </div>
-      <div id="retira-local-list"></div>
-    </div>
-
-    <!-- Cola de Envíos -->
-    <div id="page-cola-envios" style="display:none">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-        <div>
-          <h2 style="font-size:20px;font-weight:700;margin:0;">📋 Cola de Env&iacute;os</h2>
-          <p style="font-size:12px;color:#6b7280;margin:2px 0 0;">Ventas con env&iacute;o pendiente &mdash; ordenadas por antig&uuml;edad</p>
-        </div>
-        <div style="display:flex;align-items:center;gap:10px;">
-          <span id="cola-envios-updated" style="font-size:11px;color:#9ca3af;"></span>
-          <button onclick="loadColaEnvios()" style="padding:8px 14px;background:#00217E;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">Actualizar</button>
-        </div>
-      </div>
-      <div id="cola-envios-resumen" style="margin-bottom:12px;"></div>
-      <div id="cola-envios-filtros" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;"></div>
-      <div id="cola-envios-content"></div>
-    </div>
 
     <div id="page-buscador" style="display:none">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
@@ -920,7 +919,7 @@ function fmtDateTime(d) {
 }
 
 // ── Navigation ──
-const PAGES = ['tareas', 'alertas', 'recomendaciones', 'reclamos', 'devoluciones', 'buscador', 'retiros', 'retira-local', 'cola-envios', 'envios-dac', 'envios-sd', 'envios-deri', 'ml-analizar', 'usuarios'];
+const PAGES = ['tareas', 'alertas', 'recomendaciones', 'reclamos', 'devoluciones', 'buscador', 'logistica', 'envios-dac', 'envios-sd', 'envios-deri', 'ml-analizar', 'usuarios'];
 const ML_TAB_PAGES = { 'ml-preguntas': 'pendientes', 'ml-postventa': 'mensajes', 'ml-reglas': 'reglas' };
 
 function toggleNavGroup(id) {
@@ -933,7 +932,7 @@ function toggleNavGroup(id) {
 function openNavGroupFor(page) {
   const groups = {
     'nav-atencion': ['ml-preguntas','ml-postventa','reclamos','devoluciones'],
-    'nav-envios': ['retiros','retira-local','cola-envios','envios-dac','envios-sd','envios-deri'],
+    'nav-envios': ['logistica','envios-dac','envios-sd','envios-deri'],
     'nav-config': ['ml-reglas','usuarios'],
   };
   for (const [gid, pages] of Object.entries(groups)) {
@@ -993,20 +992,14 @@ function showPage(page) {
   if (page === 'recomendaciones') {
     loadRecomendaciones();
   }
-  if (page === 'retiros') {
-    loadRetiros();
-  }
-  if (page === 'retira-local') {
-    loadRetiraLocal();
+  if (page === 'logistica') {
+    initLogistica();
   }
   if (page === 'ml-analizar') {
     initAnalizarPage('pendientes');
   }
   if (page === 'usuarios') {
     loadUsersPage();
-  }
-  if (page === 'cola-envios') {
-    loadColaEnvios();
   }
   if (page === 'envios-dac') {
     loadEnviosDac();
@@ -1889,7 +1882,9 @@ async function afterUserLogin() {
 function showApp() {
   document.getElementById('ml-connect-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
-  const savedPage = localStorage.getItem('currentPage') || 'tareas';
+  const _rawSaved = localStorage.getItem('currentPage') || 'tareas';
+  // Migrar páginas viejas a logistica
+  const savedPage = ['retiros','retira-local','cola-envios'].includes(_rawSaved) ? 'logistica' : _rawSaved;
   showPage(savedPage);
   // Pedir permiso para notificaciones del navegador
   if ('Notification' in window && Notification.permission === 'default') {
@@ -1929,9 +1924,11 @@ function showApp() {
   }, 60 * 1000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshAlertasBadge(); });
 
-  // Auto-refresh Cola de Envíos cada 3 minutos si está activa
+  // Auto-refresh logística cada 3 minutos en background
   setInterval(() => {
-    if (localStorage.getItem('currentPage') === 'cola-envios') loadColaEnvios();
+    loadColaEnvios();
+    loadRetiros();
+    loadRetiraLocal();
   }, 3 * 60 * 1000);
 }
 
@@ -3045,6 +3042,35 @@ function getColaEnviosColor(minutos) {
   if (minutos >= 240) return { border: '#dc2626', bg: '#fef2f2', label: '+4hs', labelBg: '#dc2626', dot: '🔴' };
   if (minutos >= 120) return { border: '#d97706', bg: '#fffbeb', label: '2-4hs', labelBg: '#d97706', dot: '🟡' };
   return                    { border: '#16a34a', bg: '#f0fdf4', label: '<2hs', labelBg: '#16a34a', dot: '🟢' };
+}
+
+// ── Logística unificada ──
+let _logTabActivo = 'cola';
+
+function initLogistica() {
+  showLogTab(_logTabActivo);
+}
+
+function showLogTab(tab) {
+  _logTabActivo = tab;
+  ['cola', 'encamino', 'retiralocal'].forEach(t => {
+    const el = document.getElementById(`log-tab-${t}`);
+    const btn = document.getElementById(`log-tab-btn-${t}`);
+    if (el) el.style.display = t === tab ? '' : 'none';
+    if (btn) {
+      btn.style.background = t === tab ? '#00217E' : '#e5e7eb';
+      btn.style.color = t === tab ? 'white' : '#374151';
+    }
+  });
+  if (tab === 'cola') loadColaEnvios();
+  if (tab === 'encamino') loadRetiros();
+  if (tab === 'retiralocal') loadRetiraLocal();
+}
+
+function refreshLogTabActivo() {
+  if (_logTabActivo === 'cola') loadColaEnvios();
+  if (_logTabActivo === 'encamino') loadRetiros();
+  if (_logTabActivo === 'retiralocal') loadRetiraLocal();
 }
 
 let _colaEnviosTodos = [];
