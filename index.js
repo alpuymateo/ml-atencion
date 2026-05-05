@@ -3226,6 +3226,7 @@ async function actualizarDashboard() {
       ventas_dias_semana,
       thresholds: THRESH,
       webhooks: { ...webhookLastSeen },
+      ml_authenticated: !!(tokenData?.access_token),
       updated_at: new Date().toISOString(),
     };
   } catch(e) {

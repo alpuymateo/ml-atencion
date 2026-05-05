@@ -737,27 +737,24 @@ function stLabel(s) {
 }
 
 /* ── webhooks strip ── */
-function renderWebhooks(wh) {
+function renderWebhooks(wh, d) {
   if (!wh) return;
   document.getElementById('webhooks-strip').style.display = '';
   const ahora = Date.now();
 
-  // Badge ML en el header
+  // Badge ML en el header — muestra estado OAuth
   const mlBadge = document.getElementById('ml-hdr-badge');
   const mlDot   = document.getElementById('ml-hdr-dot');
   const mlTime  = document.getElementById('ml-hdr-time');
   if (mlBadge && mlDot && mlTime) {
-    if (!wh.mercadolibre) {
-      mlDot.className  = 'ml-hdr-dot dead';
-      mlTime.textContent = 'sin datos';
-      mlBadge.className = 'ml-hdr-badge dead';
+    if (d && d.ml_authenticated) {
+      mlDot.className    = 'ml-hdr-dot ok';
+      mlTime.textContent = 'conectado';
+      mlBadge.className  = 'ml-hdr-badge';
     } else {
-      const mins  = Math.floor((ahora - new Date(wh.mercadolibre).getTime()) / 60000);
-      const state = mins < 30 ? 'ok' : mins < 120 ? 'warn' : 'dead';
-      const label = mins < 1 ? 'ahora' : mins < 60 ? `hace ${mins}m` : `hace ${Math.floor(mins/60)}h`;
-      mlDot.className   = `ml-hdr-dot ${state}`;
-      mlTime.textContent = label;
-      mlBadge.className  = `ml-hdr-badge ${state !== 'ok' ? state : ''}`;
+      mlDot.className    = 'ml-hdr-dot dead';
+      mlTime.textContent = 'desconectado';
+      mlBadge.className  = 'ml-hdr-badge dead';
     }
   }
 
@@ -799,7 +796,7 @@ function renderDashboard(d) {
   const sR = st(d.reclamos_abiertos,       T.reclamos  || [1, 2, 4]);
   const sE = st(d.pendientes_despacho,     T.despacho  || [1, 4, 8]);
 
-  renderWebhooks(d.webhooks);
+  renderWebhooks(d.webhooks, d);
 
   /* delta ayer */
   const delta = d.delta_ventas || 0;
