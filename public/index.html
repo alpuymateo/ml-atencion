@@ -1481,7 +1481,8 @@ async function refreshAlertasBadge() {
   try {
     const r = await fetch('/api/ml/preguntas/pendientes?limit=100', { headers: authHeaders() });
     const d = await r.json();
-    const preguntas = (d.questions || d.results || []).filter(q => !q.answer);
+    const descartadas = getPreguntasDescartadas();
+    const preguntas = (d.questions || d.results || []).filter(q => !q.answer && !descartadas.includes(q.id));
     const ahora = Date.now();
     const urgentes = preguntas.filter(q => Math.floor((ahora - new Date(q.date_created).getTime()) / 60000) >= 15);
     const count = urgentes.length;
@@ -2024,7 +2025,8 @@ async function loadPendientes() {
   const r = await fetch(`/api/ml/preguntas/pendientes?dias=${dias}&status=${status}`, { headers: authHeaders() });
   if (!r.ok) { list.innerHTML = '<p style="color:#ef4444;">Error al cargar</p>'; return; }
   const d = await r.json();
-  pendientesData = d.questions || [];
+  const descartadas = getPreguntasDescartadas();
+  pendientesData = (d.questions || []).filter(q => !descartadas.includes(q.id));
   const totalMl = d.total_ml || d.total;
   const extra = totalMl > pendientesData.length ? ` (${totalMl} en total, filtrando por fecha)` : '';
   const label = status === 'ANSWERED' ? 'respondidas' : 'sin responder';
@@ -2121,6 +2123,11 @@ function renderPendientes() {
             <button onclick="omitirPendiente(${q.id})"
               style="padding:6px 10px;background:#f3f4f6;color:#374151;border:none;border-radius:5px;font-size:12px;cursor:pointer;">
               Omitir
+            </button>
+            <button onclick="descartarPregunta(${q.id})"
+              title="Ocultar permanentemente (no vuelve a aparecer)"
+              style="padding:6px 10px;background:#fef2f2;color:#991b1b;border:1px solid #fca5a5;border-radius:5px;font-size:12px;cursor:pointer;">
+              🗑 Descartar
             </button>
           </div>
           <div id="pend-status-${q.id}" style="margin-top:6px;font-size:12px;"></div>
@@ -2345,6 +2352,19 @@ function omitirPendiente(questionId) {
   pendientesData = pendientesData.filter(q => q.id !== questionId);
   document.getElementById(`pend-card-${questionId}`)?.remove();
   document.getElementById('pendientes-count').textContent = `${pendientesData.length} sin responder`;
+}
+
+function getPreguntasDescartadas() {
+  try { return JSON.parse(localStorage.getItem('ml_preguntas_descartadas') || '[]'); } catch { return []; }
+}
+
+function descartarPregunta(questionId) {
+  const descartadas = getPreguntasDescartadas();
+  if (!descartadas.includes(questionId)) {
+    descartadas.push(questionId);
+    localStorage.setItem('ml_preguntas_descartadas', JSON.stringify(descartadas));
+  }
+  omitirPendiente(questionId);
 }
 
 // ── Mensajes post-venta ──
