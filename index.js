@@ -424,12 +424,20 @@ app.delete('/api/users/:id', requireAdmin, (req, res) => {
   res.json({ ok: true });
 });
 
-// ── POST /notifications — webhook de MercadoLibre (claims) ───────
+// ── POST /notifications — webhook de MercadoLibre ────────────────
 app.post('/notifications', async (req, res) => {
   res.sendStatus(200);
   webhookLastSeen.mercadolibre = new Date().toISOString();
   const { topic, resource } = req.body || {};
   if (!resource || !tokenData?.access_token) return;
+
+  // Nueva venta — emitir SSE al instante y refrescar dashboard
+  if (topic === 'orders_v2') {
+    emitSSE('nueva_venta', { order_id: resource, ts: new Date().toISOString() });
+    setTimeout(() => actualizarDashboard(), 3000); // refrescar cache tras 3s
+    return;
+  }
+
   if (topic !== 'claims' && topic !== 'claims_actions') return;
   const claimId = String(resource).split('/').pop();
   if (!claimId || isNaN(claimId)) return;
@@ -3257,6 +3265,34 @@ app.get('/api/dashboard-data', (req, res) => {
 app.get('/dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
+
+// ── SSE — eventos en tiempo real ──────────────────────────────────
+const sseClients = new Set();
+
+app.get('/api/events', (req, res) => {
+  const key   = req.query.key;
+  const token = req.headers['authorization']?.replace('Bearer ', '') || req.query.token;
+  const DASHBOARD_KEY = process.env.DASHBOARD_KEY;
+  if (!(DASHBOARD_KEY && key === DASHBOARD_KEY) && !getSession(token)) {
+    return res.status(401).end();
+  }
+  res.writeHead(200, {
+    'Content-Type':  'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection':    'keep-alive',
+    'X-Accel-Buffering': 'no',
+  });
+  res.write('data: {"type":"connected"}\n\n');
+  sseClients.add(res);
+  req.on('close', () => sseClients.delete(res));
+});
+
+function emitSSE(event, data) {
+  const msg = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+  for (const client of sseClients) {
+    try { client.write(msg); } catch(_) { sseClients.delete(client); }
+  }
+}
 
 // ── Static files (ya montado arriba) ──
 
