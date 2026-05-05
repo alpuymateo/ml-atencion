@@ -1890,7 +1890,12 @@ function showApp() {
 
   // Actualizar badge de alertas al iniciar, cada minuto, y al volver a la pestaña
   refreshAlertasBadge();
-  setInterval(refreshAlertasBadge, 60 * 1000);
+  setInterval(() => {
+    refreshAlertasBadge();
+    // Auto-refresh lista de preguntas si la tab está visible
+    const tab = document.getElementById('analizar-tab-pendientes');
+    if (tab && tab.style.display !== 'none') loadPendientes();
+  }, 60 * 1000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshAlertasBadge(); });
 
   // Auto-refresh Cola de Envíos cada 3 minutos si está activa
