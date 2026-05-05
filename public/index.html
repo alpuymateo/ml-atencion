@@ -1892,9 +1892,7 @@ function showApp() {
   refreshAlertasBadge();
   setInterval(() => {
     refreshAlertasBadge();
-    // Auto-refresh lista de preguntas si la tab está visible
-    const tab = document.getElementById('analizar-tab-pendientes');
-    if (tab && tab.style.display !== 'none') loadPendientes();
+    loadPendientes();
   }, 60 * 1000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshAlertasBadge(); });
 
