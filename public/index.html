@@ -405,7 +405,15 @@
 
     </nav>
 
-    <div style="padding: 10px 14px 6px;">
+    <div style="padding: 10px 14px 4px;">
+      <div style="background:rgba(255,255,255,0.07);border-radius:8px;padding:8px 12px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+          <span id="ml-status-dot" style="width:7px;height:7px;border-radius:50%;background:#6b7280;flex-shrink:0;"></span>
+          <span id="ml-status-text" style="font-size:11px;color:rgba(255,255,255,0.55);font-weight:600;">MercadoLibre</span>
+        </div>
+        <div id="sidebar-clock" style="font-size:15px;font-weight:700;color:white;letter-spacing:.02em;line-height:1.1;"></div>
+        <div id="sidebar-date" style="font-size:10px;color:rgba(255,255,255,0.45);margin-top:2px;"></div>
+      </div>
       <a id="btn-dashboard" href="/dashboard" target="_blank" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#FFCA61;color:#00217E;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;transition:opacity .15s;" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
         <span style="font-size:16px;">📊</span> Ver Dashboard
       </a>
@@ -1887,6 +1895,31 @@ function showApp() {
   if ('Notification' in window && Notification.permission === 'default') {
     Notification.requestPermission();
   }
+
+  // Reloj sidebar
+  function tickSidebarClock() {
+    const now = new Date();
+    const clock = document.getElementById('sidebar-clock');
+    const dateEl = document.getElementById('sidebar-date');
+    if (clock) clock.textContent = now.toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    if (dateEl) dateEl.textContent = now.toLocaleDateString('es-UY', { weekday: 'long', day: 'numeric', month: 'long' });
+  }
+  tickSidebarClock();
+  setInterval(tickSidebarClock, 1000);
+
+  // Estado ML en sidebar
+  async function refreshMlStatus() {
+    try {
+      const r = await fetch('/api/auth-status', { headers: authHeaders() });
+      const d = await r.json();
+      const dot = document.getElementById('ml-status-dot');
+      const txt = document.getElementById('ml-status-text');
+      if (dot) dot.style.background = d.authenticated ? '#22c55e' : '#ef4444';
+      if (txt) txt.textContent = d.authenticated ? 'MercadoLibre conectado' : 'MercadoLibre sin datos';
+    } catch(_) {}
+  }
+  refreshMlStatus();
+  setInterval(refreshMlStatus, 5 * 60 * 1000);
 
   // Actualizar badge de alertas al iniciar, cada minuto, y al volver a la pestaña
   refreshAlertasBadge();
