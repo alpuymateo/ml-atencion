@@ -1920,7 +1920,10 @@ function showApp() {
   refreshAlertasBadge();
   setInterval(() => {
     refreshAlertasBadge();
-    loadPendientes();
+    // No refrescar si el usuario está editando un textarea en la lista
+    const editando = document.activeElement?.tagName === 'TEXTAREA' &&
+      document.activeElement?.id?.startsWith('pend-txt-');
+    if (!editando) loadPendientes();
   }, 60 * 1000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshAlertasBadge(); });
 
