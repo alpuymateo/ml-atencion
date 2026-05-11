@@ -1920,11 +1920,13 @@ function showApp() {
   refreshAlertasBadge();
   setInterval(() => {
     refreshAlertasBadge();
-    // No refrescar si el usuario está editando algún textarea de la lista
+    // No refrescar si el usuario está interactuando con alguna card de preguntas
     const activeId = document.activeElement?.id || '';
-    const editando = document.activeElement?.tagName === 'TEXTAREA' &&
+    const editandoTexto = document.activeElement?.tagName === 'TEXTAREA' &&
       (activeId.startsWith('pend-txt-') || activeId.startsWith('fb-correccion-') || activeId.startsWith('fb-motivo-'));
-    if (!editando) loadPendientes();
+    const hayCardActiva = [...document.querySelectorAll('[id^="pend-ia-"]')]
+      .some(el => el.style.display !== 'none');
+    if (!editandoTexto && !hayCardActiva) loadPendientes();
   }, 60 * 1000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshAlertasBadge(); });
 
