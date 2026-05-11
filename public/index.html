@@ -2345,7 +2345,14 @@ async function simularTodas() {
 }
 
 async function enviarRespuesta(questionId) {
-  const texto = document.getElementById(`pend-txt-${questionId}`)?.value?.trim();
+  // Si el usuario escribió una corrección en el campo "Mala", usarla
+  const correccionEl = document.getElementById(`fb-correccion-${questionId}`);
+  const textoBase    = document.getElementById(`pend-txt-${questionId}`)?.value?.trim();
+  const correccion   = correccionEl?.value?.trim();
+  const texto = correccion || textoBase;
+  // Sincronizar pend-txt con lo que se va a publicar
+  const txtEl = document.getElementById(`pend-txt-${questionId}`);
+  if (txtEl && correccion) txtEl.value = correccion;
   if (!texto) { alert('La respuesta está vacía'); return; }
 
   const btn = document.getElementById(`btn-enviar-${questionId}`);
