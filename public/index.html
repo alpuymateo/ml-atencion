@@ -1916,17 +1916,22 @@ function showApp() {
   refreshMlStatus();
   setInterval(refreshMlStatus, 5 * 60 * 1000);
 
+  // Detectar cuando el usuario escribe en cualquier campo de preguntas pendientes
+  document.getElementById('pendientes-list').addEventListener('input', (e) => {
+    const id = e.target.id || '';
+    const m = id.match(/^(?:pend-txt|fb-correccion|fb-motivo)-(.+)$/);
+    if (m) pendientesModificados.add(m[1]);
+  });
+
   // Actualizar badge de alertas al iniciar, cada minuto, y al volver a la pestaña
   refreshAlertasBadge();
   setInterval(() => {
     refreshAlertasBadge();
-    // No refrescar si el usuario está interactuando con alguna card de preguntas
-    const activeId = document.activeElement?.id || '';
-    const editandoTexto = document.activeElement?.tagName === 'TEXTAREA' &&
-      (activeId.startsWith('pend-txt-') || activeId.startsWith('fb-correccion-') || activeId.startsWith('fb-motivo-'));
+    // No refrescar si el usuario tiene texto escrito sin enviar
+    if (pendientesModificados.size > 0) return;
     const hayCardActiva = [...document.querySelectorAll('[id^="pend-ia-"]')]
       .some(el => el.style.display !== 'none');
-    if (!editandoTexto && !hayCardActiva) loadPendientes();
+    if (!hayCardActiva) loadPendientes();
   }, 60 * 1000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshAlertasBadge(); });
 
@@ -2052,9 +2057,11 @@ async function initAnalizarPage(defaultTab = 'pendientes') {
 // ── Preguntas pendientes ──
 let pendientesData = [];
 let pendientesPage = 0;
+const pendientesModificados = new Set(); // IDs de preguntas con texto escrito sin enviar
 const PREGUNTAS_PER_PAGE = 50;
 
 async function loadPendientes() {
+  pendientesModificados.clear();
   const list = document.getElementById('pendientes-list');
   const count = document.getElementById('pendientes-count');
   list.innerHTML = '<p style="color:#9ca3af;font-size:13px;padding:16px;">Cargando preguntas...</p>';
@@ -2381,6 +2388,7 @@ async function enviarRespuesta(questionId) {
       pendientesData = pendientesData.filter(q => q.id !== questionId);
       document.getElementById(`pend-card-${questionId}`)?.remove();
       document.getElementById('pendientes-count').textContent = `${pendientesData.length} sin responder`;
+      pendientesModificados.delete(questionId);
     }, 1500);
   } else {
     const err = d.error || {};
@@ -2398,6 +2406,7 @@ function omitirPendiente(questionId) {
   pendientesData = pendientesData.filter(q => q.id !== questionId);
   document.getElementById(`pend-card-${questionId}`)?.remove();
   document.getElementById('pendientes-count').textContent = `${pendientesData.length} sin responder`;
+  pendientesModificados.delete(questionId);
 }
 
 function getPreguntasDescartadas() {
