@@ -2152,7 +2152,9 @@ app.get('/api/ml/preguntas/pendientes', requireToken, async (req, res) => {
         answer: q.answer ? { text: q.answer.text, date_created: q.answer.date_created } : null
       };
     }));
-    res.json({ questions: enriched, total: enriched.length, total_ml: totalMl });
+    const descartadasIds = new Set(loadDescartadas().map(d => d.id));
+    const visible = enriched.filter(q => !descartadasIds.has(q.id));
+    res.json({ questions: visible, total: visible.length, total_ml: totalMl });
   } catch(e) {
     console.error('[preguntas/pendientes]', e.message);
     res.status(500).json({ error: e.message });
@@ -2332,8 +2334,42 @@ Instrucciones:
   res.json({ results });
 });
 
-const LEARNED_FILE  = path.join(OWN_DATA_DIR, 'respuestas_aprendidas.json');
-const BAD_RESP_FILE = path.join(OWN_DATA_DIR, 'respuestas_malas.json');
+const LEARNED_FILE     = path.join(OWN_DATA_DIR, 'respuestas_aprendidas.json');
+const BAD_RESP_FILE    = path.join(OWN_DATA_DIR, 'respuestas_malas.json');
+const DESCARTADAS_FILE = path.join(OWN_DATA_DIR, 'preguntas_descartadas.json');
+
+function loadDescartadas() {
+  if (!fs.existsSync(DESCARTADAS_FILE)) return [];
+  try { return JSON.parse(fs.readFileSync(DESCARTADAS_FILE, 'utf8')); } catch { return []; }
+}
+function saveDescartadas(arr) {
+  fs.writeFileSync(DESCARTADAS_FILE, JSON.stringify(arr, null, 2));
+}
+
+// POST /api/ml/preguntas/descartar
+app.post('/api/ml/preguntas/descartar', requireToken, (req, res) => {
+  const { id, text, item_id, item_title, item_thumbnail, item_permalink } = req.body;
+  if (!id) return res.status(400).json({ error: 'id requerido' });
+  const arr = loadDescartadas();
+  if (!arr.find(d => d.id === id)) {
+    arr.push({ id, text: text || '', item_id: item_id || null, item_title: item_title || '', item_thumbnail: item_thumbnail || '', item_permalink: item_permalink || '', fecha: new Date().toISOString() });
+    saveDescartadas(arr);
+  }
+  res.json({ ok: true });
+});
+
+// DELETE /api/ml/preguntas/descartar/:id  (restaurar)
+app.delete('/api/ml/preguntas/descartar/:id', requireToken, (req, res) => {
+  const id = parseInt(req.params.id);
+  const arr = loadDescartadas().filter(d => d.id !== id);
+  saveDescartadas(arr);
+  res.json({ ok: true });
+});
+
+// GET /api/ml/preguntas/descartadas
+app.get('/api/ml/preguntas/descartadas', requireToken, (req, res) => {
+  res.json({ questions: loadDescartadas() });
+});
 
 // POST /api/ml/mensajes/feedback-malo
 app.post('/api/ml/mensajes/feedback-malo', requireToken, async (req, res) => {

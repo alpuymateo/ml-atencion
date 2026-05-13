@@ -599,6 +599,7 @@
             <select id="pendientes-status" onchange="loadPendientes()" style="padding:4px 8px;border:1px solid #d1d5db;border-radius:5px;font-size:12px;">
               <option value="UNANSWERED" selected>Pendientes</option>
               <option value="ANSWERED">Respondidas</option>
+              <option value="DESCARTADAS">Descartadas</option>
             </select>
             <select id="pendientes-dias" onchange="loadPendientes()" style="padding:4px 8px;border:1px solid #d1d5db;border-radius:5px;font-size:12px;">
               <option value="1">Hoy</option>
@@ -1482,8 +1483,8 @@ async function refreshAlertasBadge() {
   try {
     const r = await fetch('/api/ml/preguntas/pendientes?limit=100', { headers: authHeaders() });
     const d = await r.json();
-    const descartadas = getPreguntasDescartadas();
-    const preguntas = (d.questions || d.results || []).filter(q => !q.answer && !descartadas.includes(q.id));
+    // El servidor ya filtra las descartadas
+    const preguntas = (d.questions || d.results || []).filter(q => !q.answer);
     const ahora = Date.now();
     const urgentes = preguntas.filter(q => Math.floor((ahora - new Date(q.date_created).getTime()) / 60000) >= 15);
     const count = urgentes.length;
@@ -2064,20 +2065,46 @@ async function loadPendientes() {
   pendientesModificados.clear();
   const list = document.getElementById('pendientes-list');
   const count = document.getElementById('pendientes-count');
+  const status = document.getElementById('pendientes-status')?.value || 'UNANSWERED';
+  const btnSimular = document.getElementById('btn-simular-todas');
+
+  if (status === 'DESCARTADAS') {
+    if (btnSimular) btnSimular.style.display = 'none';
+    list.innerHTML = '<p style="color:#9ca3af;font-size:13px;padding:16px;">Cargando...</p>';
+    count.textContent = '';
+    const r = await fetch('/api/ml/preguntas/descartadas', { headers: authHeaders() });
+    if (!r.ok) { list.innerHTML = '<p style="color:#ef4444;">Error al cargar</p>'; return; }
+    const d = await r.json();
+    const items = d.questions || [];
+    count.textContent = `${items.length} descartadas`;
+    if (!items.length) {
+      list.innerHTML = '<div class="card" style="text-align:center;color:#9ca3af;padding:32px;">No hay preguntas descartadas</div>';
+      return;
+    }
+    list.innerHTML = items.map(q => `
+      <div class="card" style="margin-bottom:12px;border-left:4px solid #e5e7eb;" id="desc-card-${q.id}">
+        <div style="font-size:11px;color:#9ca3af;margin-bottom:4px;">${q.item_title || q.item_id || ''} · ${new Date(q.fecha).toLocaleDateString('es-UY')}</div>
+        <div style="font-size:14px;font-weight:600;color:#374151;margin-bottom:10px;">${q.text}</div>
+        <button onclick="restaurarPregunta(${q.id})"
+          style="padding:5px 12px;background:#f0fdf4;color:#166534;border:1px solid #86efac;border-radius:5px;font-size:12px;cursor:pointer;">
+          ↩ Restaurar
+        </button>
+      </div>`).join('');
+    return;
+  }
+
+  if (btnSimular) btnSimular.style.display = '';
   list.innerHTML = '<p style="color:#9ca3af;font-size:13px;padding:16px;">Cargando preguntas...</p>';
   count.textContent = '';
   const dias = document.getElementById('pendientes-dias')?.value || 20;
-  const status = document.getElementById('pendientes-status')?.value || 'UNANSWERED';
   const r = await fetch(`/api/ml/preguntas/pendientes?dias=${dias}&status=${status}`, { headers: authHeaders() });
   if (!r.ok) { list.innerHTML = '<p style="color:#ef4444;">Error al cargar</p>'; return; }
   const d = await r.json();
-  const descartadas = getPreguntasDescartadas();
-  pendientesData = (d.questions || []).filter(q => !descartadas.includes(q.id));
+  pendientesData = d.questions || [];
   const totalMl = d.total_ml || d.total;
   const extra = totalMl > pendientesData.length ? ` (${totalMl} en total, filtrando por fecha)` : '';
   const label = status === 'ANSWERED' ? 'respondidas' : 'sin responder';
   count.textContent = `${pendientesData.length} ${label}${extra}`;
-  const btnSimular = document.getElementById('btn-simular-todas');
   if (btnSimular) btnSimular.textContent = status === 'ANSWERED' ? '🤖 Simular todas con IA' : '🤖 Generar todas con IA';
   pendientesPage = 0;
   renderPendientes();
@@ -2414,12 +2441,28 @@ function getPreguntasDescartadas() {
 }
 
 function descartarPregunta(questionId) {
-  const descartadas = getPreguntasDescartadas();
-  if (!descartadas.includes(questionId)) {
-    descartadas.push(questionId);
-    localStorage.setItem('ml_preguntas_descartadas', JSON.stringify(descartadas));
-  }
+  const q = pendientesData.find(p => p.id === questionId);
+  fetch('/api/ml/preguntas/descartar', {
+    method: 'POST',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      id: questionId,
+      text: q?.text || '',
+      item_id: q?.item_id || null,
+      item_title: q?.item_title || '',
+      item_thumbnail: q?.item_thumbnail || '',
+      item_permalink: q?.item_permalink || ''
+    })
+  }).catch(() => {});
   omitirPendiente(questionId);
+}
+
+async function restaurarPregunta(questionId) {
+  await fetch(`/api/ml/preguntas/descartar/${questionId}`, { method: 'DELETE', headers: authHeaders() });
+  document.getElementById(`desc-card-${questionId}`)?.remove();
+  const count = document.getElementById('pendientes-count');
+  const remaining = document.querySelectorAll('[id^="desc-card-"]').length;
+  count.textContent = `${remaining} descartadas`;
 }
 
 // ── Mensajes post-venta ──
