@@ -1190,6 +1190,7 @@ ${esAgradecimiento ? '- El cliente está conforme: respondé breve y cálido, no
 - NUNCA uses "Agradecemos te hayas comunicado" ni frases similares
 - NUNCA menciones "MUNDO SHOP" más de una vez (solo al cerrar)
 - Si no tenés la info exacta, no la inventes
+- PROHIBIDO usar expresiones vulgares aunque sean comunes en el habla rioplatense: "al pedo", "una mierda", "boludez", "cagada", ni ninguna variante. Es una respuesta a un cliente
 ${esReclamo ? '- Sugerí una acción concreta (coordinar retiro, reenviar producto, emitir reembolso, etc)' : ''}
 ${esRetiroLocal && preguntaDireccion ? '- Esta compra es para retiro en local. Dales la dirección y horario exactos que están en las reglas del negocio (categoría "local").' : ''}
 ${esRetiroLocal && !preguntaDireccion ? '- Esta compra es para retiro en local. Si el comprador menciona que va a pasar a buscar, confirmale la dirección y horario.' : ''}
@@ -2315,7 +2316,8 @@ Instrucciones:
 - Para referirte al producto usá el tipo genérico ("este sillón", "esta mesa", "este mueble"), NUNCA el nombre comercial completo
 - Sé breve y directo, máximo 2-3 oraciones
 - Si no tenés el dato exacto, usá tu conocimiento general con una referencia estándar del rubro aclarando que es aproximada. NUNCA derives al cliente a otro lado
-- No inventes datos específicos, pero sí podés dar referencias estándar cuando aplica`;
+- No inventes datos específicos, pero sí podés dar referencias estándar cuando aplica
+- PROHIBIDO usar expresiones vulgares o groserías aunque sean comunes en el habla rioplatense: "al pedo", "una mierda", "boludez", "cagada", ni ninguna variante. Es una respuesta a un cliente, debe ser siempre respetuosa`;
 
       const r = await anthropic.messages.create({
         model: 'claude-sonnet-4-6',
