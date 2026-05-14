@@ -2100,7 +2100,9 @@ async function loadPendientes() {
   const r = await fetch(`/api/ml/preguntas/pendientes?dias=${dias}&status=${status}`, { headers: authHeaders() });
   if (!r.ok) { list.innerHTML = '<p style="color:#ef4444;">Error al cargar</p>'; return; }
   const d = await r.json();
-  pendientesData = d.questions || [];
+  // Filtrar también por localStorage para compatibilidad con descartadas anteriores
+  const localDescartadas = getPreguntasDescartadas();
+  pendientesData = (d.questions || []).filter(q => !localDescartadas.includes(q.id));
   const totalMl = d.total_ml || d.total;
   const extra = totalMl > pendientesData.length ? ` (${totalMl} en total, filtrando por fecha)` : '';
   const label = status === 'ANSWERED' ? 'respondidas' : 'sin responder';
@@ -2441,6 +2443,9 @@ function getPreguntasDescartadas() {
 }
 
 function descartarPregunta(questionId) {
+  // Guardar en localStorage (respaldo) y en servidor
+  const local = getPreguntasDescartadas();
+  if (!local.includes(questionId)) { local.push(questionId); localStorage.setItem('ml_preguntas_descartadas', JSON.stringify(local)); }
   const q = pendientesData.find(p => p.id === questionId);
   fetch('/api/ml/preguntas/descartar', {
     method: 'POST',
