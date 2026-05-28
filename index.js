@@ -3332,6 +3332,173 @@ function emitSSE(event, data) {
   }
 }
 
+// ══════════════════════════════════════════════════════════════
+// PILOTO AUTOMÁTICO
+// ══════════════════════════════════════════════════════════════
+const AUTOPILOT_CONFIG_FILE = path.join(OWN_DATA_DIR, 'autopilot_config.json');
+const AUTOPILOT_LOG_FILE    = path.join(OWN_DATA_DIR, 'autopilot_log.json');
+
+const AUTOPILOT_DEFAULT = { enabled: false, hora_inicio: '09:00', hora_fin: '18:00', dias: [1,2,3,4,5] };
+
+function loadAutopilotConfig() {
+  try { return fs.existsSync(AUTOPILOT_CONFIG_FILE) ? { ...AUTOPILOT_DEFAULT, ...JSON.parse(fs.readFileSync(AUTOPILOT_CONFIG_FILE, 'utf8')) } : { ...AUTOPILOT_DEFAULT }; }
+  catch { return { ...AUTOPILOT_DEFAULT }; }
+}
+function saveAutopilotConfig(cfg) { fs.writeFileSync(AUTOPILOT_CONFIG_FILE, JSON.stringify(cfg, null, 2)); }
+
+function loadAutopilotLog() {
+  try { return fs.existsSync(AUTOPILOT_LOG_FILE) ? JSON.parse(fs.readFileSync(AUTOPILOT_LOG_FILE, 'utf8')) : []; }
+  catch { return []; }
+}
+function appendAutopilotLog(entry) {
+  const log = loadAutopilotLog();
+  log.unshift(entry);
+  fs.writeFileSync(AUTOPILOT_LOG_FILE, JSON.stringify(log.slice(0, 200), null, 2));
+}
+
+app.get('/api/autopilot/config', requireToken, (req, res) => res.json(loadAutopilotConfig()));
+app.post('/api/autopilot/config', requireToken, (req, res) => {
+  const cfg = { ...AUTOPILOT_DEFAULT, ...req.body };
+  saveAutopilotConfig(cfg);
+  res.json({ ok: true });
+});
+app.get('/api/autopilot/log', requireToken, (req, res) => {
+  const limit = parseInt(req.query.limit) || 50;
+  res.json({ entries: loadAutopilotLog().slice(0, limit) });
+});
+
+// Palabras que indican reclamo/problema — no auto-responder
+const AUTOPILOT_SKIP_KEYWORDS = ['problema', 'roto', 'rota', 'defecto', 'defectuos', 'devolución', 'devolucion', 'reclamo', 'dañado', 'dañada', 'no funciona', 'no llegó', 'no llego', 'nunca llegó', 'mal estado', 'falla', 'faltó', 'falta', 'falso', 'falsa', 'garantía', 'garantia'];
+
+function autopilotDebeSkip(texto) {
+  const t = texto.toLowerCase();
+  return AUTOPILOT_SKIP_KEYWORDS.some(k => t.includes(k));
+}
+
+function autopilotEnHorario(cfg) {
+  const now = new Date();
+  const dia = now.getDay(); // 0=Dom, 1=Lun...
+  if (!cfg.dias.includes(dia)) return false;
+  const hhmm = now.getHours() * 60 + now.getMinutes();
+  const [hIni, mIni] = cfg.hora_inicio.split(':').map(Number);
+  const [hFin, mFin] = cfg.hora_fin.split(':').map(Number);
+  return hhmm >= hIni * 60 + mIni && hhmm < hFin * 60 + mFin;
+}
+
+async function generarRespuestaIA(q) {
+  if (!anthropic) throw new Error('ANTHROPIC_API_KEY no configurada');
+  let kb = null;
+  if (fs.existsSync(QA_KB_FILE)) kb = JSON.parse(fs.readFileSync(QA_KB_FILE, 'utf8'));
+  const kbText = kb ? `Estilo MUNDO SHOP:\n- Saludo: "${kb.estilo.saludo}"\n- Despedida: "${kb.estilo.despedida}"\n- Tono: ${kb.estilo.tono}\nReglas clave:\n${kb.reglas_generales.slice(0, 10).map(r => '- ' + r).join('\n')}` : '';
+  const reglasText = reglasTexto(filtrarReglasPorContexto(loadReglasNegocio(), 'preguntas'));
+  let preguntasData = null;
+  if (fs.existsSync(PREGUNTAS_FILE)) { try { preguntasData = JSON.parse(fs.readFileSync(PREGUNTAS_FILE, 'utf8')); } catch {} }
+  let malasCtx = '';
+  if (fs.existsSync(BAD_RESP_FILE)) {
+    try {
+      const malas = JSON.parse(fs.readFileSync(BAD_RESP_FILE, 'utf8')).slice(-15).filter(m => m.pregunta);
+      if (malas.length) malasCtx = '\nERRORES A EVITAR:\n' + malas.slice(-8).map(m => `P: ${m.pregunta}\nMala: ${m.respuesta_mala || ''}${m.correccion ? `\nCorreción: ${m.correccion}` : ''}`).join('\n---\n');
+    } catch {}
+  }
+  const qTextLower = q.text?.trim().toLowerCase() || '';
+  const cierres = ['gracias', 'ok', 'dale', 'listo', 'perfecto', 'buenísimo', 'buenisimo', 'entendido', 'de acuerdo'];
+  if (cierres.some(c => qTextLower === c || qTextLower === c + '.' || qTextLower === c + '!')) {
+    return '¡Con gusto! Quedamos a las órdenes 😊 MUNDO SHOP';
+  }
+  const itemCtx = await fetchItemContext(q.item_id);
+  const itemText = buildItemContextText(itemCtx);
+  let ejemplos = '';
+  if (preguntasData && q.item_id && preguntasData.byPub?.[q.item_id]) {
+    const prevQA = preguntasData.byPub[q.item_id].qa.slice(-10);
+    if (prevQA.length) ejemplos = '\nEjemplos anteriores:\n' + prevQA.map(e => `P: ${e.q}\nR: ${e.a}`).join('\n---\n');
+  }
+  const similares = buscarSimilares(q.text, 10);
+  if (similares.length) ejemplos += '\nRespuestas similares validadas:\n' + similares.map(e => `P: ${e.pregunta}\nR: ${e.respuesta}`).join('\n---\n');
+
+  const prompt = `Sos el equipo de atención al cliente de MUNDO SHOP en Mercado Libre Uruguay.
+Soná como una persona real: cercana, amigable y profesional. Usá lenguaje rioplatense natural (vos, te, etc).
+${kbText}
+${reglasText ? 'REGLAS DEL NEGOCIO (prioridad absoluta):\n' + reglasText : ''}
+${malasCtx}
+${ejemplos}
+${itemText}
+Pregunta del comprador: "${q.text}"
+Instrucciones:
+- Respondé SOLO con el texto final, sin explicaciones ni comillas
+- Saludá con "¡Hola!" y respondé directo
+- Cerrá con "¡Cualquier otra consulta nos avisás! MUNDO SHOP"
+- MUNDO SHOP aparece UNA SOLA VEZ, al cerrar
+- NUNCA frases corporativas
+- Sé breve y directo, máximo 2-3 oraciones
+- PROHIBIDO usar expresiones vulgares: "al pedo", "una mierda", "boludez", ni variantes`;
+
+  const r = await anthropic.messages.create({ model: 'claude-sonnet-4-6', max_tokens: 250, messages: [{ role: 'user', content: prompt }] });
+  return r.content[0].text.trim();
+}
+
+async function responderEnMLDirecto(questionId, text, pregunta, item_id, item_title) {
+  const r = await axios.post(`${ML_API_URL}/answers`,
+    { question_id: questionId, text },
+    { headers: { Authorization: `Bearer ${tokenData.access_token}`, 'Content-Type': 'application/json' } }
+  );
+  // Auto-learn
+  try {
+    let learned = fs.existsSync(LEARNED_FILE) ? JSON.parse(fs.readFileSync(LEARNED_FILE, 'utf8')) : [];
+    if (!learned.some(e => e.pregunta === pregunta && e.respuesta === text)) {
+      learned.push({ pregunta, respuesta: text, item_id: item_id || null, item_title: item_title || null, tipo: 'pregunta', fecha: new Date().toISOString() });
+      if (learned.length > 2000) learned = learned.slice(-2000);
+      fs.writeFileSync(LEARNED_FILE, JSON.stringify(learned, null, 2));
+    }
+  } catch {}
+  return r.data;
+}
+
+let autopilotRunning = false;
+async function runAutopilot() {
+  if (autopilotRunning) return;
+  const cfg = loadAutopilotConfig();
+  if (!cfg.enabled) return;
+  if (!autopilotEnHorario(cfg)) return;
+  if (!tokenData?.access_token) return;
+  autopilotRunning = true;
+  console.log('[autopilot] iniciando ciclo...');
+  try {
+    const r = await axios.get(`${ML_API_URL}/my/received_questions/search`, {
+      params: { status: 'UNANSWERED', limit: 50, sort_fields: 'date_created', sort_types: 'DESC' },
+      headers: { Authorization: `Bearer ${tokenData.access_token}` }
+    });
+    const preguntas = r.data.questions || [];
+    const ahora = Date.now();
+    const logActual = loadAutopilotLog();
+    const yaRespondidas = new Set(logActual.map(e => e.question_id));
+    const descartadasIds = new Set(loadDescartadas().map(d => d.id));
+
+    for (const q of preguntas) {
+      if (yaRespondidas.has(q.id)) continue;
+      if (descartadasIds.has(q.id)) continue;
+      const antiguedad = (ahora - new Date(q.date_created).getTime()) / 1000;
+      if (antiguedad < 60) continue; // esperar al menos 1 minuto
+      if (autopilotDebeSkip(q.text || '')) {
+        console.log(`[autopilot] skip (reclamo): ${q.id}`);
+        continue;
+      }
+      try {
+        const respuesta = await generarRespuestaIA({ id: q.id, item_id: q.item_id, text: q.text });
+        await responderEnMLDirecto(q.id, respuesta, q.text, q.item_id, null);
+        appendAutopilotLog({ question_id: q.id, pregunta: q.text, item_id: q.item_id, respuesta, timestamp: new Date().toISOString() });
+        console.log(`[autopilot] respondida: ${q.id} — "${q.text?.slice(0, 50)}"`);
+      } catch(e) {
+        console.error(`[autopilot] error en ${q.id}:`, e.response?.data || e.message);
+      }
+    }
+  } catch(e) {
+    console.error('[autopilot] error general:', e.message);
+  }
+  autopilotRunning = false;
+}
+
+setInterval(runAutopilot, 60 * 1000);
+
 // ── Static files (ya montado arriba) ──
 
 app.listen(PORT, () => {

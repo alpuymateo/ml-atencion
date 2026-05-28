@@ -613,6 +613,7 @@
           <div style="display:flex;gap:8px;">
             <button onclick="loadPendientes()" style="padding:8px 14px;background:#e5e7eb;color:#374151;border:none;border-radius:6px;font-size:13px;cursor:pointer;">↺ Actualizar</button>
             <button onclick="sincronizarHistorial()" id="btn-sync-historial" style="padding:8px 14px;background:#f3f4f6;color:#374151;border:1px solid #d1d5db;border-radius:6px;font-size:13px;cursor:pointer;" title="Importa el historial de preguntas respondidas de ML para mejorar las respuestas IA">📚 Sync historial</button>
+            <button onclick="abrirAutopilot()" id="btn-autopilot" style="padding:8px 14px;background:#f3f4f6;color:#374151;border:1px solid #d1d5db;border-radius:6px;font-size:13px;cursor:pointer;">✈️ Piloto automático</button>
             <button onclick="simularTodas()" id="btn-simular-todas" style="padding:8px 16px;background:#00217E;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">🤖 Generar todas con IA</button>
           </div>
         </div>
@@ -846,6 +847,61 @@
       </div>
       <div class="table-card">
         <div id="users-table-content"><div class="loading"><span class="spinner"></span>Cargando...</div></div>
+      </div>
+
+      <!-- Modal piloto automático -->
+      <div id="autopilot-modal" style="display:none;position:fixed;inset:0;background:#0006;z-index:1000;align-items:center;justify-content:center;">
+        <div style="background:white;border-radius:16px;padding:24px;width:100%;max-width:480px;margin:16px;max-height:90vh;overflow-y:auto;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+            <h3 style="font-size:16px;font-weight:700;margin:0;">✈️ Piloto automático</h3>
+            <button onclick="cerrarAutopilot()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#9ca3af;">✕</button>
+          </div>
+
+          <!-- Toggle -->
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#f9fafb;border-radius:10px;margin-bottom:16px;">
+            <div>
+              <div style="font-weight:600;font-size:14px;">Respuesta automática</div>
+              <div id="autopilot-status-text" style="font-size:12px;color:#9ca3af;">Cargando...</div>
+            </div>
+            <label style="position:relative;display:inline-block;width:48px;height:26px;cursor:pointer;">
+              <input type="checkbox" id="autopilot-enabled" onchange="toggleAutopilot()" style="opacity:0;width:0;height:0;">
+              <span id="autopilot-toggle-track" style="position:absolute;inset:0;background:#d1d5db;border-radius:13px;transition:.2s;"></span>
+              <span id="autopilot-toggle-thumb" style="position:absolute;left:3px;top:3px;width:20px;height:20px;background:white;border-radius:50%;transition:.2s;box-shadow:0 1px 3px #0003;"></span>
+            </label>
+          </div>
+
+          <!-- Horario -->
+          <div style="margin-bottom:16px;">
+            <label style="font-size:12px;color:#6b7280;font-weight:600;display:block;margin-bottom:8px;">HORARIO</label>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <input type="time" id="autopilot-hora-inicio" style="flex:1;padding:8px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;">
+              <span style="color:#9ca3af;font-size:13px;">hasta</span>
+              <input type="time" id="autopilot-hora-fin" style="flex:1;padding:8px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;">
+            </div>
+          </div>
+
+          <!-- Días -->
+          <div style="margin-bottom:20px;">
+            <label style="font-size:12px;color:#6b7280;font-weight:600;display:block;margin-bottom:8px;">DÍAS</label>
+            <div style="display:flex;gap:6px;">
+              ${[['Lun',1],['Mar',2],['Mié',3],['Jue',4],['Vie',5],['Sáb',6],['Dom',0]].map(([label, val]) => `
+              <label style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;">
+                <input type="checkbox" data-dia="${val}" class="autopilot-dia" style="width:16px;height:16px;cursor:pointer;">
+                <span style="font-size:11px;color:#374151;">${label}</span>
+              </label>`).join('')}
+            </div>
+          </div>
+
+          <button onclick="guardarAutopilot()" style="width:100%;padding:10px;background:#00217E;color:white;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:20px;">Guardar configuración</button>
+
+          <!-- Log -->
+          <div>
+            <div style="font-size:12px;color:#6b7280;font-weight:600;margin-bottom:10px;">ÚLTIMAS RESPUESTAS AUTOMÁTICAS</div>
+            <div id="autopilot-log" style="font-size:12px;color:#374151;">
+              <span style="color:#9ca3af;">Cargando...</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Modal usuario -->
@@ -1924,6 +1980,9 @@ function showApp() {
     if (m) pendientesModificados.add(m[1]);
   });
 
+  // Estado inicial del botón piloto automático
+  refreshAutopilotBtn();
+
   // Actualizar badge de alertas al iniciar, cada minuto, y al volver a la pestaña
   refreshAlertasBadge();
   setInterval(() => {
@@ -2335,6 +2394,84 @@ async function sincronizarHistorial() {
   } catch(e) {
     if (btn) { btn.textContent = '📚 Sync historial'; btn.disabled = false; }
   }
+}
+
+// ── Piloto automático ──
+async function abrirAutopilot() {
+  document.getElementById('autopilot-modal').style.display = 'flex';
+  const [cfgRes, logRes] = await Promise.all([
+    fetch('/api/autopilot/config', { headers: authHeaders() }),
+    fetch('/api/autopilot/log?limit=20', { headers: authHeaders() })
+  ]);
+  const cfg = await cfgRes.json();
+  const { entries } = await logRes.json();
+
+  document.getElementById('autopilot-enabled').checked = cfg.enabled;
+  document.getElementById('autopilot-hora-inicio').value = cfg.hora_inicio || '09:00';
+  document.getElementById('autopilot-hora-fin').value = cfg.hora_fin || '18:00';
+  document.querySelectorAll('.autopilot-dia').forEach(cb => {
+    cb.checked = (cfg.dias || []).includes(parseInt(cb.dataset.dia));
+  });
+  actualizarToggleUI(cfg.enabled);
+  renderAutopilotLog(entries);
+}
+
+function cerrarAutopilot() {
+  document.getElementById('autopilot-modal').style.display = 'none';
+}
+
+function toggleAutopilot() {
+  const enabled = document.getElementById('autopilot-enabled').checked;
+  actualizarToggleUI(enabled);
+}
+
+function actualizarToggleUI(enabled) {
+  const track = document.getElementById('autopilot-toggle-track');
+  const thumb = document.getElementById('autopilot-toggle-thumb');
+  const statusText = document.getElementById('autopilot-status-text');
+  const btn = document.getElementById('btn-autopilot');
+  track.style.background = enabled ? '#00217E' : '#d1d5db';
+  thumb.style.left = enabled ? '25px' : '3px';
+  statusText.textContent = enabled ? 'Activo — respondiendo automáticamente' : 'Desactivado';
+  statusText.style.color = enabled ? '#059669' : '#9ca3af';
+  if (btn) { btn.style.background = enabled ? '#dcfce7' : '#f3f4f6'; btn.style.color = enabled ? '#166534' : '#374151'; btn.style.borderColor = enabled ? '#86efac' : '#d1d5db'; }
+}
+
+async function guardarAutopilot() {
+  const dias = [...document.querySelectorAll('.autopilot-dia')].filter(cb => cb.checked).map(cb => parseInt(cb.dataset.dia));
+  const cfg = {
+    enabled: document.getElementById('autopilot-enabled').checked,
+    hora_inicio: document.getElementById('autopilot-hora-inicio').value,
+    hora_fin: document.getElementById('autopilot-hora-fin').value,
+    dias
+  };
+  await fetch('/api/autopilot/config', { method: 'POST', headers: { ...authHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify(cfg) });
+  actualizarToggleUI(cfg.enabled);
+  cerrarAutopilot();
+}
+
+function renderAutopilotLog(entries) {
+  const el = document.getElementById('autopilot-log');
+  if (!entries?.length) { el.innerHTML = '<span style="color:#9ca3af;">Sin respuestas automáticas todavía.</span>'; return; }
+  el.innerHTML = entries.map(e => `
+    <div style="border-bottom:1px solid #f3f4f6;padding:8px 0;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+        <div style="flex:1;">
+          <div style="color:#6b7280;font-size:11px;margin-bottom:2px;">${new Date(e.timestamp).toLocaleString('es-UY', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })}</div>
+          <div style="font-weight:600;color:#111827;margin-bottom:2px;">P: ${e.pregunta}</div>
+          <div style="color:#374151;">R: ${e.respuesta}</div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// Actualizar ícono del botón al cargar
+async function refreshAutopilotBtn() {
+  try {
+    const r = await fetch('/api/autopilot/config', { headers: authHeaders() });
+    const cfg = await r.json();
+    actualizarToggleUI(cfg.enabled);
+  } catch {}
 }
 
 function actualizarResumenFeedback() {
