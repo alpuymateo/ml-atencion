@@ -3367,6 +3367,12 @@ app.get('/api/autopilot/log', requireToken, (req, res) => {
   res.json({ entries: loadAutopilotLog().slice(0, limit) });
 });
 
+// POST /api/autopilot/run — forzar ejecución inmediata
+app.post('/api/autopilot/run', requireToken, async (req, res) => {
+  res.json({ ok: true, message: 'Ciclo iniciado' });
+  runAutopilot();
+});
+
 // Palabras que indican reclamo/problema — no auto-responder
 const AUTOPILOT_SKIP_KEYWORDS = ['problema', 'roto', 'rota', 'defecto', 'defectuos', 'devolución', 'devolucion', 'reclamo', 'dañado', 'dañada', 'no funciona', 'no llegó', 'no llego', 'nunca llegó', 'mal estado', 'falla', 'faltó', 'falta', 'falso', 'falsa', 'garantía', 'garantia'];
 

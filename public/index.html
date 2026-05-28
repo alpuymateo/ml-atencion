@@ -924,7 +924,10 @@
           <label style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" data-dia="0" class="autopilot-dia" style="width:16px;height:16px;cursor:pointer;"><span style="font-size:11px;color:#374151;">Dom</span></label>
         </div>
       </div>
-      <button onclick="guardarAutopilot()" style="width:100%;padding:10px;background:#00217E;color:white;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:20px;">Guardar configuraci&oacute;n</button>
+      <div style="display:flex;gap:8px;margin-bottom:20px;">
+        <button onclick="guardarAutopilot()" style="flex:1;padding:10px;background:#00217E;color:white;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">Guardar configuraci&oacute;n</button>
+        <button onclick="ejecutarAutopilotAhora()" id="btn-run-autopilot" style="padding:10px 16px;background:#f3f4f6;color:#374151;border:1px solid #d1d5db;border-radius:8px;font-size:13px;cursor:pointer;" title="Forzar ejecución inmediata sin esperar el ciclo">&#9654; Ejecutar ahora</button>
+      </div>
       <div>
         <div style="font-size:12px;color:#6b7280;font-weight:600;margin-bottom:10px;">&#218;LTIMAS RESPUESTAS AUTOM&#193;TICAS</div>
         <div id="autopilot-log" style="font-size:12px;color:#374151;"><span style="color:#9ca3af;">Sin respuestas autom&aacute;ticas todav&iacute;a.</span></div>
@@ -2426,6 +2429,19 @@ function actualizarToggleUI(enabled) {
   if (thumb) { thumb.style.left = enabled ? '25px' : '3px'; }
   if (statusText) { statusText.textContent = enabled ? 'Activo — respondiendo automáticamente' : 'Desactivado'; statusText.style.color = enabled ? '#059669' : '#9ca3af'; }
   if (btn) { btn.style.background = enabled ? '#059669' : '#7c3aed'; btn.style.color = 'white'; btn.style.border = 'none'; btn.textContent = enabled ? 'Piloto activo' : 'Piloto automático'; }
+}
+
+async function ejecutarAutopilotAhora() {
+  const btn = document.getElementById('btn-run-autopilot');
+  btn.textContent = '⏳ Ejecutando...';
+  btn.disabled = true;
+  await fetch('/api/autopilot/run', { method: 'POST', headers: authHeaders() });
+  await new Promise(r => setTimeout(r, 3000));
+  const logRes = await fetch('/api/autopilot/log?limit=20', { headers: authHeaders() });
+  const { entries } = await logRes.json();
+  renderAutopilotLog(entries);
+  btn.textContent = '▶ Ejecutar ahora';
+  btn.disabled = false;
 }
 
 async function guardarAutopilot() {
