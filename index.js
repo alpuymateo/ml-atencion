@@ -3373,6 +3373,62 @@ app.post('/api/autopilot/run', requireToken, async (req, res) => {
   runAutopilot();
 });
 
+// GET /api/autopilot/diagnostico — estado detallado sin responder nada
+app.get('/api/autopilot/diagnostico', requireToken, async (req, res) => {
+  const cfg = loadAutopilotConfig();
+  const ahora = new Date();
+  const dia = ahora.getDay();
+  const hhmm = ahora.getHours() * 60 + ahora.getMinutes();
+  const [hIni, mIni] = (cfg.hora_inicio || '09:00').split(':').map(Number);
+  const [hFin, mFin] = (cfg.hora_fin || '18:00').split(':').map(Number);
+  const enHorario = hhmm >= hIni * 60 + mIni && hhmm < hFin * 60 + mFin;
+  const diaActivo = cfg.dias?.includes(dia);
+  const tieneToken = !!tokenData?.access_token;
+
+  const report = {
+    hora_actual: ahora.toLocaleTimeString('es-UY'),
+    dia_actual: ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][dia],
+    config: cfg,
+    checks: {
+      habilitado: cfg.enabled,
+      en_horario: enHorario,
+      dia_activo: diaActivo,
+      token_ml: tieneToken,
+      scheduler_corriendo: autopilotRunning
+    },
+    preguntas: []
+  };
+
+  if (tieneToken) {
+    try {
+      const r = await axios.get(`${ML_API_URL}/my/received_questions/search`, {
+        params: { status: 'UNANSWERED', limit: 20, sort_fields: 'date_created', sort_types: 'DESC' },
+        headers: { Authorization: `Bearer ${tokenData.access_token}` }
+      });
+      const preguntas = r.data.questions || [];
+      const logActual = loadAutopilotLog();
+      const yaRespondidas = new Set(logActual.map(e => e.question_id));
+      const descartadasIds = new Set(loadDescartadas().map(d => d.id));
+      report.preguntas = preguntas.map(q => {
+        const antiguedad = Math.round((Date.now() - new Date(q.date_created).getTime()) / 1000);
+        return {
+          id: q.id,
+          text: q.text?.slice(0, 80),
+          antiguedad_seg: antiguedad,
+          ya_respondida_por_autopilot: yaRespondidas.has(q.id),
+          descartada: descartadasIds.has(q.id),
+          skip_reclamo: autopilotDebeSkip(q.text || ''),
+          seria_procesada: !yaRespondidas.has(q.id) && !descartadasIds.has(q.id) && antiguedad >= 60 && !autopilotDebeSkip(q.text || '')
+        };
+      });
+    } catch(e) {
+      report.error_ml = e.response?.data || e.message;
+    }
+  }
+
+  res.json(report);
+});
+
 // Palabras que indican reclamo/problema — no auto-responder
 const AUTOPILOT_SKIP_KEYWORDS = ['problema', 'roto', 'rota', 'defecto', 'defectuos', 'devolución', 'devolucion', 'reclamo', 'dañado', 'dañada', 'no funciona', 'no llegó', 'no llego', 'nunca llegó', 'mal estado', 'falla', 'faltó', 'falta', 'falso', 'falsa', 'garantía', 'garantia'];
 
