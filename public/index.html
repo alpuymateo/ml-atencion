@@ -613,7 +613,7 @@
           <div style="display:flex;gap:8px;">
             <button onclick="loadPendientes()" style="padding:8px 14px;background:#e5e7eb;color:#374151;border:none;border-radius:6px;font-size:13px;cursor:pointer;">↺ Actualizar</button>
             <button onclick="sincronizarHistorial()" id="btn-sync-historial" style="padding:8px 14px;background:#f3f4f6;color:#374151;border:1px solid #d1d5db;border-radius:6px;font-size:13px;cursor:pointer;" title="Importa el historial de preguntas respondidas de ML para mejorar las respuestas IA">📚 Sync historial</button>
-            <button onclick="abrirAutopilot()" id="btn-autopilot" style="padding:8px 14px;background:#f3f4f6;color:#374151;border:1px solid #d1d5db;border-radius:6px;font-size:13px;cursor:pointer;">✈️ Piloto automático</button>
+            <button onclick="abrirAutopilot()" id="btn-autopilot" style="padding:8px 16px;background:#7c3aed;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;letter-spacing:.01em;">Piloto automático</button>
             <button onclick="simularTodas()" id="btn-simular-todas" style="padding:8px 16px;background:#00217E;color:white;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">🤖 Generar todas con IA</button>
           </div>
         </div>
@@ -2434,7 +2434,7 @@ function actualizarToggleUI(enabled) {
   thumb.style.left = enabled ? '25px' : '3px';
   statusText.textContent = enabled ? 'Activo — respondiendo automáticamente' : 'Desactivado';
   statusText.style.color = enabled ? '#059669' : '#9ca3af';
-  if (btn) { btn.style.background = enabled ? '#dcfce7' : '#f3f4f6'; btn.style.color = enabled ? '#166534' : '#374151'; btn.style.borderColor = enabled ? '#86efac' : '#d1d5db'; }
+  if (btn) { btn.style.background = enabled ? '#059669' : '#7c3aed'; btn.style.color = 'white'; btn.style.border = 'none'; btn.textContent = enabled ? '● Piloto activo' : 'Piloto automático'; }
 }
 
 async function guardarAutopilot() {
