@@ -2483,16 +2483,54 @@ async function guardarAutopilot() {
 function renderAutopilotLog(entries) {
   const el = document.getElementById('autopilot-log');
   if (!entries?.length) { el.innerHTML = '<span style="color:#9ca3af;">Sin respuestas automáticas todavía.</span>'; return; }
-  el.innerHTML = entries.map(e => `
-    <div style="border-bottom:1px solid #f3f4f6;padding:8px 0;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
-        <div style="flex:1;">
-          <div style="color:#6b7280;font-size:11px;margin-bottom:2px;">${new Date(e.timestamp).toLocaleString('es-UY', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })}</div>
-          <div style="font-weight:600;color:#111827;margin-bottom:2px;">P: ${e.pregunta}</div>
-          <div style="color:#374151;">R: ${e.respuesta}</div>
-        </div>
+  el.innerHTML = entries.map((e, i) => `
+    <div style="border-bottom:1px solid #f3f4f6;padding:10px 0;" id="aplog-${i}">
+      <div style="color:#6b7280;font-size:11px;margin-bottom:4px;">${new Date(e.timestamp).toLocaleString('es-UY', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })}</div>
+      <div style="font-weight:600;color:#111827;margin-bottom:2px;">P: ${e.pregunta}</div>
+      <div style="color:#374151;margin-bottom:8px;">R: ${e.respuesta}</div>
+      <div id="aplog-fb-${i}" style="display:flex;gap:6px;align-items:center;">
+        <button onclick="feedbackAutopilot(${i},${JSON.stringify(e).replace(/"/g,'&quot;')},'buena')"
+          style="padding:3px 10px;background:#f0fdf4;border:1px solid #86efac;border-radius:5px;font-size:12px;cursor:pointer;color:#166534;">👍 Buena</button>
+        <button onclick="feedbackAutopilot(${i},${JSON.stringify(e).replace(/"/g,'&quot;')},'mala')"
+          style="padding:3px 10px;background:#fef2f2;border:1px solid #fca5a5;border-radius:5px;font-size:12px;cursor:pointer;color:#991b1b;">👎 Mala</button>
       </div>
     </div>`).join('');
+}
+
+async function feedbackAutopilot(idx, entry, tipo) {
+  const fbEl = document.getElementById(`aplog-fb-${idx}`);
+  if (tipo === 'buena') {
+    fetch('/api/ml/preguntas/feedback', {
+      method: 'POST',
+      headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pregunta: entry.pregunta, respuesta: entry.respuesta, item_id: entry.item_id, tipo: 'pregunta' })
+    }).catch(() => {});
+    fbEl.innerHTML = '<span style="font-size:12px;color:#166534;font-weight:600;">👍 Guardada como buena</span>';
+  } else {
+    fbEl.innerHTML = `
+      <div style="width:100%;">
+        <textarea id="aplog-correccion-${idx}" rows="2" placeholder="Escribí la respuesta correcta..."
+          style="width:100%;padding:6px 8px;border:1px solid #fca5a5;border-radius:5px;font-size:12px;font-family:inherit;resize:vertical;box-sizing:border-box;">${entry.respuesta}</textarea>
+        <div style="display:flex;gap:6px;margin-top:4px;">
+          <button onclick="guardarCorreccionAutopilot(${idx},${JSON.stringify(entry).replace(/"/g,'&quot;')})"
+            style="padding:4px 10px;background:#991b1b;color:white;border:none;border-radius:4px;font-size:11px;cursor:pointer;">Guardar corrección</button>
+          <button onclick="document.getElementById('aplog-fb-${idx}').innerHTML='<span style=\\'font-size:12px;color:#991b1b;\\'>👎 Marcada como mala</span>'"
+            style="padding:4px 8px;background:#f3f4f6;border:none;border-radius:4px;font-size:11px;cursor:pointer;">Omitir</button>
+        </div>
+      </div>`;
+  }
+}
+
+async function guardarCorreccionAutopilot(idx, entry) {
+  const correccion = document.getElementById(`aplog-correccion-${idx}`)?.value?.trim();
+  const fbEl = document.getElementById(`aplog-fb-${idx}`);
+  if (!correccion) return;
+  fetch('/api/ml/preguntas/feedback-malo', {
+    method: 'POST',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pregunta: entry.pregunta, respuesta_mala: entry.respuesta, correccion, item_id: entry.item_id })
+  }).catch(() => {});
+  fbEl.innerHTML = '<span style="font-size:12px;color:#166534;font-weight:600;">✓ Corrección guardada</span>';
 }
 
 // Actualizar ícono del botón al cargar
