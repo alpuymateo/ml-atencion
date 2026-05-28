@@ -3376,7 +3376,7 @@ app.post('/api/autopilot/run', requireToken, async (req, res) => {
 // GET /api/autopilot/diagnostico — estado detallado sin responder nada
 app.get('/api/autopilot/diagnostico', requireToken, async (req, res) => {
   const cfg = loadAutopilotConfig();
-  const ahora = new Date();
+  const ahora = getNowUY();
   const dia = ahora.getDay();
   const hhmm = ahora.getHours() * 60 + ahora.getMinutes();
   const [hIni, mIni] = (cfg.hora_inicio || '09:00').split(':').map(Number);
@@ -3437,8 +3437,13 @@ function autopilotDebeSkip(texto) {
   return AUTOPILOT_SKIP_KEYWORDS.some(k => t.includes(k));
 }
 
+function getNowUY() {
+  // Railway corre en UTC — convertir a hora de Uruguay (America/Montevideo)
+  return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Montevideo' }));
+}
+
 function autopilotEnHorario(cfg) {
-  const now = new Date();
+  const now = getNowUY();
   const dia = now.getDay(); // 0=Dom, 1=Lun...
   if (!cfg.dias.includes(dia)) return false;
   const hhmm = now.getHours() * 60 + now.getMinutes();
