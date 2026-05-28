@@ -853,15 +853,15 @@
       <div id="autopilot-modal" style="display:none;position:fixed;inset:0;background:#0006;z-index:1000;align-items:center;justify-content:center;">
         <div style="background:white;border-radius:16px;padding:24px;width:100%;max-width:480px;margin:16px;max-height:90vh;overflow-y:auto;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
-            <h3 style="font-size:16px;font-weight:700;margin:0;">✈️ Piloto automático</h3>
-            <button onclick="cerrarAutopilot()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#9ca3af;">✕</button>
+            <h3 style="font-size:16px;font-weight:700;margin:0;">Piloto automático</h3>
+            <button onclick="cerrarAutopilot()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#9ca3af;">&#x2715;</button>
           </div>
 
           <!-- Toggle -->
           <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#f9fafb;border-radius:10px;margin-bottom:16px;">
             <div>
               <div style="font-weight:600;font-size:14px;">Respuesta automática</div>
-              <div id="autopilot-status-text" style="font-size:12px;color:#9ca3af;">Cargando...</div>
+              <div id="autopilot-status-text" style="font-size:12px;color:#9ca3af;">Desactivado</div>
             </div>
             <label style="position:relative;display:inline-block;width:48px;height:26px;cursor:pointer;">
               <input type="checkbox" id="autopilot-enabled" onchange="toggleAutopilot()" style="opacity:0;width:0;height:0;">
@@ -874,31 +874,33 @@
           <div style="margin-bottom:16px;">
             <label style="font-size:12px;color:#6b7280;font-weight:600;display:block;margin-bottom:8px;">HORARIO</label>
             <div style="display:flex;align-items:center;gap:10px;">
-              <input type="time" id="autopilot-hora-inicio" style="flex:1;padding:8px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;">
+              <input type="time" id="autopilot-hora-inicio" value="09:00" style="flex:1;padding:8px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;">
               <span style="color:#9ca3af;font-size:13px;">hasta</span>
-              <input type="time" id="autopilot-hora-fin" style="flex:1;padding:8px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;">
+              <input type="time" id="autopilot-hora-fin" value="18:00" style="flex:1;padding:8px 10px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;">
             </div>
           </div>
 
           <!-- Días -->
           <div style="margin-bottom:20px;">
-            <label style="font-size:12px;color:#6b7280;font-weight:600;display:block;margin-bottom:8px;">DÍAS</label>
-            <div style="display:flex;gap:6px;">
-              ${[['Lun',1],['Mar',2],['Mié',3],['Jue',4],['Vie',5],['Sáb',6],['Dom',0]].map(([label, val]) => `
-              <label style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;">
-                <input type="checkbox" data-dia="${val}" class="autopilot-dia" style="width:16px;height:16px;cursor:pointer;">
-                <span style="font-size:11px;color:#374151;">${label}</span>
-              </label>`).join('')}
+            <label style="font-size:12px;color:#6b7280;font-weight:600;display:block;margin-bottom:8px;">D&Iacute;AS</label>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <label style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" data-dia="1" class="autopilot-dia" style="width:16px;height:16px;cursor:pointer;" checked><span style="font-size:11px;color:#374151;">Lun</span></label>
+              <label style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" data-dia="2" class="autopilot-dia" style="width:16px;height:16px;cursor:pointer;" checked><span style="font-size:11px;color:#374151;">Mar</span></label>
+              <label style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" data-dia="3" class="autopilot-dia" style="width:16px;height:16px;cursor:pointer;" checked><span style="font-size:11px;color:#374151;">Mi&eacute;</span></label>
+              <label style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" data-dia="4" class="autopilot-dia" style="width:16px;height:16px;cursor:pointer;" checked><span style="font-size:11px;color:#374151;">Jue</span></label>
+              <label style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" data-dia="5" class="autopilot-dia" style="width:16px;height:16px;cursor:pointer;" checked><span style="font-size:11px;color:#374151;">Vie</span></label>
+              <label style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" data-dia="6" class="autopilot-dia" style="width:16px;height:16px;cursor:pointer;"><span style="font-size:11px;color:#374151;">S&aacute;b</span></label>
+              <label style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" data-dia="0" class="autopilot-dia" style="width:16px;height:16px;cursor:pointer;"><span style="font-size:11px;color:#374151;">Dom</span></label>
             </div>
           </div>
 
-          <button onclick="guardarAutopilot()" style="width:100%;padding:10px;background:#00217E;color:white;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:20px;">Guardar configuración</button>
+          <button onclick="guardarAutopilot()" style="width:100%;padding:10px;background:#00217E;color:white;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:20px;">Guardar configuraci&oacute;n</button>
 
           <!-- Log -->
           <div>
-            <div style="font-size:12px;color:#6b7280;font-weight:600;margin-bottom:10px;">ÚLTIMAS RESPUESTAS AUTOMÁTICAS</div>
+            <div style="font-size:12px;color:#6b7280;font-weight:600;margin-bottom:10px;">&#218;LTIMAS RESPUESTAS AUTOM&#193;TICAS</div>
             <div id="autopilot-log" style="font-size:12px;color:#374151;">
-              <span style="color:#9ca3af;">Cargando...</span>
+              <span style="color:#9ca3af;">Sin respuestas autom&aacute;ticas todav&iacute;a.</span>
             </div>
           </div>
         </div>
@@ -2430,11 +2432,10 @@ function actualizarToggleUI(enabled) {
   const thumb = document.getElementById('autopilot-toggle-thumb');
   const statusText = document.getElementById('autopilot-status-text');
   const btn = document.getElementById('btn-autopilot');
-  track.style.background = enabled ? '#00217E' : '#d1d5db';
-  thumb.style.left = enabled ? '25px' : '3px';
-  statusText.textContent = enabled ? 'Activo — respondiendo automáticamente' : 'Desactivado';
-  statusText.style.color = enabled ? '#059669' : '#9ca3af';
-  if (btn) { btn.style.background = enabled ? '#059669' : '#7c3aed'; btn.style.color = 'white'; btn.style.border = 'none'; btn.textContent = enabled ? '● Piloto activo' : 'Piloto automático'; }
+  if (track) { track.style.background = enabled ? '#00217E' : '#d1d5db'; }
+  if (thumb) { thumb.style.left = enabled ? '25px' : '3px'; }
+  if (statusText) { statusText.textContent = enabled ? 'Activo — respondiendo automáticamente' : 'Desactivado'; statusText.style.color = enabled ? '#059669' : '#9ca3af'; }
+  if (btn) { btn.style.background = enabled ? '#059669' : '#7c3aed'; btn.style.color = 'white'; btn.style.border = 'none'; btn.textContent = enabled ? 'Piloto activo' : 'Piloto automático'; }
 }
 
 async function guardarAutopilot() {
