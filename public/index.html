@@ -2433,10 +2433,33 @@ function actualizarToggleUI(enabled) {
 
 async function ejecutarAutopilotAhora() {
   const btn = document.getElementById('btn-run-autopilot');
+  const logEl = document.getElementById('autopilot-log');
   btn.textContent = '⏳ Ejecutando...';
   btn.disabled = true;
+
+  // Mostrar diagnóstico primero
+  const diagRes = await fetch('/api/autopilot/diagnostico', { headers: authHeaders() });
+  const diag = await diagRes.json();
+  const checks = diag.checks || {};
+  const bloqueado = !checks.habilitado || !checks.en_horario || !checks.dia_activo || !checks.token_ml;
+  if (bloqueado) {
+    const motivos = [];
+    if (!checks.habilitado) motivos.push('Piloto desactivado');
+    if (!checks.token_ml) motivos.push('Token ML no disponible');
+    if (!checks.en_horario) motivos.push(`Fuera de horario (ahora: ${diag.hora_actual}, configurado: ${diag.config?.hora_inicio}–${diag.config?.hora_fin})`);
+    if (!checks.dia_activo) motivos.push(`Día no activo (hoy: ${diag.dia_actual})`);
+    logEl.innerHTML = `<div style="color:#ef4444;font-weight:600;">No se ejecutó:</div><ul style="margin:6px 0 0 16px;color:#374151;">${motivos.map(m => `<li>${m}</li>`).join('')}</ul>`;
+    btn.textContent = '▶ Ejecutar ahora';
+    btn.disabled = false;
+    return;
+  }
+
+  // Si pasa los checks, ejecutar y esperar
   await fetch('/api/autopilot/run', { method: 'POST', headers: authHeaders() });
-  await new Promise(r => setTimeout(r, 3000));
+  const procesables = (diag.preguntas || []).filter(q => q.seria_procesada).length;
+  const espera = Math.max(4000, procesables * 4000);
+  logEl.innerHTML = `<span style="color:#6b7280;">Procesando ${procesables} pregunta${procesables !== 1 ? 's' : ''}...</span>`;
+  await new Promise(r => setTimeout(r, espera));
   const logRes = await fetch('/api/autopilot/log?limit=20', { headers: authHeaders() });
   const { entries } = await logRes.json();
   renderAutopilotLog(entries);
