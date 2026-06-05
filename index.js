@@ -3347,7 +3347,7 @@ function emitSSE(event, data) {
 // ══════════════════════════════════════════════════════════════
 const AUTOPILOT_CONFIG_FILE = path.join(OWN_DATA_DIR, 'autopilot_config.json');
 const AUTOPILOT_LOG_FILE    = path.join(OWN_DATA_DIR, 'autopilot_log.json');
-const API_USAGE_FILE        = path.join(OWN_DATA_DIR, 'api_usage.json');
+const API_USAGE_FILE        = path.join(DATA_DIR, 'api_usage.json');
 
 // Precios por millón de tokens (USD) — actualizar si Anthropic cambia tarifas
 const MODEL_PRICING = {
