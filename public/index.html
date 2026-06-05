@@ -2483,7 +2483,12 @@ async function guardarAutopilot() {
 function renderAutopilotLog(entries) {
   const el = document.getElementById('autopilot-log');
   if (!entries?.length) { el.innerHTML = '<span style="color:#9ca3af;">Sin respuestas automáticas todavía.</span>'; return; }
-  el.innerHTML = entries.map((e, i) => `
+  el.innerHTML = entries.map((e, i) => e.error ? `
+    <div style="border-bottom:1px solid #f3f4f6;padding:10px 0;background:#fef9f9;border-left:3px solid #f87171;padding-left:8px;" id="aplog-${i}">
+      <div style="color:#6b7280;font-size:11px;margin-bottom:4px;">${new Date(e.timestamp).toLocaleString('es-UY', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })}</div>
+      <div style="font-weight:600;color:#111827;margin-bottom:2px;">P: ${e.pregunta}</div>
+      <div style="color:#dc2626;font-size:12px;">Error al enviar: ${e.error}</div>
+    </div>` : `
     <div style="border-bottom:1px solid #f3f4f6;padding:10px 0;" id="aplog-${i}">
       <div style="color:#6b7280;font-size:11px;margin-bottom:4px;">${new Date(e.timestamp).toLocaleString('es-UY', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })}</div>
       <div style="font-weight:600;color:#111827;margin-bottom:2px;">P: ${e.pregunta}</div>

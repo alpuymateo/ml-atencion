@@ -3463,8 +3463,8 @@ async function generarRespuestaIA(q) {
   let malasCtx = '';
   if (fs.existsSync(BAD_RESP_FILE)) {
     try {
-      const malas = JSON.parse(fs.readFileSync(BAD_RESP_FILE, 'utf8')).slice(-15).filter(m => m.pregunta);
-      if (malas.length) malasCtx = '\nERRORES A EVITAR:\n' + malas.slice(-8).map(m => `P: ${m.pregunta}\nMala: ${m.respuesta_mala || ''}${m.correccion ? `\nCorreción: ${m.correccion}` : ''}`).join('\n---\n');
+      const malas = JSON.parse(fs.readFileSync(BAD_RESP_FILE, 'utf8')).filter(m => m.pregunta).slice(-5);
+      if (malas.length) malasCtx = '\nERRORES A EVITAR:\n' + malas.map(m => `P: ${m.pregunta}\nMala: ${m.respuesta_mala || ''}${m.correccion ? `\nCorreción: ${m.correccion}` : ''}`).join('\n---\n');
     } catch {}
   }
   const qTextLower = q.text?.trim().toLowerCase() || '';
@@ -3476,10 +3476,10 @@ async function generarRespuestaIA(q) {
   const itemText = buildItemContextText(itemCtx);
   let ejemplos = '';
   if (preguntasData && q.item_id && preguntasData.byPub?.[q.item_id]) {
-    const prevQA = preguntasData.byPub[q.item_id].qa.slice(-10);
+    const prevQA = preguntasData.byPub[q.item_id].qa.slice(-5);
     if (prevQA.length) ejemplos = '\nEjemplos anteriores:\n' + prevQA.map(e => `P: ${e.q}\nR: ${e.a}`).join('\n---\n');
   }
-  const similares = buscarSimilares(q.text, 10);
+  const similares = buscarSimilares(q.text, 5);
   if (similares.length) ejemplos += '\nRespuestas similares validadas:\n' + similares.map(e => `P: ${e.pregunta}\nR: ${e.respuesta}`).join('\n---\n');
 
   const prompt = `Sos el equipo de atención al cliente de MUNDO SHOP en Mercado Libre Uruguay.
@@ -3499,7 +3499,7 @@ Instrucciones:
 - Sé breve y directo, máximo 2-3 oraciones
 - PROHIBIDO usar expresiones vulgares: "al pedo", "una mierda", "boludez", ni variantes`;
 
-  const r = await anthropic.messages.create({ model: 'claude-sonnet-4-6', max_tokens: 250, messages: [{ role: 'user', content: prompt }] });
+  const r = await anthropic.messages.create({ model: 'claude-haiku-4-5', max_tokens: 250, messages: [{ role: 'user', content: prompt }] });
   return r.content[0].text.trim();
 }
 
@@ -3549,13 +3549,24 @@ async function runAutopilot() {
         console.log(`[autopilot] skip (reclamo): ${q.id}`);
         continue;
       }
+      let respuesta = null;
       try {
-        const respuesta = await generarRespuestaIA({ id: q.id, item_id: q.item_id, text: q.text });
+        respuesta = await generarRespuestaIA({ id: q.id, item_id: q.item_id, text: q.text });
         await responderEnMLDirecto(q.id, respuesta, q.text, q.item_id, null);
         appendAutopilotLog({ question_id: q.id, pregunta: q.text, item_id: q.item_id, respuesta, timestamp: new Date().toISOString() });
         console.log(`[autopilot] respondida: ${q.id} — "${q.text?.slice(0, 50)}"`);
       } catch(e) {
-        console.error(`[autopilot] error en ${q.id}:`, e.response?.data || e.message);
+        const errMsg = e.response?.data?.message || e.message || 'error desconocido';
+        console.error(`[autopilot] error en ${q.id}:`, errMsg);
+        // Loguear igualmente para que no se reintente en el próximo ciclo y no se genere otra llamada a la API
+        appendAutopilotLog({
+          question_id: q.id,
+          pregunta: q.text,
+          item_id: q.item_id,
+          respuesta: respuesta || '(no generada)',
+          timestamp: new Date().toISOString(),
+          error: errMsg
+        });
       }
     }
   } catch(e) {
