@@ -395,9 +395,6 @@
         <div class="nav-item admin-only" data-page="usuarios" onclick="showPage('usuarios')" style="display:none;">
           <span class="nav-icon">👥</span> Usuarios
         </div>
-        <div class="nav-item" data-page="api-usage" onclick="showPage('api-usage')">
-          <span class="nav-icon">💰</span> Uso API IA
-        </div>
       </div>
 
     </nav>
@@ -410,6 +407,11 @@
         </div>
         <div id="sidebar-clock" style="font-size:15px;font-weight:700;color:white;letter-spacing:.02em;line-height:1.1;"></div>
         <div id="sidebar-date" style="font-size:10px;color:rgba(255,255,255,0.45);margin-top:2px;"></div>
+      </div>
+      <div class="admin-only" style="display:none;margin-bottom:8px;">
+        <button onclick="showPage('api-usage')" data-page="api-usage" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#1e3a5f;color:#FFCA61;border-radius:8px;font-size:13px;font-weight:700;border:none;cursor:pointer;width:100%;transition:opacity .15s;" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+          <span style="font-size:16px;">💰</span> Uso API IA
+        </button>
       </div>
       <a id="btn-dashboard" href="/dashboard" target="_blank" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#FFCA61;color:#00217E;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;transition:opacity .15s;" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
         <span style="font-size:16px;">📊</span> Ver Dashboard
