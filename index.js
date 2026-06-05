@@ -612,6 +612,7 @@ INSTRUCCIONES:
 Respondé en JSON: {"respuesta":"..."}`
       }]
     });
+    logApiUsage('claude-sonnet-4-6', 'reclamos', r.usage?.input_tokens || 0, r.usage?.output_tokens || 0);
 
     const text = r.content[0].text.trim();
     try {
@@ -666,6 +667,7 @@ ${rawQuestions.map(q => `ID ${q.id}: "${q.text}"`).join('\n')}`;
           max_tokens: 4096,
           messages: [{ role: 'user', content: prompt }],
         });
+        logApiUsage('claude-haiku-4-5', 'tareas_sugerencias', r.usage?.input_tokens || 0, r.usage?.output_tokens || 0);
         const text = r.content.find(b => b.type === 'text')?.text || '{}';
         try { fs.writeFileSync(path.join(OWN_DATA_DIR, 'debug_suggestions.json'), JSON.stringify({ text }, null, 2)); } catch {}
         const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -891,6 +893,7 @@ Respondé ÚNICAMENTE con JSON válido, sin texto adicional:
         ],
       }],
     });
+    logApiUsage('claude-opus-4-6', 'pedidos_imagen', msg.usage?.input_tokens || 0, msg.usage?.output_tokens || 0);
     let parsed;
     try {
       const text = msg.content[0].text.trim().replace(/^```json\n?/, '').replace(/\n?```$/, '');
@@ -1197,6 +1200,7 @@ ${esRetiroLocal && !preguntaDireccion ? '- Esta compra es para retiro en local. 
 Respondé en JSON: {"respuesta":"...","accion":null}`
       }]
     });
+    logApiUsage('claude-sonnet-4-6', 'mensajes', r.usage?.input_tokens || 0, r.usage?.output_tokens || 0);
 
     const text = r.content[0].text.trim();
     try {
@@ -1352,6 +1356,7 @@ ${reglas.map(r => `- ${r.categoria ? '[' + r.categoria + '] ' : ''}${r.texto}`).
 Resumí cada regla en formato diagrama de una línea: "situación → acción/dato clave". Una línea por regla, sin explicaciones, sin puntos, directo al grano. Ejemplo: "retiro muebles → Av. Italia 1234"`
       }]
     });
+    logApiUsage('claude-sonnet-4-6', 'reglas_interpretar', r.usage?.input_tokens || 0, r.usage?.output_tokens || 0);
     res.json({ interpretacion: r.content[0].text.trim() });
   } catch(e) {
     res.status(500).json({ error: e.message });
@@ -2326,6 +2331,7 @@ Instrucciones:
         max_tokens: 250,
         messages: [{ role: 'user', content: promptText }]
       });
+      logApiUsage('claude-sonnet-4-6', 'preguntas_responder', r.usage?.input_tokens || 0, r.usage?.output_tokens || 0);
       results.push({ id: q.id, respuesta: r.content[0].text.trim() });
     } catch(e) {
       results.push({ id: q.id, error: e.message });
@@ -2401,6 +2407,7 @@ Empezá con un verbo en infinitivo (ej: "No mencionar...", "Evitar...", "Respond
 Respondé ÚNICAMENTE con el texto de la regla, sin explicaciones.`
             }]
           });
+          logApiUsage('claude-haiku-4-5', 'feedback_regla', r.usage?.input_tokens || 0, r.usage?.output_tokens || 0);
           const reglaTexto = r.content[0].text.trim();
           if (reglaTexto) {
             const reglas = loadReglasNegocio();
@@ -2464,6 +2471,7 @@ ${motivo ? `Motivo: "${motivo}"` : ''}
 Generá UNA regla corta y concreta (máx 20 palabras) para que el chatbot no cometa este error.
 Empezá con verbo en infinitivo. Respondé ÚNICAMENTE con el texto de la regla.` }]
           });
+          logApiUsage('claude-haiku-4-5', 'feedback_preguntas_regla', r.usage?.input_tokens || 0, r.usage?.output_tokens || 0);
           const reglaTexto = r.content[0].text.trim();
           if (reglaTexto) {
             const reglas = loadReglasNegocio();
@@ -2751,6 +2759,7 @@ Pregunta del comprador: "${pregunta}"
 Responde SOLO con el texto de la respuesta, sin explicaciones adicionales. Si no sabes un dato específico, no lo inventes — decí que lo consulten por el chat de la compra.`
       }]
     });
+    logApiUsage('claude-sonnet-4-6', 'preguntas_sugerir', r.usage?.input_tokens || 0, r.usage?.output_tokens || 0);
 
     res.json({ respuesta: r.content[0].text.trim() });
   } catch(e) {
@@ -2990,6 +2999,7 @@ Sé directo y específico. Máximo 600 palabras.`;
       max_tokens: 1400,
       messages: [{ role: 'user', content: messageContent }]
     });
+    logApiUsage('claude-sonnet-4-6', 'recomendaciones', r.usage?.input_tokens || 0, r.usage?.output_tokens || 0);
 
     res.json({
       recomendaciones: r.content[0].text.trim(),
@@ -3337,6 +3347,28 @@ function emitSSE(event, data) {
 // ══════════════════════════════════════════════════════════════
 const AUTOPILOT_CONFIG_FILE = path.join(OWN_DATA_DIR, 'autopilot_config.json');
 const AUTOPILOT_LOG_FILE    = path.join(OWN_DATA_DIR, 'autopilot_log.json');
+const API_USAGE_FILE        = path.join(OWN_DATA_DIR, 'api_usage.json');
+
+// Precios por millón de tokens (USD) — actualizar si Anthropic cambia tarifas
+const MODEL_PRICING = {
+  'claude-haiku-4-5':           { input: 0.80, output: 4.00 },
+  'claude-haiku-4-5-20251001':  { input: 0.80, output: 4.00 },
+  'claude-sonnet-4-6':          { input: 3.00, output: 15.00 },
+  'claude-opus-4-6':            { input: 15.00, output: 75.00 },
+};
+
+function logApiUsage(model, source, inputTokens, outputTokens) {
+  try {
+    const pricing = MODEL_PRICING[model] || { input: 3.00, output: 15.00 };
+    const costUsd = (inputTokens * pricing.input + outputTokens * pricing.output) / 1_000_000;
+    const entry = { ts: new Date().toISOString(), model, source, input_tokens: inputTokens, output_tokens: outputTokens, cost_usd: costUsd };
+    let data = [];
+    if (fs.existsSync(API_USAGE_FILE)) { try { data = JSON.parse(fs.readFileSync(API_USAGE_FILE, 'utf8')); } catch {} }
+    data.push(entry);
+    if (data.length > 20000) data = data.slice(-20000); // ~60 días de margen
+    fs.writeFileSync(API_USAGE_FILE, JSON.stringify(data));
+  } catch {}
+}
 
 const AUTOPILOT_DEFAULT = { enabled: false, hora_inicio: '09:00', hora_fin: '18:00', dias: [1,2,3,4,5] };
 
@@ -3500,6 +3532,7 @@ Instrucciones:
 - PROHIBIDO usar expresiones vulgares: "al pedo", "una mierda", "boludez", ni variantes`;
 
   const r = await anthropic.messages.create({ model: 'claude-haiku-4-5', max_tokens: 250, messages: [{ role: 'user', content: prompt }] });
+  logApiUsage('claude-haiku-4-5', 'autopilot', r.usage?.input_tokens || 0, r.usage?.output_tokens || 0);
   return r.content[0].text.trim();
 }
 
@@ -3576,6 +3609,64 @@ async function runAutopilot() {
 }
 
 setInterval(runAutopilot, 60 * 1000);
+
+// ── API Usage ──
+app.get('/api/anthropic/usage', requireToken, (req, res) => {
+  let data = [];
+  if (fs.existsSync(API_USAGE_FILE)) { try { data = JSON.parse(fs.readFileSync(API_USAGE_FILE, 'utf8')); } catch {} }
+
+  const nowUY = getNowUY();
+  const hoyStr = nowUY.toISOString().slice(0, 10);
+  const mesStr = hoyStr.slice(0, 7); // YYYY-MM
+
+  const hoy = data.filter(e => e.ts.startsWith(hoyStr));
+  const mes = data.filter(e => e.ts.startsWith(mesStr));
+
+  const sumGroup = arr => arr.reduce((acc, e) => ({
+    costo: acc.costo + (e.cost_usd || 0),
+    llamadas: acc.llamadas + 1,
+    input_tokens: acc.input_tokens + (e.input_tokens || 0),
+    output_tokens: acc.output_tokens + (e.output_tokens || 0),
+  }), { costo: 0, llamadas: 0, input_tokens: 0, output_tokens: 0 });
+
+  const groupBy = (arr, key) => {
+    const map = {};
+    arr.forEach(e => {
+      const k = e[key] || 'desconocido';
+      if (!map[k]) map[k] = { [key]: k, costo: 0, llamadas: 0, input_tokens: 0, output_tokens: 0 };
+      map[k].costo += e.cost_usd || 0;
+      map[k].llamadas++;
+      map[k].input_tokens += e.input_tokens || 0;
+      map[k].output_tokens += e.output_tokens || 0;
+    });
+    return Object.values(map).sort((a, b) => b.costo - a.costo);
+  };
+
+  // Últimos 30 días
+  const hace30 = new Date(nowUY); hace30.setDate(hace30.getDate() - 29);
+  const ultimos30 = data.filter(e => new Date(e.ts) >= hace30);
+  const porDia = {};
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(nowUY); d.setDate(d.getDate() - (29 - i));
+    const dStr = d.toISOString().slice(0, 10);
+    porDia[dStr] = { dia: dStr, costo: 0, llamadas: 0 };
+  }
+  ultimos30.forEach(e => {
+    const d = e.ts.slice(0, 10);
+    if (porDia[d]) { porDia[d].costo += e.cost_usd || 0; porDia[d].llamadas++; }
+  });
+
+  res.json({
+    hoy: sumGroup(hoy),
+    mes: sumGroup(mes),
+    total: sumGroup(data),
+    por_fuente_hoy: groupBy(hoy, 'source'),
+    por_fuente_mes: groupBy(mes, 'source'),
+    por_modelo_mes: groupBy(mes, 'model'),
+    por_dia: Object.values(porDia),
+    ultimas_llamadas: data.slice(-50).reverse(),
+  });
+});
 
 // ── Static files (ya montado arriba) ──
 

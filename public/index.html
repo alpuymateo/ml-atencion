@@ -395,6 +395,9 @@
         <div class="nav-item admin-only" data-page="usuarios" onclick="showPage('usuarios')" style="display:none;">
           <span class="nav-icon">👥</span> Usuarios
         </div>
+        <div class="nav-item" data-page="api-usage" onclick="showPage('api-usage')">
+          <span class="nav-icon">💰</span> Uso API IA
+        </div>
       </div>
 
     </nav>
@@ -884,6 +887,81 @@
       </div>
     </div>
 
+    <!-- Uso API IA -->
+    <div id="page-api-usage" style="display:none;">
+      <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1>Uso API IA</h1>
+          <p>Consumo y costo de llamadas a Claude (Anthropic)</p>
+        </div>
+        <button onclick="loadApiUsagePage()" style="padding:8px 16px;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;">Actualizar</button>
+      </div>
+
+      <!-- KPIs -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:24px;" id="api-kpis">
+        <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:16px;">
+          <div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;">Hoy</div>
+          <div id="api-kpi-hoy" style="font-size:26px;font-weight:700;color:#111827;margin:6px 0 2px;">--</div>
+          <div id="api-kpi-hoy-sub" style="font-size:11px;color:#9ca3af;">-- llamadas</div>
+        </div>
+        <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:16px;">
+          <div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;">Este mes</div>
+          <div id="api-kpi-mes" style="font-size:26px;font-weight:700;color:#111827;margin:6px 0 2px;">--</div>
+          <div id="api-kpi-mes-sub" style="font-size:11px;color:#9ca3af;">-- llamadas</div>
+        </div>
+        <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:16px;">
+          <div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;">Promedio diario (mes)</div>
+          <div id="api-kpi-avg" style="font-size:26px;font-weight:700;color:#111827;margin:6px 0 2px;">--</div>
+          <div id="api-kpi-avg-sub" style="font-size:11px;color:#9ca3af;">por día activo</div>
+        </div>
+        <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:16px;">
+          <div style="font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;">Total histórico</div>
+          <div id="api-kpi-total" style="font-size:26px;font-weight:700;color:#111827;margin:6px 0 2px;">--</div>
+          <div id="api-kpi-total-sub" style="font-size:11px;color:#9ca3af;">-- llamadas totales</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
+        <!-- Uso por fuente (mes) -->
+        <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:18px;">
+          <div style="font-size:13px;font-weight:700;color:#111827;margin-bottom:14px;">Gasto por función — este mes</div>
+          <div id="api-chart-fuente"></div>
+        </div>
+        <!-- Uso por modelo (mes) -->
+        <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:18px;">
+          <div style="font-size:13px;font-weight:700;color:#111827;margin-bottom:14px;">Gasto por modelo — este mes</div>
+          <div id="api-chart-modelo"></div>
+        </div>
+      </div>
+
+      <!-- Gráfico diario 30 días -->
+      <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:18px;margin-bottom:24px;">
+        <div style="font-size:13px;font-weight:700;color:#111827;margin-bottom:14px;">Gasto diario — últimos 30 días</div>
+        <div id="api-chart-dias" style="display:flex;align-items:flex-end;gap:3px;height:80px;"></div>
+        <div id="api-chart-dias-labels" style="display:flex;gap:3px;margin-top:4px;"></div>
+      </div>
+
+      <!-- Últimas llamadas -->
+      <div style="background:white;border:1px solid #e5e7eb;border-radius:12px;padding:18px;">
+        <div style="font-size:13px;font-weight:700;color:#111827;margin-bottom:14px;">Últimas llamadas</div>
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:12px;">
+            <thead>
+              <tr style="border-bottom:2px solid #f3f4f6;">
+                <th style="text-align:left;padding:6px 8px;color:#6b7280;font-weight:600;">Fecha/hora</th>
+                <th style="text-align:left;padding:6px 8px;color:#6b7280;font-weight:600;">Función</th>
+                <th style="text-align:left;padding:6px 8px;color:#6b7280;font-weight:600;">Modelo</th>
+                <th style="text-align:right;padding:6px 8px;color:#6b7280;font-weight:600;">Input tok.</th>
+                <th style="text-align:right;padding:6px 8px;color:#6b7280;font-weight:600;">Output tok.</th>
+                <th style="text-align:right;padding:6px 8px;color:#6b7280;font-weight:600;">Costo</th>
+              </tr>
+            </thead>
+            <tbody id="api-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <!-- Modal piloto automático — fuera de todos los page-* para que position:fixed funcione -->
@@ -971,7 +1049,7 @@ function fmtDateTime(d) {
 }
 
 // ── Navigation ──
-const PAGES = ['tareas', 'alertas', 'recomendaciones', 'reclamos', 'devoluciones', 'buscador', 'logistica', 'envios-dac', 'envios-sd', 'envios-deri', 'ml-analizar', 'usuarios'];
+const PAGES = ['tareas', 'alertas', 'recomendaciones', 'reclamos', 'devoluciones', 'buscador', 'logistica', 'envios-dac', 'envios-sd', 'envios-deri', 'ml-analizar', 'usuarios', 'api-usage'];
 const ML_TAB_PAGES = { 'ml-preguntas': 'pendientes', 'ml-postventa': 'mensajes', 'ml-reglas': 'reglas' };
 
 function toggleNavGroup(id) {
@@ -1061,6 +1139,9 @@ function showPage(page) {
   }
   if (page === 'envios-deri') {
     loadEnviosDeri();
+  }
+  if (page === 'api-usage') {
+    loadApiUsagePage();
   }
 }
 
@@ -2545,6 +2626,104 @@ async function refreshAutopilotBtn() {
     const cfg = await r.json();
     actualizarToggleUI(cfg.enabled);
   } catch {}
+}
+
+// ── Uso API IA ──
+const SOURCE_LABELS = {
+  autopilot: 'Piloto automático',
+  mensajes: 'Mensajes',
+  preguntas_responder: 'Responder preguntas (lote)',
+  preguntas_sugerir: 'Sugerir respuesta',
+  reclamos: 'Reclamos',
+  recomendaciones: 'Recomendaciones',
+  tareas_sugerencias: 'Sugerencias de tareas',
+  pedidos_imagen: 'Pedidos por imagen',
+  feedback_regla: 'Regla desde feedback mensajes',
+  feedback_preguntas_regla: 'Regla desde feedback preguntas',
+  reglas_interpretar: 'Interpretar reglas',
+};
+const MODEL_COLORS = {
+  'claude-haiku-4-5': '#4ade80',
+  'claude-haiku-4-5-20251001': '#4ade80',
+  'claude-sonnet-4-6': '#60a5fa',
+  'claude-opus-4-6': '#f87171',
+};
+function fmtUsd(n) {
+  if (n === undefined || n === null) return '$0.000';
+  return '$' + n.toFixed(4).replace(/(\.\d{2})\d+/, '$1');
+}
+function fmtUsd2(n) {
+  if (!n) return '$0.00';
+  return '$' + n.toFixed(2);
+}
+function renderBarChart(container, items, valueKey, labelKey, colorFn) {
+  if (!items.length) { container.innerHTML = '<span style="color:#9ca3af;font-size:12px;">Sin datos</span>'; return; }
+  const max = Math.max(...items.map(i => i[valueKey]));
+  container.innerHTML = items.map(item => {
+    const pct = max > 0 ? (item[valueKey] / max * 100) : 0;
+    const color = colorFn ? colorFn(item) : '#60a5fa';
+    return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <div style="width:120px;flex-shrink:0;font-size:11px;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${item[labelKey]}">${item[labelKey]}</div>
+      <div style="flex:1;background:#f3f4f6;border-radius:4px;height:14px;">
+        <div style="width:${pct}%;background:${color};border-radius:4px;height:100%;transition:width .3s;"></div>
+      </div>
+      <div style="width:58px;text-align:right;font-size:11px;font-weight:600;color:#111827;flex-shrink:0;">${fmtUsd2(item[valueKey])}</div>
+    </div>`;
+  }).join('');
+}
+async function loadApiUsagePage() {
+  try {
+    const res = await fetch('/api/anthropic/usage', { headers: authHeaders() });
+    const d = await res.json();
+
+    // KPIs
+    document.getElementById('api-kpi-hoy').textContent = fmtUsd2(d.hoy.costo);
+    document.getElementById('api-kpi-hoy-sub').textContent = `${d.hoy.llamadas} llamadas · ${((d.hoy.input_tokens || 0) + (d.hoy.output_tokens || 0)).toLocaleString()} tokens`;
+    document.getElementById('api-kpi-mes').textContent = fmtUsd2(d.mes.costo);
+    document.getElementById('api-kpi-mes-sub').textContent = `${d.mes.llamadas} llamadas · ${((d.mes.input_tokens || 0) + (d.mes.output_tokens || 0)).toLocaleString()} tokens`;
+    // Promedio: días del mes con al menos 1 llamada
+    const diasActivos = d.por_dia.filter(x => x.llamadas > 0).length || 1;
+    document.getElementById('api-kpi-avg').textContent = fmtUsd2(d.mes.costo / diasActivos);
+    document.getElementById('api-kpi-avg-sub').textContent = `${diasActivos} días con actividad este mes`;
+    document.getElementById('api-kpi-total').textContent = fmtUsd2(d.total.costo);
+    document.getElementById('api-kpi-total-sub').textContent = `${d.total.llamadas.toLocaleString()} llamadas totales`;
+
+    // Charts fuente y modelo
+    const fuentes = (d.por_fuente_mes || []).map(f => ({ ...f, source: SOURCE_LABELS[f.source] || f.source }));
+    renderBarChart(document.getElementById('api-chart-fuente'), fuentes, 'costo', 'source', () => '#60a5fa');
+    const modelos = (d.por_modelo_mes || []).map(m => ({ ...m, model: m.model.replace('claude-', '').replace('-20251001', '') }));
+    renderBarChart(document.getElementById('api-chart-modelo'), modelos, 'costo', 'model', item => MODEL_COLORS[item.model] || '#a78bfa');
+
+    // Gráfico diario
+    const diasEl = document.getElementById('api-chart-dias');
+    const labelsEl = document.getElementById('api-chart-dias-labels');
+    const maxCosto = Math.max(...d.por_dia.map(x => x.costo), 0.001);
+    diasEl.innerHTML = d.por_dia.map(x => {
+      const h = Math.max(4, (x.costo / maxCosto) * 80);
+      const isToday = x.dia === new Date().toISOString().slice(0, 10);
+      return `<div style="flex:1;display:flex;align-items:flex-end;justify-content:center;" title="${x.dia}: ${fmtUsd2(x.costo)} · ${x.llamadas} llamadas">
+        <div style="width:100%;background:${isToday ? '#3b82f6' : '#93c5fd'};border-radius:2px 2px 0 0;height:${h}px;"></div>
+      </div>`;
+    }).join('');
+    labelsEl.innerHTML = d.por_dia.map((x, i) => {
+      const show = i % 5 === 0 || i === d.por_dia.length - 1;
+      return `<div style="flex:1;text-align:center;font-size:9px;color:#9ca3af;">${show ? x.dia.slice(5) : ''}</div>`;
+    }).join('');
+
+    // Tabla últimas llamadas
+    const tbody = document.getElementById('api-table-body');
+    tbody.innerHTML = (d.ultimas_llamadas || []).map(e => `
+      <tr style="border-bottom:1px solid #f9fafb;">
+        <td style="padding:5px 8px;color:#6b7280;">${new Date(e.ts).toLocaleString('es-UY', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })}</td>
+        <td style="padding:5px 8px;color:#374151;">${SOURCE_LABELS[e.source] || e.source}</td>
+        <td style="padding:5px 8px;"><span style="font-size:10px;padding:2px 6px;border-radius:4px;background:${MODEL_COLORS[e.model] || '#e5e7eb'}22;color:#374151;font-weight:600;">${e.model.replace('claude-', '').replace('-20251001', '')}</span></td>
+        <td style="padding:5px 8px;text-align:right;color:#374151;">${(e.input_tokens || 0).toLocaleString()}</td>
+        <td style="padding:5px 8px;text-align:right;color:#374151;">${(e.output_tokens || 0).toLocaleString()}</td>
+        <td style="padding:5px 8px;text-align:right;font-weight:600;color:#111827;">${fmtUsd(e.cost_usd)}</td>
+      </tr>`).join('');
+  } catch(e) {
+    console.error('api-usage error:', e);
+  }
 }
 
 function actualizarResumenFeedback() {
