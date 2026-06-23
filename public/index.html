@@ -2498,9 +2498,18 @@ function cerrarAutopilot() {
   document.getElementById('autopilot-modal').style.display = 'none';
 }
 
-function toggleAutopilot() {
+async function toggleAutopilot() {
   const enabled = document.getElementById('autopilot-enabled').checked;
   actualizarToggleUI(enabled);
+  // Guardar inmediatamente al servidor para que el backend refleje el cambio
+  const dias = [...document.querySelectorAll('.autopilot-dia')].filter(cb => cb.checked).map(cb => parseInt(cb.dataset.dia));
+  const cfg = {
+    enabled,
+    hora_inicio: document.getElementById('autopilot-hora-inicio').value,
+    hora_fin: document.getElementById('autopilot-hora-fin').value,
+    dias
+  };
+  await fetch('/api/autopilot/config', { method: 'POST', headers: { ...authHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify(cfg) });
 }
 
 function actualizarToggleUI(enabled) {
