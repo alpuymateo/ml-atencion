@@ -3608,7 +3608,8 @@ async function runAutopilot() {
   autopilotRunning = false;
 }
 
-setInterval(runAutopilot, 60 * 1000);
+// Auto-run desactivado — solo se ejecuta manualmente desde el panel con "Ejecutar ahora"
+// setInterval(runAutopilot, 60 * 1000);
 
 // ── API Usage ──
 app.get('/api/anthropic/usage', requireToken, (req, res) => {
